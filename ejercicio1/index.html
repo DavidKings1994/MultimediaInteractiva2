@@ -1,0 +1,47 @@
+<html>
+<head>
+	<title>Ejercicio 0.1 Javascript OOP</title>
+	<!-- Hoja de estilos -->
+	<link rel="stylesheet" type="text/css" href="css/main.css">
+	<!-- JQuery -->
+	<script type="text/javascript" src="js/libs/jquery-2.1.4.min.js"></script>
+	<script type="text/javascript" src="js/clases.js"></script>
+	<!-- Nuestros modelos -->
+
+	<!-- Nuestro codigo principal en JavaScript con jQuery -->
+	<script type="text/javascript">
+		$(document).ready(function() {
+			var productos = [];
+			$('#btnAdd').click(function(){
+				var producto = new Kings.Producto({
+					nombre: $('#txtName').val(),
+					detalles: $('#txtDetails').val(),
+					precio: $('#txtPrice').val()
+				});
+				producto.agregarA($('div.product-list'));
+				productos.push();
+			});
+		});
+	</script>
+	<!-- Fin codigo principal -->
+</head>
+<body>
+	<div class="product-list">
+		<!-- Aqui van a ir nuestros productos dinamicamente agregados-->
+		<!--<div class="product">
+			<p>Fresa</p>
+			<p>Muy rica</p>
+			<p>$125</p>
+			<button class="btnDelete">Borrar</button>
+		</div>-->
+	</div>
+	<div class="add-data">
+
+			<input id="txtName" type="text" placeholder="Nombre">
+			<input id="txtDetails" type="text" placeholder="Detalles">
+			<input id="txtPrice" type="text" placeholder="Precio">
+			<button id="btnAdd">Agregar</button>
+
+	</div>
+</body>
+</html>
