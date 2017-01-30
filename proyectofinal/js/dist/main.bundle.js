@@ -44,18 +44,35 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(2), __webpack_require__(4)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, Vue, Game) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(2), __webpack_require__(4)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Vue, Game) {
 	    $(document).ready(function() {
-	        $('#gameWindow').KingsGame();
-	        // new Vue({
-	        //     el: '#App',
-	        //     data: {
-	        //         message: 'Hello Vue.js!'
-	        //     }
-	        // });
+	        new Vue({
+	            el: '#App',
+	            data: {
+	                gameStarted: false,
+	                welcome: 'New game'
+	            },
+	            computed: {},
+	            watch: {
+	                gameStarted: function(state) {
+	                    console.log('game started');
+	                }
+	            },
+	            methods: {
+	                start: function() {
+	                    this.gameStarted = true;
+	                }
+	            },
+	            updated: function() {
+	                if (this.gameStarted) {
+	                    $('#gameWindow').initGame();
+	                }
+	            }
+	        });
 	    });
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ },
 /* 1 */
@@ -18979,16 +18996,16 @@
 	}(this, function($, glMatrix) {
 	    'use strict';
 
-	    var KingsGame = window.KingsGame || {};
-	    var KingsGame = ( function() {
-	        function KingsGame() {
+	    var Kings = window.Kings || {};
+	    var Kings = ( function() {
+	        function Kings() {
 	            var self = this, dataSettings;
 	            self.init(true);
 	        }
-	        return KingsGame;
+	        return Kings;
 	    }());
 
-	    KingsGame.Shader = function(parameters) {
+	    Kings.Shader = function(parameters) {
 	        this.gl = parameters.gl;
 	        var vertexShaderSource = document.getElementById(parameters.vertexShaderSource).text;
 	        var fragmentShaderSource = document.getElementById(parameters.fragmentShaderSource).text;
@@ -18998,8 +19015,8 @@
 	        this.program = this.createProgram();
 	    };
 
-	    KingsGame.Shader.prototype = {
-	        constructor: KingsGame.Shader,
+	    Kings.Shader.prototype = {
+	        constructor: Kings.Shader,
 
 	        createShader: function(type, source) {
 	            var shader = this.gl.createShader(type);
@@ -19036,6 +19053,10 @@
 	            return this.gl.getAttribLocation(this.program, name);
 	        },
 
+	        getUniform: function(name) {
+	            return this.gl.getUniformLocation(this.program, name);
+	        },
+
 	        setAtribute: function(value, type) {
 	            var buffer = this.gl.createBuffer();
 	            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
@@ -19049,13 +19070,13 @@
 	        }
 	    };
 
-	    KingsGame.Graphics = function(canvas) {
+	    Kings.Graphics = function(canvas) {
 	        this.gl = canvas.getContext("webgl");
 	        if (!this.gl) {
 	            alert('No se puede incializar');
 	        }
 
-	        this.shader = new KingsGame.Shader({
+	        this.shader = new Kings.Shader({
 	            gl: this.gl,
 	            vertexShaderSource: '2d-vertex-shader',
 	            fragmentShaderSource: '2d-fragment-shader'
@@ -19067,15 +19088,20 @@
 	        ];
 	        this.positionAttributeLocation = this.shader.getAttributeLocation('a_position');
 	        this.positionBuffer = this.shader.setAtribute(positions, 'Float32Array');
+	        this.matrixLocation = this.shader.getUniform('u_matrix');
+	        this.angle = 0;
 
-	        this.draw();
+	        //while (true) {
+	            //this.update();
+	            this.draw();
+	        //}
 	    };
 
-	    KingsGame.Graphics.prototype = {
-	        constructor: KingsGame.Graphics,
+	    Kings.Graphics.prototype = {
+	        constructor: Kings.Graphics,
 
 	        update: function() {
-
+	            this.angle += 0.3;
 	        },
 
 	        draw: function() {
@@ -19110,8 +19136,8 @@
 	        }
 	    };
 
-	    $.fn.KingsGame = function( parameters ) {
-	        KingsGame.game = new KingsGame.Graphics($(this)[0]);
+	    $.fn.initGame = function( parameters ) {
+	        Kings.game = new Kings.Graphics($(this)[0]);
 	    };
 	}));
 

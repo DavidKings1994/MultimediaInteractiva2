@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8">
         <title></title>
+        <link rel="stylesheet" href="css/main.css">
         <script src="js/dist/main.bundle.js" charset="utf-8"></script>
         <script id="2d-vertex-shader" type="notjs">
             // an attribute will receive data from a buffer
@@ -27,9 +28,15 @@
         </script>
     </head>
     <body>
-        <canvas id="gameWindow" width="600" height="600"></canvas>
-        <!-- <div id="App">
-            <p>{{ message }}</p>
-        </div> -->
+        <div id="App">
+            <template v-if='!gameStarted'>
+                <div class="">
+                    <input type="button" v-on:click='start' value="Start">
+                </div>
+            </template>
+            <template v-if='gameStarted'>
+                <canvas id="gameWindow"></canvas>
+            </template>
+        </div>
     </body>
 </html>

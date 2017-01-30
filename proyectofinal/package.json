@@ -1,19 +1,21 @@
 {
-  "name": "proyectofinal",
-  "version": "1.0.0",
-  "description": "Proyecto final para multimedia interactiva con el prof. Zamaniego",
-  "main": "main.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [
-    "lmad"
-  ],
-  "author": "David Reyes",
-  "license": "ISC",
-  "dependencies": {
-    "gl-matrix": "^2.3.2",
-    "jquery": "^3.1.1",
-    "vue": "^2.1.10"
-  }
+    "name": "proyectofinal",
+    "version": "1.0.0",
+    "description": "Proyecto final para multimedia interactiva con el prof. Samaniego",
+    "main": "main.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "lmad"
+    ],
+    "author": "David Reyes",
+    "license": "ISC",
+    "dependencies": {
+        "bootstrap": "^3.3.7",
+        "gl-matrix": "^2.3.2",
+        "jquery": "^3.1.1",
+        "vue": "^2.1.10",
+        "webpack": "^1.14.0"
+    }
 }
