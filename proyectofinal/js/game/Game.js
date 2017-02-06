@@ -19,138 +19,50 @@
         return Kings;
     }());
 
-    Kings.Shader = function(parameters) {
-        this.gl = parameters.gl;
-        var vertexShaderSource = document.getElementById(parameters.vertexShaderSource).text;
-        var fragmentShaderSource = document.getElementById(parameters.fragmentShaderSource).text;
+    window.Kings = Kings;
 
-        this.vertexShader = this.createShader(this.gl.VERTEX_SHADER, vertexShaderSource);
-        this.fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, fragmentShaderSource);
-        this.program = this.createProgram();
-    };
+    require('./Shader.js');
+    require('./Graphics.js');
 
-    Kings.Shader.prototype = {
-        constructor: Kings.Shader,
+    Kings.prototype.keyHandler = function(event) {
+        var up = (event.type == 'keyup');
 
-        createShader: function(type, source) {
-            var shader = this.gl.createShader(type);
-            this.gl.shaderSource(shader, source);
-            this.gl.compileShader(shader);
-            var success = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
-            if (success) {
-                return shader;
-            }
+        if(!up && event.type !== 'keydown')
+            return;
 
-            console.log(this.gl.getShaderInfoLog(shader));
-            this.gl.deleteShader(shader);
-        },
+        switch(event.keyCode){
 
-        createProgram: function() {
-            var program = this.gl.createProgram();
-            this.gl.attachShader(program, this.vertexShader);
-            this.gl.attachShader(program, this.fragmentShader);
-            this.gl.linkProgram(program);
-            var success = this.gl.getProgramParameter(program, this.gl.LINK_STATUS);
-            if (success) {
-                return program;
-            }
+        case 87: // w
+        case 38: // forward
 
-            console.log(this.gl.getProgramInfoLog(program));
-            this.gl.deleteProgram(program);
-        },
+            break;
+        case 83: // s
+        case 40: // backward
 
-        getProgram: function() {
-            return this.program;
-        },
+            break;
+        case 65: // a
+        case 37: // left
 
-        getAttributeLocation: function(name) {
-            return this.gl.getAttribLocation(this.program, name);
-        },
+            break;
+        case 68: // d
+        case 39: // right
 
-        getUniform: function(name) {
-            return this.gl.getUniformLocation(this.program, name);
-        },
-
-        setAtribute: function(value, type) {
-            var buffer = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-            switch (type) {
-                case 'Float32Array': {
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(value), this.gl.STATIC_DRAW);
-                    return buffer;
-                }
-                default: {}
-            }
+            break;
         }
     };
 
-    Kings.Graphics = function(canvas) {
-        this.gl = canvas.getContext("webgl");
-        if (!this.gl) {
-            alert('No se puede incializar');
-        }
-
-        this.shader = new Kings.Shader({
-            gl: this.gl,
-            vertexShaderSource: '2d-vertex-shader',
-            fragmentShaderSource: '2d-fragment-shader'
-        });
-        var positions = [
-            0, 0,
-            0, 0.5,
-            0.7, 0,
-        ];
-        this.positionAttributeLocation = this.shader.getAttributeLocation('a_position');
-        this.positionBuffer = this.shader.setAtribute(positions, 'Float32Array');
-        this.matrixLocation = this.shader.getUniform('u_matrix');
-        this.angle = 0;
-
-        //while (true) {
-            //this.update();
-            this.draw();
-        //}
+    Kings.prototype.onKeyDown = function(event) {
+        KingsGame.prototype.keyHandler( event );
     };
 
-    Kings.Graphics.prototype = {
-        constructor: Kings.Graphics,
-
-        update: function() {
-            this.angle += 0.3;
-        },
-
-        draw: function() {
-            this.resizeView();
-            this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-            this.gl.clearColor(0, 0, 0, 0);
-            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-            this.gl.useProgram(this.shader.getProgram());
-            this.gl.enableVertexAttribArray(this.positionAttributeLocation);
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-
-            var size = 2;
-            var type = this.gl.FLOAT;
-            var normalize = false;
-            var stride = 0;
-            var offset = 0;
-            this.gl.vertexAttribPointer(this.positionAttributeLocation, size, type, normalize, stride, offset);
-
-            var primitiveType = this.gl.TRIANGLES;
-            var offset = 0;
-            var count = 3;
-            this.gl.drawArrays(primitiveType, offset, count);
-        },
-
-        resizeView: function() {
-            var displayWidth  = this.gl.canvas.clientWidth;
-            var displayHeight = this.gl.canvas.clientHeight;
-            if (this.gl.canvas.width  != displayWidth || this.gl.canvas.height != displayHeight) {
-                this.gl.canvas.width  = displayWidth;
-                this.gl.canvas.height = displayHeight;
-            }
-        }
+    Kings.prototype.onKeyDown = function(event) {
+        KingsGame.prototype.keyHandler( event );
     };
 
     $.fn.initGame = function( parameters ) {
         Kings.game = new Kings.Graphics($(this)[0]);
+
+        document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
+        document.addEventListener( 'keyup', Kings.prototype.onKeyUp, false );
     };
 }));
