@@ -1,0 +1,25 @@
+{
+    "assetRoot": "./Assets/",
+    "bundles": [
+        {
+            "name": "core",
+            "contents": [
+                "img/logo.png"
+            ]
+        },
+        {
+            "name": "level1",
+            "contents": [
+                "L1/background.jpg",
+                "L1/blip.wav"
+            ]
+        },
+        {
+            "name": "level2",
+            "contents": [
+                "L2/intro.mov"
+            ]
+        }
+    ],
+    "autoDownload": false
+}

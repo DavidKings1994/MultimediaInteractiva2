@@ -14,9 +14,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             multMatrix(glMatrix.Translation($V([v[0], v[1], v[2]])).ensure4x4());
         },
 
-        setMatrixUniforms: function() {
-            gl.uniformMatrix4fv(Kings.pMatrixUniform, false, Kings.pMatrix);
-            gl.uniformMatrix4fv(Kings.mvMatrixUniform, false, Kings.mvMatrix);
+        setMatrixUniforms: function(shader) {
+            gl.uniformMatrix4fv(shader.getUniform('uPMatrix'), false, Kings.pMatrix);
+            gl.uniformMatrix4fv(shader.getUniform('uMVMatrix'), false, Kings.mvMatrix);
         },
 
         mvPushMatrix: function(m) {

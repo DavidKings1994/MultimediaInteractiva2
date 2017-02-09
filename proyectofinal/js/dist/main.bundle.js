@@ -19009,6 +19009,7 @@
 
 	    __webpack_require__(6);
 	    __webpack_require__(7);
+	    __webpack_require__(12);
 
 	    Kings.prototype.keyHandler = function(event) {
 	        var up = (event.type == 'keyup');
@@ -19046,10 +19047,19 @@
 	    };
 
 	    $.fn.initGame = function( parameters ) {
-	        Kings.game = new Kings.Graphics($(this)[0]);
+	        var self = this;
+	        Kings.game = new Kings.Graphics($(self)[0]);
+	        Kings.AssetBundles = [];
+	        Kings.LoadManager.loadBundle('core', function() {
+	            console.log('todo cargado');
+	            console.log(Kings.AssetBundles);
+	            Kings.game.addElement(new Kings.Triangle({
+	                texture: Kings.AssetBundles[0].content.logo
+	            }));
 
-	        document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
-	        document.addEventListener( 'keyup', Kings.prototype.onKeyUp, false );
+	            document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
+	            document.addEventListener( 'keyup', Kings.prototype.onKeyUp, false );
+	        });
 	    };
 	}));
 
@@ -25780,26 +25790,19 @@
 
 	        this.lastTime = 0;
 
-	        this.shader = new Kings.Shader({
+	        Kings.colorShader = new Kings.Shader({
 	            gl: gl,
 	            vertexShaderSource: '2d-vertex-shader',
 	            fragmentShaderSource: '2d-fragment-shader'
 	        });
 
+	        Kings.textureShader = new Kings.Shader({
+	            gl: gl,
+	            vertexShaderSource: '2d-vertex-shader-texture',
+	            fragmentShaderSource: '2d-fragment-shader-texture'
+	        });
+
 	        this.elements = [];
-
-	        this.vertexPositionAttribute = this.shader.getAttributeLocation('aVertexPosition');
-	        gl.enableVertexAttribArray(this.vertexPositionAttribute);
-	        this.vertexColorAttribute = this.shader.getAttributeLocation('aVertexColor');
-	        gl.enableVertexAttribArray(this.vertexColorAttribute);
-	        Kings.pMatrixUniform = this.shader.getUniform('uPMatrix');
-	        Kings.mvMatrixUniform = this.shader.getUniform('uMVMatrix');
-
-	        this.addElement(new Kings.Triangle({
-	            vertexColorAttribute: this.vertexColorAttribute,
-	            vertexPositionAttribute: this.vertexPositionAttribute
-	        }));
-
 	        this.tick();
 	    };
 
@@ -25821,7 +25824,7 @@
 	            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 	            gl.clearColor(0, 0, 0, 1);
 	            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	            gl.useProgram(this.shader.getProgram());
+	            //gl.useProgram(Kings.colorShader.getProgram());
 
 	            Kings.GL.lookAt(
 	                glMatrix.vec3.fromValues(0, 0, -10),
@@ -25892,9 +25895,9 @@
 	            multMatrix(glMatrix.Translation($V([v[0], v[1], v[2]])).ensure4x4());
 	        },
 
-	        setMatrixUniforms: function() {
-	            gl.uniformMatrix4fv(Kings.pMatrixUniform, false, Kings.pMatrix);
-	            gl.uniformMatrix4fv(Kings.mvMatrixUniform, false, Kings.mvMatrix);
+	        setMatrixUniforms: function(shader) {
+	            gl.uniformMatrix4fv(shader.getUniform('uPMatrix'), false, Kings.pMatrix);
+	            gl.uniformMatrix4fv(shader.getUniform('uMVMatrix'), false, Kings.mvMatrix);
 	        },
 
 	        mvPushMatrix: function(m) {
@@ -25938,10 +25941,24 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
+	    __webpack_require__(10);
+
 	    Kings.Triangle = function(parameters) {
+	        this.color = parameters.color || null;
+	        this.texture = parameters.texture || null;
+	        if (this.texture != null) {
+	            Kings.Texture.SetCurrentTexture(this.texture);
+	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.textureCoordAttribute = Kings.textureShader.getAttributeLocation('aTextureCoord');
+	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+	        } else {
+	            this.vertexPositionAttribute = Kings.colorShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.vertexColorAttribute = Kings.colorShader.getAttributeLocation('aVertexColor');
+	            gl.enableVertexAttribArray(this.vertexColorAttribute);
+	        }
 	        this.initBuffers();
-	        this.vertexPositionAttribute = parameters.vertexPositionAttribute;
-	        this.vertexColorAttribute = parameters.vertexColorAttribute;
 	        this.angle = 0;
 	    };
 
@@ -25949,6 +25966,31 @@
 	        constructor: Kings.Triangle,
 
 	        initBuffers: function() {
+	            if (this.texture != null) {
+	                this.triangleTextureCoordBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleTextureCoordBuffer);
+	                var textureCoords = [
+	                    0.0, 0.0,
+	                    1.0, 0.0,
+	                    0.5, 1.0,
+	                ];
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	                this.triangleTextureCoordBuffer.itemSize = 2;
+	                this.triangleTextureCoordBuffer.numItems = 3;
+
+	            } else {
+	                this.triangleVertexColorBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
+	                var colors = [
+	                    1.0, 0.0, 0.0, 1.0,
+	                    0.0, 1.0, 0.0, 1.0,
+	                    0.0, 0.0, 1.0, 1.0,
+	                ];
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+	                this.triangleVertexColorBuffer.itemSize = 4;
+	                this.triangleVertexColorBuffer.numItems = 3;
+	            }
+
 	            this.triangleVertexPositionBuffer = gl.createBuffer();
 	            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexPositionBuffer);
 	            var vertices = [
@@ -25959,17 +26001,6 @@
 	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 	            this.triangleVertexPositionBuffer.itemSize = 3;
 	            this.triangleVertexPositionBuffer.numItems = 3;
-
-	            this.triangleVertexColorBuffer = gl.createBuffer();
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
-	            var colors = [
-	                1.0, 0.0, 0.0, 1.0,
-	                0.0, 1.0, 0.0, 1.0,
-	                0.0, 0.0, 1.0, 1.0,
-	            ];
-	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-	            this.triangleVertexColorBuffer.itemSize = 4;
-	            this.triangleVertexColorBuffer.numItems = 3;
 	        },
 
 	        update: function() {
@@ -25983,13 +26014,129 @@
 	            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexPositionBuffer);
 	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
-	            gl.vertexAttribPointer(this.vertexColorAttribute, this.triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+	            if (this.texture != null) {
+	                gl.useProgram(Kings.textureShader.getProgram());
+	                gl.activeTexture(gl.TEXTURE0);
+	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	            Kings.GL.setMatrixUniforms();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleTextureCoordBuffer);
+	                gl.vertexAttribPointer(this.textureCoordAttribute, this.triangleTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                Kings.GL.setMatrixUniforms(Kings.textureShader);
+	            } else {
+	                gl.useProgram(Kings.colorShader.getProgram());
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
+	                gl.vertexAttribPointer(this.vertexColorAttribute, this.triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                Kings.GL.setMatrixUniforms(Kings.colorShader);
+	            }
+
 	            gl.drawArrays(gl.TRIANGLES, 0, this.triangleVertexPositionBuffer.numItems);
 
 	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Texture = {
+	        loadTexture: function(path) {
+	            var ready = false;
+	            texture = gl.createTexture();
+	            texture.image = new Image();
+	            texture.image.onload = function() {
+	                ready = true;
+	                console.log('done');
+	            }
+	            texture.image.src = path;
+	            while(!ready) {
+
+	            }
+	            return texture;
+	        },
+
+	        SetCurrentTexture: function(texture) {
+	            gl.bindTexture(gl.TEXTURE_2D, texture);
+	            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+	            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+	            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	            gl.bindTexture(gl.TEXTURE_2D, null);
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 11 */,
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.LoadManager = {
+	        loadBundle: function(name, callback) {
+	            var self = this;
+	            this.successCount = 0;
+	            this.errorCount = 0;
+	            this.downloadQueue = [];
+
+	            $.getJSON("./AssetConfig.json", function(json) {
+	                console.log(json);
+	                var bundle = {};
+
+	                var getAssetName = function(path) {
+	                    var filename = path.replace(/^.*[\\\/]/, '');
+	                    return filename.replace(/\.[^/.]+$/, "");
+	                };
+
+	                for (var i = 0; i < json.bundles.length; i++) {
+	                    if(json.bundles[i].name == name) {
+	                        self.downloadQueue = json.bundles[i].contents;
+	                    }
+	                }
+
+	                for (var i = 0; i < self.downloadQueue.length; i++) {
+	                    var path = json.assetRoot + self.downloadQueue[i];
+	                    var texture = gl.createTexture();
+	                    texture.image = new Image();
+	                    texture.image.addEventListener("load", function() {
+	                        self.successCount++;
+	                        bundle[getAssetName(path)] = texture;
+	                        if (self.isDone()) {
+	                            Kings.AssetBundles.push({
+	                                name: name,
+	                                content: bundle
+	                            });
+	                            callback();
+	                        }
+	                    }, false);
+	                    texture.image.addEventListener("error", function() {
+	                        self.errorCount++;
+	                        if (self.isDone()) {
+	                            callback();
+	                        }
+	                    }, false);
+	                    texture.image.src = path;
+	                }
+	            });
+	        },
+
+	        isDone: function() {
+	            return (this.downloadQueue.length == this.successCount + this.errorCount);
+	        },
+
+	        getProgress: function() {
+	            return (this.successCount + this.errorCount) / this.downloadQueue.length;
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));

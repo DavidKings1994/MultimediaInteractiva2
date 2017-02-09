@@ -32,26 +32,19 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         this.lastTime = 0;
 
-        this.shader = new Kings.Shader({
+        Kings.colorShader = new Kings.Shader({
             gl: gl,
             vertexShaderSource: '2d-vertex-shader',
             fragmentShaderSource: '2d-fragment-shader'
         });
 
+        Kings.textureShader = new Kings.Shader({
+            gl: gl,
+            vertexShaderSource: '2d-vertex-shader-texture',
+            fragmentShaderSource: '2d-fragment-shader-texture'
+        });
+
         this.elements = [];
-
-        this.vertexPositionAttribute = this.shader.getAttributeLocation('aVertexPosition');
-        gl.enableVertexAttribArray(this.vertexPositionAttribute);
-        this.vertexColorAttribute = this.shader.getAttributeLocation('aVertexColor');
-        gl.enableVertexAttribArray(this.vertexColorAttribute);
-        Kings.pMatrixUniform = this.shader.getUniform('uPMatrix');
-        Kings.mvMatrixUniform = this.shader.getUniform('uMVMatrix');
-
-        this.addElement(new Kings.Triangle({
-            vertexColorAttribute: this.vertexColorAttribute,
-            vertexPositionAttribute: this.vertexPositionAttribute
-        }));
-
         this.tick();
     };
 
@@ -73,7 +66,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.useProgram(this.shader.getProgram());
+            //gl.useProgram(Kings.colorShader.getProgram());
 
             Kings.GL.lookAt(
                 glMatrix.vec3.fromValues(0, 0, -10),

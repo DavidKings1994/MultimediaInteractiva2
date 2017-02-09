@@ -23,6 +23,7 @@
 
     require('./Shader.js');
     require('./Graphics.js');
+    require('./Utils/LoadManager.js');
 
     Kings.prototype.keyHandler = function(event) {
         var up = (event.type == 'keyup');
@@ -60,9 +61,18 @@
     };
 
     $.fn.initGame = function( parameters ) {
-        Kings.game = new Kings.Graphics($(this)[0]);
+        var self = this;
+        Kings.game = new Kings.Graphics($(self)[0]);
+        Kings.AssetBundles = [];
+        Kings.LoadManager.loadBundle('core', function() {
+            console.log('todo cargado');
+            console.log(Kings.AssetBundles);
+            Kings.game.addElement(new Kings.Triangle({
+                texture: Kings.AssetBundles[0].content.logo
+            }));
 
-        document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
-        document.addEventListener( 'keyup', Kings.prototype.onKeyUp, false );
+            document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
+            document.addEventListener( 'keyup', Kings.prototype.onKeyUp, false );
+        });
     };
 }));
