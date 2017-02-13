@@ -24,27 +24,29 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 }
 
                 for (var i = 0; i < self.downloadQueue.length; i++) {
-                    var path = json.assetRoot + self.downloadQueue[i];
-                    var texture = gl.createTexture();
-                    texture.image = new Image();
-                    texture.image.addEventListener("load", function() {
-                        self.successCount++;
-                        bundle[getAssetName(path)] = texture;
-                        if (self.isDone()) {
-                            Kings.AssetBundles.push({
-                                name: name,
-                                content: bundle
-                            });
-                            callback();
-                        }
-                    }, false);
-                    texture.image.addEventListener("error", function() {
-                        self.errorCount++;
-                        if (self.isDone()) {
-                            callback();
-                        }
-                    }, false);
-                    texture.image.src = path;
+                    (function() {
+                        var path = json.assetRoot + self.downloadQueue[i];
+                        var texture = gl.createTexture();
+                        texture.image = new Image();
+                        texture.image.addEventListener("load", function() {
+                            self.successCount++;
+                            bundle[getAssetName(path)] = texture;
+                            if (self.isDone()) {
+                                Kings.AssetBundles.push({
+                                    name: name,
+                                    content: bundle
+                                });
+                                callback();
+                            }
+                        }, false);
+                        texture.image.addEventListener("error", function() {
+                            self.errorCount++;
+                            if (self.isDone()) {
+                                callback();
+                            }
+                        }, false);
+                        texture.image.src = path;
+                    }());
                 }
             });
         },

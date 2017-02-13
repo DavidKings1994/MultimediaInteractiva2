@@ -4,7 +4,8 @@
         {
             "name": "core",
             "contents": [
-                "img/logo.png"
+                "img/logo.png",
+                "textures/road.jpg"
             ]
         },
         {

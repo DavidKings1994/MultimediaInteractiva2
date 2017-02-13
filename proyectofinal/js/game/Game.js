@@ -24,6 +24,7 @@
     require('./Shader.js');
     require('./Graphics.js');
     require('./Utils/LoadManager.js');
+    require('./GameObjects/Road/Road.js');
 
     Kings.prototype.keyHandler = function(event) {
         var up = (event.type == 'keyup');
@@ -53,11 +54,11 @@
     };
 
     Kings.prototype.onKeyDown = function(event) {
-        KingsGame.prototype.keyHandler( event );
+        Kings.prototype.keyHandler( event );
     };
 
     Kings.prototype.onKeyDown = function(event) {
-        KingsGame.prototype.keyHandler( event );
+        Kings.prototype.keyHandler( event );
     };
 
     $.fn.initGame = function( parameters ) {
@@ -65,10 +66,16 @@
         Kings.game = new Kings.Graphics($(self)[0]);
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
-            console.log('todo cargado');
-            console.log(Kings.AssetBundles);
+            console.log(Kings.AssetBundles[0]);
             Kings.game.addElement(new Kings.Triangle({
+                position: { x: 0, y: 0, z: 10},
                 texture: Kings.AssetBundles[0].content.logo
+            }));
+
+            Kings.game.addElement(new Kings.Road({
+                texture: Kings.AssetBundles[0].content.road,
+                position: { x: 0, y: -2, z: 0},
+                sectionSize: 4
             }));
 
             document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );

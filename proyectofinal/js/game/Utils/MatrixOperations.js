@@ -10,13 +10,15 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             Kings.mvMatrix = Kings.mvMatrix.mul(m);
         },
 
-        mvTranslate: function(v) {
-            multMatrix(glMatrix.Translation($V([v[0], v[1], v[2]])).ensure4x4());
-        },
-
         setMatrixUniforms: function(shader) {
             gl.uniformMatrix4fv(shader.getUniform('uPMatrix'), false, Kings.pMatrix);
             gl.uniformMatrix4fv(shader.getUniform('uMVMatrix'), false, Kings.mvMatrix);
+
+            var normalMatrix = glMatrix.mat3.create();
+            glMatrix.mat3.fromMat4(normalMatrix, Kings.mvMatrix);
+            glMatrix.mat3.invert(normalMatrix, normalMatrix);
+            glMatrix.mat3.transpose(normalMatrix, normalMatrix);
+            gl.uniformMatrix3fv(shader.getUniform('uNMatrix'), false, normalMatrix);
         },
 
         mvPushMatrix: function(m) {
@@ -44,6 +46,14 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         mvRotate: function(angle, x, y, z) {
             var inRadians = angle * Math.PI / 180.0;
             glMatrix.mat4.rotate(Kings.mvMatrix, Kings.mvMatrix, inRadians, glMatrix.vec3.fromValues(x, y, z));
+        },
+
+        mvTranslate: function(v) {
+            glMatrix.mat4.translate(Kings.mvMatrix, Kings.mvMatrix, glMatrix.vec3.fromValues(v.x, v.y, v.z));
+        },
+
+        mvScale: function(v) {
+            glMatrix.mat4.scale(Kings.mvMatrix, Kings.mvMatrix, glMatrix.vec3.fromValues(v.x, v.y, v.z));
         },
 
         lookAt: function(eye, center, up) {

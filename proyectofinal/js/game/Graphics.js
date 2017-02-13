@@ -3,6 +3,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     require('./Utils/MatrixOperations.js');
     require('./Geometry/Triangle.js');
+    require('./Geometry/Plane.js');
+    require('./GameObjects/Gameobject.js');
 
     Kings.Graphics = function(canvas) {
         window.gl = canvas.getContext("webgl");
@@ -69,8 +71,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             //gl.useProgram(Kings.colorShader.getProgram());
 
             Kings.GL.lookAt(
-                glMatrix.vec3.fromValues(0, 0, -10),
                 glMatrix.vec3.fromValues(0, 0, 0),
+                glMatrix.vec3.fromValues(0, 0, 10),
                 glMatrix.vec3.fromValues(0, 1, 0)
             );
 

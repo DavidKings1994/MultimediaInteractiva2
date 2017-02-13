@@ -19009,7 +19009,8 @@
 
 	    __webpack_require__(6);
 	    __webpack_require__(7);
-	    __webpack_require__(12);
+	    __webpack_require__(11);
+	    __webpack_require__(13);
 
 	    Kings.prototype.keyHandler = function(event) {
 	        var up = (event.type == 'keyup');
@@ -19039,11 +19040,11 @@
 	    };
 
 	    Kings.prototype.onKeyDown = function(event) {
-	        KingsGame.prototype.keyHandler( event );
+	        Kings.prototype.keyHandler( event );
 	    };
 
 	    Kings.prototype.onKeyDown = function(event) {
-	        KingsGame.prototype.keyHandler( event );
+	        Kings.prototype.keyHandler( event );
 	    };
 
 	    $.fn.initGame = function( parameters ) {
@@ -19051,10 +19052,16 @@
 	        Kings.game = new Kings.Graphics($(self)[0]);
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
-	            console.log('todo cargado');
-	            console.log(Kings.AssetBundles);
+	            console.log(Kings.AssetBundles[0]);
 	            Kings.game.addElement(new Kings.Triangle({
+	                position: { x: 0, y: 0, z: 10},
 	                texture: Kings.AssetBundles[0].content.logo
+	            }));
+
+	            Kings.game.addElement(new Kings.Road({
+	                texture: Kings.AssetBundles[0].content.road,
+	                position: { x: 0, y: -2, z: 0},
+	                sectionSize: 4
 	            }));
 
 	            document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
@@ -25761,6 +25768,8 @@
 
 	    __webpack_require__(8);
 	    __webpack_require__(9);
+	    __webpack_require__(12);
+	    __webpack_require__(14);
 
 	    Kings.Graphics = function(canvas) {
 	        window.gl = canvas.getContext("webgl");
@@ -25827,8 +25836,8 @@
 	            //gl.useProgram(Kings.colorShader.getProgram());
 
 	            Kings.GL.lookAt(
-	                glMatrix.vec3.fromValues(0, 0, -10),
 	                glMatrix.vec3.fromValues(0, 0, 0),
+	                glMatrix.vec3.fromValues(0, 0, 10),
 	                glMatrix.vec3.fromValues(0, 1, 0)
 	            );
 
@@ -25891,13 +25900,15 @@
 	            Kings.mvMatrix = Kings.mvMatrix.mul(m);
 	        },
 
-	        mvTranslate: function(v) {
-	            multMatrix(glMatrix.Translation($V([v[0], v[1], v[2]])).ensure4x4());
-	        },
-
 	        setMatrixUniforms: function(shader) {
 	            gl.uniformMatrix4fv(shader.getUniform('uPMatrix'), false, Kings.pMatrix);
 	            gl.uniformMatrix4fv(shader.getUniform('uMVMatrix'), false, Kings.mvMatrix);
+
+	            var normalMatrix = glMatrix.mat3.create();
+	            glMatrix.mat3.fromMat4(normalMatrix, Kings.mvMatrix);
+	            glMatrix.mat3.invert(normalMatrix, normalMatrix);
+	            glMatrix.mat3.transpose(normalMatrix, normalMatrix);
+	            gl.uniformMatrix3fv(shader.getUniform('uNMatrix'), false, normalMatrix);
 	        },
 
 	        mvPushMatrix: function(m) {
@@ -25927,6 +25938,14 @@
 	            glMatrix.mat4.rotate(Kings.mvMatrix, Kings.mvMatrix, inRadians, glMatrix.vec3.fromValues(x, y, z));
 	        },
 
+	        mvTranslate: function(v) {
+	            glMatrix.mat4.translate(Kings.mvMatrix, Kings.mvMatrix, glMatrix.vec3.fromValues(v.x, v.y, v.z));
+	        },
+
+	        mvScale: function(v) {
+	            glMatrix.mat4.scale(Kings.mvMatrix, Kings.mvMatrix, glMatrix.vec3.fromValues(v.x, v.y, v.z));
+	        },
+
 	        lookAt: function(eye, center, up) {
 	            glMatrix.mat4.lookAt(Kings.mvMatrix, eye, center, up);
 	        }
@@ -25944,22 +25963,29 @@
 	    __webpack_require__(10);
 
 	    Kings.Triangle = function(parameters) {
-	        this.color = parameters.color || null;
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.width = parameters.width || 1;
+	        this.height = parameters.height || 1;
+	        this.color = parameters.color || { r: 1, g: 1, b: 1, a: 1 };
 	        this.texture = parameters.texture || null;
 	        if (this.texture != null) {
-	            Kings.Texture.SetCurrentTexture(this.texture);
 	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
 	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
 	            this.textureCoordAttribute = Kings.textureShader.getAttributeLocation('aTextureCoord');
 	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	            Kings.Texture.handleTexture(this.texture);
 	        } else {
 	            this.vertexPositionAttribute = Kings.colorShader.getAttributeLocation('aVertexPosition');
 	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
 	            this.vertexColorAttribute = Kings.colorShader.getAttributeLocation('aVertexColor');
 	            gl.enableVertexAttribArray(this.vertexColorAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
 	        }
 	        this.initBuffers();
-	        this.angle = 0;
 	    };
 
 	    Kings.Triangle.prototype = {
@@ -25970,9 +25996,9 @@
 	                this.triangleTextureCoordBuffer = gl.createBuffer();
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleTextureCoordBuffer);
 	                var textureCoords = [
+	                    0.5, 1.0,
 	                    0.0, 0.0,
 	                    1.0, 0.0,
-	                    0.5, 1.0,
 	                ];
 	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
 	                this.triangleTextureCoordBuffer.itemSize = 2;
@@ -25982,9 +26008,9 @@
 	                this.triangleVertexColorBuffer = gl.createBuffer();
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
 	                var colors = [
-	                    1.0, 0.0, 0.0, 1.0,
-	                    0.0, 1.0, 0.0, 1.0,
-	                    0.0, 0.0, 1.0, 1.0,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
 	                ];
 	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 	                this.triangleVertexColorBuffer.itemSize = 4;
@@ -25994,31 +26020,56 @@
 	            this.triangleVertexPositionBuffer = gl.createBuffer();
 	            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexPositionBuffer);
 	            var vertices = [
-	                 0.0,  1.0,  0.0,
-	                -1.0, -1.0,  0.0,
-	                 1.0, -1.0,  0.0
+	                this.position.x, this.position.y + this.height, this.position.z,
+	                this.position.x + this.width, this.position.y - this.height, this.position.z,
+	                this.position.x - this.width, this.position.y - this.height, this.position.z,
 	            ];
 	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 	            this.triangleVertexPositionBuffer.itemSize = 3;
 	            this.triangleVertexPositionBuffer.numItems = 3;
+
+	            this.triangleVertexNormalBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexNormalBuffer);
+	            var vertexNormals = [
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	            ];
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	            this.triangleVertexNormalBuffer.itemSize = 3;
+	            this.triangleVertexNormalBuffer.numItems = 3;
 	        },
 
 	        update: function() {
-	            this.angle += 0.3;
+
 	        },
 
 	        draw: function() {
 	            Kings.GL.mvPushMatrix();
-	            Kings.GL.mvRotate(this.angle, 1, 0, 1);
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
 
 	            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexPositionBuffer);
 	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexNormalBuffer);
+	            gl.vertexAttribPointer(this.vertexNormalAttribute, this.triangleVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
 	            if (this.texture != null) {
 	                gl.useProgram(Kings.textureShader.getProgram());
 	                gl.activeTexture(gl.TEXTURE0);
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
+
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
+	                glMatrix.vec3.scale(adjustedLD, -1);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.triangleTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -26028,6 +26079,14 @@
 	                gl.useProgram(Kings.colorShader.getProgram());
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
+	                glMatrix.vec3.scale(adjustedLD, -1);
+	                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
@@ -26049,12 +26108,12 @@
 
 	    Kings.Texture = {
 	        loadTexture: function(path) {
+	            var self = this;
 	            var ready = false;
 	            texture = gl.createTexture();
 	            texture.image = new Image();
 	            texture.image.onload = function() {
 	                ready = true;
-	                console.log('done');
 	            }
 	            texture.image.src = path;
 	            while(!ready) {
@@ -26063,7 +26122,7 @@
 	            return texture;
 	        },
 
-	        SetCurrentTexture: function(texture) {
+	        handleTexture: function(texture) {
 	            gl.bindTexture(gl.TEXTURE_2D, texture);
 	            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
@@ -26076,8 +26135,7 @@
 
 
 /***/ },
-/* 11 */,
-/* 12 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -26106,27 +26164,29 @@
 	                }
 
 	                for (var i = 0; i < self.downloadQueue.length; i++) {
-	                    var path = json.assetRoot + self.downloadQueue[i];
-	                    var texture = gl.createTexture();
-	                    texture.image = new Image();
-	                    texture.image.addEventListener("load", function() {
-	                        self.successCount++;
-	                        bundle[getAssetName(path)] = texture;
-	                        if (self.isDone()) {
-	                            Kings.AssetBundles.push({
-	                                name: name,
-	                                content: bundle
-	                            });
-	                            callback();
-	                        }
-	                    }, false);
-	                    texture.image.addEventListener("error", function() {
-	                        self.errorCount++;
-	                        if (self.isDone()) {
-	                            callback();
-	                        }
-	                    }, false);
-	                    texture.image.src = path;
+	                    (function() {
+	                        var path = json.assetRoot + self.downloadQueue[i];
+	                        var texture = gl.createTexture();
+	                        texture.image = new Image();
+	                        texture.image.addEventListener("load", function() {
+	                            self.successCount++;
+	                            bundle[getAssetName(path)] = texture;
+	                            if (self.isDone()) {
+	                                Kings.AssetBundles.push({
+	                                    name: name,
+	                                    content: bundle
+	                                });
+	                                callback();
+	                            }
+	                        }, false);
+	                        texture.image.addEventListener("error", function() {
+	                            self.errorCount++;
+	                            if (self.isDone()) {
+	                                callback();
+	                            }
+	                        }, false);
+	                        texture.image.src = path;
+	                    }());
 	                }
 	            });
 	        },
@@ -26138,6 +26198,268 @@
 	        getProgress: function() {
 	            return (this.successCount + this.errorCount) / this.downloadQueue.length;
 	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(10);
+
+	    Kings.Plane = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.width = parameters.width || 1;
+	        this.height = parameters.height || 1;
+	        this.color = parameters.color || { r: 1, g: 1, b: 1, a: 1 };
+	        this.texture = parameters.texture || null;
+	        if (this.texture != null) {
+	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.textureCoordAttribute = Kings.textureShader.getAttributeLocation('aTextureCoord');
+	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	            Kings.Texture.handleTexture(this.texture);
+	        } else {
+	            this.vertexPositionAttribute = Kings.colorShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.vertexColorAttribute = Kings.colorShader.getAttributeLocation('aVertexColor');
+	            gl.enableVertexAttribArray(this.vertexColorAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	        }
+	        this.initBuffers();
+	    };
+
+	    Kings.Plane.prototype = {
+	        constructor: Kings.Plane,
+
+	        initBuffers: function() {
+	            if (this.texture != null) {
+	                this.planeTextureCoordBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	                var textureCoords = [
+	                    0.0, 0.0,
+	                    1.0, 0.0,
+	                    0.0, 1.0,
+	                    1.0, 1.0,
+	                ];
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	                this.planeTextureCoordBuffer.itemSize = 2;
+	                this.planeTextureCoordBuffer.numItems = 4;
+
+	            } else {
+	                this.planeVertexColorBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+	                var colors = [
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                ];
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+	                this.planeVertexColorBuffer.itemSize = 4;
+	                this.planeVertexColorBuffer.numItems = 4;
+	            }
+
+	            this.planeVertexPositionBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            var vertices = [
+	                this.position.x - this.width, this.position.y - this.height, this.position.z,
+	                this.position.x + this.width, this.position.y - this.height, this.position.z,
+	                this.position.x - this.width, this.position.y + this.height, this.position.z,
+	                this.position.x + this.width, this.position.y + this.height, this.position.z,
+	            ];
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	            this.planeVertexPositionBuffer.itemSize = 3;
+	            this.planeVertexPositionBuffer.numItems = 4;
+
+	            this.planeVertexNormalBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
+	            var vertexNormals = [
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	            ];
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	            this.planeVertexNormalBuffer.itemSize = 3;
+	            this.planeVertexNormalBuffer.numItems = 4;
+	        },
+
+	        update: function() {
+
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
+	            gl.vertexAttribPointer(this.vertexNormalAttribute, this.planeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            if (this.texture != null) {
+	                gl.useProgram(Kings.textureShader.getProgram());
+	                gl.activeTexture(gl.TEXTURE0);
+	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
+
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
+	                glMatrix.vec3.scale(adjustedLD, -1);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                Kings.GL.setMatrixUniforms(Kings.textureShader);
+	            } else {
+	                gl.useProgram(Kings.colorShader.getProgram());
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
+	                glMatrix.vec3.scale(adjustedLD, -1);
+	                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+
+	                Kings.GL.setMatrixUniforms(Kings.colorShader);
+	            }
+
+	            gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.planeVertexPositionBuffer.numItems);
+
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(15);
+
+	    Kings.Road = function(parameters) {
+	        Kings.GameObject.call(this, parameters);
+	        this.sections = [];
+	        this.numberOfSections = parameters.numberOfSections || 4;
+	        this.sectionSize = parameters.sectionSize || 4;
+	        console.log(this);
+	        for (var i = 0; i < this.numberOfSections; i++) {
+	            if(i>1) {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                    //hazard: KingsGame.HAZARDS.meteorites,
+	                    //dificulty: KingsGame.DIFICULTY.easy
+	                }));
+	            } else {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                }));
+	            }
+	        }
+	    };
+
+	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Road.prototype.draw = function() {
+	        for (var i = 0; i < this.sections.length; i++) {
+	            this.sections[i].draw();
+	        }
+	    };
+
+	    Kings.Road.CreateSection = function() {
+
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.GameObject = function(parameters) {
+	        this.position = parameters.position;
+	        this.rotation = parameters.rotation;
+	        this.scale = parameters.scale;
+	        this.shape = parameters.shape || null;
+	        this.texture = parameters.texture || null;
+	    };
+
+	    Kings.GameObject.prototype = {
+	        constructor: Kings.GameObject,
+
+	        update: function() {
+
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+
+	            this.shape.draw();
+
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.RoadSection = function(parameters) {
+	        parameters.rotation = { x: 90, y: 0, z: 0};
+	        parameters.shape = new Kings.Plane({
+	            height: parameters.sectionSize,
+	            width: parameters.sectionSize,
+	            texture: parameters.texture
+	        });
+	        Kings.GameObject.call(this, parameters);
+	    };
+
+	    Kings.RoadSection.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.RoadSection.prototype.destroy = function() {
+
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 

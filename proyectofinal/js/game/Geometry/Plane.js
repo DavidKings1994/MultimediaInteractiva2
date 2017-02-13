@@ -3,7 +3,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     require('./../Utils/TextureLoader.js');
 
-    Kings.Triangle = function(parameters) {
+    Kings.Plane = function(parameters) {
         this.position = parameters.position || { x: 0, y: 0, z: 0 };
         this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
         this.width = parameters.width || 1;
@@ -29,56 +29,60 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.initBuffers();
     };
 
-    Kings.Triangle.prototype = {
-        constructor: Kings.Triangle,
+    Kings.Plane.prototype = {
+        constructor: Kings.Plane,
 
         initBuffers: function() {
             if (this.texture != null) {
-                this.triangleTextureCoordBuffer = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleTextureCoordBuffer);
+                this.planeTextureCoordBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
                 var textureCoords = [
-                    0.5, 1.0,
                     0.0, 0.0,
                     1.0, 0.0,
+                    0.0, 1.0,
+                    1.0, 1.0,
                 ];
                 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-                this.triangleTextureCoordBuffer.itemSize = 2;
-                this.triangleTextureCoordBuffer.numItems = 3;
+                this.planeTextureCoordBuffer.itemSize = 2;
+                this.planeTextureCoordBuffer.numItems = 4;
 
             } else {
-                this.triangleVertexColorBuffer = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
+                this.planeVertexColorBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
                 var colors = [
+                    this.color.r, this.color.g, this.color.b, this.color.a,
                     this.color.r, this.color.g, this.color.b, this.color.a,
                     this.color.r, this.color.g, this.color.b, this.color.a,
                     this.color.r, this.color.g, this.color.b, this.color.a,
                 ];
                 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-                this.triangleVertexColorBuffer.itemSize = 4;
-                this.triangleVertexColorBuffer.numItems = 3;
+                this.planeVertexColorBuffer.itemSize = 4;
+                this.planeVertexColorBuffer.numItems = 4;
             }
 
-            this.triangleVertexPositionBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexPositionBuffer);
+            this.planeVertexPositionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
             var vertices = [
-                this.position.x, this.position.y + this.height, this.position.z,
-                this.position.x + this.width, this.position.y - this.height, this.position.z,
                 this.position.x - this.width, this.position.y - this.height, this.position.z,
+                this.position.x + this.width, this.position.y - this.height, this.position.z,
+                this.position.x - this.width, this.position.y + this.height, this.position.z,
+                this.position.x + this.width, this.position.y + this.height, this.position.z,
             ];
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-            this.triangleVertexPositionBuffer.itemSize = 3;
-            this.triangleVertexPositionBuffer.numItems = 3;
+            this.planeVertexPositionBuffer.itemSize = 3;
+            this.planeVertexPositionBuffer.numItems = 4;
 
-            this.triangleVertexNormalBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexNormalBuffer);
+            this.planeVertexNormalBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
             var vertexNormals = [
+                0.0,  0.0,  1.0,
                 0.0,  0.0,  1.0,
                 0.0,  0.0,  1.0,
                 0.0,  0.0,  1.0,
             ];
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
-            this.triangleVertexNormalBuffer.itemSize = 3;
-            this.triangleVertexNormalBuffer.numItems = 3;
+            this.planeVertexNormalBuffer.itemSize = 3;
+            this.planeVertexNormalBuffer.numItems = 4;
         },
 
         update: function() {
@@ -92,11 +96,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
             Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexPositionBuffer);
-            gl.vertexAttribPointer(this.vertexPositionAttribute, this.triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexNormalBuffer);
-            gl.vertexAttribPointer(this.vertexNormalAttribute, this.triangleVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
+            gl.vertexAttribPointer(this.vertexNormalAttribute, this.planeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
             if (this.texture != null) {
                 gl.useProgram(Kings.textureShader.getProgram());
@@ -112,14 +116,14 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
                 gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleTextureCoordBuffer);
-                gl.vertexAttribPointer(this.textureCoordAttribute, this.triangleTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
                 Kings.GL.setMatrixUniforms(Kings.textureShader);
             } else {
                 gl.useProgram(Kings.colorShader.getProgram());
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
-                gl.vertexAttribPointer(this.vertexColorAttribute, this.triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
                 gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
                 var lightingDirection = [1.0, -1.0, -1.0];
@@ -132,7 +136,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 Kings.GL.setMatrixUniforms(Kings.colorShader);
             }
 
-            gl.drawArrays(gl.TRIANGLES, 0, this.triangleVertexPositionBuffer.numItems);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.planeVertexPositionBuffer.numItems);
 
             Kings.GL.mvPopMatrix();
         }
