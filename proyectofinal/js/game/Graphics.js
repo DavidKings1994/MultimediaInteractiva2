@@ -5,12 +5,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     require('./Geometry/Triangle.js');
     require('./Geometry/Plane.js');
     require('./GameObjects/Gameobject.js');
+    require('./GameObjects/Camera.js');
 
-    Kings.Graphics = function(canvas) {
-        window.gl = canvas.getContext("webgl");
+    Kings.Graphics = function(parameters) {
+        window.gl = parameters.canvas.getContext("webgl");
         if (!gl) {
             alert('No se puede incializar');
         }
+
+        this.camera = parameters.camera || new Kings.Camera();
+        this.gameUpdate = function() { parameters.update() };
 
         window.requestAnimFrame = (function() {
             return window.requestAnimationFrame ||
@@ -61,6 +65,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     //}
                 //}
             }
+            this.camera.update();
+            this.gameUpdate();
         },
 
         draw: function() {
@@ -68,13 +74,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            //gl.useProgram(Kings.colorShader.getProgram());
-
-            Kings.GL.lookAt(
-                glMatrix.vec3.fromValues(0, 0, 0),
-                glMatrix.vec3.fromValues(0, 0, 10),
-                glMatrix.vec3.fromValues(0, 1, 0)
-            );
 
             for (var i = 0; i < this.elements.length; i++) {
                 //if (Kings.Gameobject != null) {

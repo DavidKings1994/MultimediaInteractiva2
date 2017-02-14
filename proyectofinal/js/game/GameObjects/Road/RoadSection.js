@@ -2,6 +2,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
     Kings.RoadSection = function(parameters) {
+        this.id = parameters.id;
         parameters.rotation = { x: 90, y: 0, z: 0};
         parameters.shape = new Kings.Plane({
             height: parameters.sectionSize,

@@ -19022,11 +19022,11 @@
 
 	        case 87: // w
 	        case 38: // forward
-
+	            Kings.game.camera.position.z += 1;
 	            break;
 	        case 83: // s
 	        case 40: // backward
-
+	            Kings.game.camera.position.z -= 1;
 	            break;
 	        case 65: // a
 	        case 37: // left
@@ -19049,7 +19049,15 @@
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
-	        Kings.game = new Kings.Graphics($(self)[0]);
+	        Kings.game = new Kings.Graphics({
+	            canvas: $(self)[0],
+	            camera: new Kings.Camera({
+	                position: { x: 0, y: 0, z: 0 },
+	            }),
+	            update: function() {
+
+	            }
+	        });
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
 	            console.log(Kings.AssetBundles[0]);
@@ -19058,11 +19066,16 @@
 	                texture: Kings.AssetBundles[0].content.logo
 	            }));
 
-	            Kings.game.addElement(new Kings.Road({
+	            var road = new Kings.Road({
 	                texture: Kings.AssetBundles[0].content.road,
 	                position: { x: 0, y: -2, z: 0},
-	                sectionSize: 4
-	            }));
+	                sectionSize: 4,
+	                numberOfSections: 6,
+	                update: function() {
+	                    road.locatePlayer(Kings.game.camera.position);
+	                }
+	            })
+	            Kings.game.addElement(road);
 
 	            document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
 	            document.addEventListener( 'keyup', Kings.prototype.onKeyUp, false );
@@ -25770,12 +25783,16 @@
 	    __webpack_require__(9);
 	    __webpack_require__(12);
 	    __webpack_require__(14);
+	    __webpack_require__(16);
 
-	    Kings.Graphics = function(canvas) {
-	        window.gl = canvas.getContext("webgl");
+	    Kings.Graphics = function(parameters) {
+	        window.gl = parameters.canvas.getContext("webgl");
 	        if (!gl) {
 	            alert('No se puede incializar');
 	        }
+
+	        this.camera = parameters.camera || new Kings.Camera();
+	        this.gameUpdate = function() { parameters.update() };
 
 	        window.requestAnimFrame = (function() {
 	            return window.requestAnimationFrame ||
@@ -25826,6 +25843,8 @@
 	                    //}
 	                //}
 	            }
+	            this.camera.update();
+	            this.gameUpdate();
 	        },
 
 	        draw: function() {
@@ -25833,13 +25852,6 @@
 	            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 	            gl.clearColor(0, 0, 0, 1);
 	            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	            //gl.useProgram(Kings.colorShader.getProgram());
-
-	            Kings.GL.lookAt(
-	                glMatrix.vec3.fromValues(0, 0, 0),
-	                glMatrix.vec3.fromValues(0, 0, 10),
-	                glMatrix.vec3.fromValues(0, 1, 0)
-	            );
 
 	            for (var i = 0; i < this.elements.length; i++) {
 	                //if (Kings.Gameobject != null) {
@@ -26363,6 +26375,8 @@
 
 	    Kings.Road = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
+	        this.gameUpdate = function() { parameters.update() };
+	        this.playerIndexLocation = 0;
 	        this.sections = [];
 	        this.numberOfSections = parameters.numberOfSections || 4;
 	        this.sectionSize = parameters.sectionSize || 4;
@@ -26390,13 +26404,54 @@
 
 	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
 
+	    Kings.Road.prototype.update = function(v) {
+	        this.gameUpdate();
+	        if(this.playerIndexLocation > 1) {
+	            this.sections.push(new Kings.RoadSection({
+	                id: this.sections[this.numberOfSections - 1].id + 1,
+	                position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize * 2) },
+	                sectionSize: this.sectionSize,
+	                texture: this.texture
+	            }));
+	            this.sections[0].destroy();
+	            this.sections.splice(0,1);
+	        }
+	        for (var i = 0; i < this.sections.length; i++) {
+	            this.sections[i].update();
+	        }
+	    };
+
 	    Kings.Road.prototype.draw = function() {
 	        for (var i = 0; i < this.sections.length; i++) {
 	            this.sections[i].draw();
 	        }
 	    };
 
-	    Kings.Road.CreateSection = function() {
+	    Kings.Road.prototype.locatePlayer = function(v) {
+	        for (var i = 0; i < this.sections.length; i++) {
+	            if(
+	                (
+	                    v.x > (this.sections[i].position.x - this.sectionSize) &&
+	                    v.x < (this.sections[i].position.x + this.sectionSize)
+	                ) && (
+	                    v.z > (this.sections[i].position.z - this.sectionSize) &&
+	                    v.z < (this.sections[i].position.z + this.sectionSize)
+	                )
+	            ) {
+	                this.playerIndexLocation = i;
+	                console.log(i);
+	            }
+	        }
+	    },
+
+	    Kings.Road.prototype.insideRoad = function(position) {
+	        if((position.x > -this.sectionSize && position.x < this.sectionSize)) {
+	            return true;
+	        }
+	        return false;
+	    },
+
+	    Kings.Road.prototype.CreateSection = function() {
 
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -26447,6 +26502,7 @@
 	    var Kings = window.Kings || {};
 
 	    Kings.RoadSection = function(parameters) {
+	        this.id = parameters.id;
 	        parameters.rotation = { x: 90, y: 0, z: 0};
 	        parameters.shape = new Kings.Plane({
 	            height: parameters.sectionSize,
@@ -26460,6 +26516,41 @@
 
 	    Kings.RoadSection.prototype.destroy = function() {
 
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Camera = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.aim = parameters.aim || { x: 0, y: 0, z: 10 };
+	    };
+
+	    Kings.Camera.prototype = {
+	        constructor: Kings.Camera,
+
+	        setPosition: function(v) {
+	            this.position = { x: v.x, y: v.y, z: v.z};
+	        },
+
+	        rotate: function() {
+
+	        },
+
+	        update: function() {
+	            Kings.GL.lookAt(
+	                glMatrix.vec3.fromValues(this.position.x, this.position.y, this.position.z),
+	                glMatrix.vec3.fromValues(this.position.x + this.aim.x, this.position.y + this.aim.y, this.position.z + this.aim.z),
+	                glMatrix.vec3.fromValues(0, 1, 0)
+	            );
+	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 

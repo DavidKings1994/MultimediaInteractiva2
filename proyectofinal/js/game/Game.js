@@ -36,11 +36,11 @@
 
         case 87: // w
         case 38: // forward
-
+            Kings.game.camera.position.z += 1;
             break;
         case 83: // s
         case 40: // backward
-
+            Kings.game.camera.position.z -= 1;
             break;
         case 65: // a
         case 37: // left
@@ -63,7 +63,15 @@
 
     $.fn.initGame = function( parameters ) {
         var self = this;
-        Kings.game = new Kings.Graphics($(self)[0]);
+        Kings.game = new Kings.Graphics({
+            canvas: $(self)[0],
+            camera: new Kings.Camera({
+                position: { x: 0, y: 0, z: 0 },
+            }),
+            update: function() {
+
+            }
+        });
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
             console.log(Kings.AssetBundles[0]);
@@ -72,11 +80,16 @@
                 texture: Kings.AssetBundles[0].content.logo
             }));
 
-            Kings.game.addElement(new Kings.Road({
+            var road = new Kings.Road({
                 texture: Kings.AssetBundles[0].content.road,
                 position: { x: 0, y: -2, z: 0},
-                sectionSize: 4
-            }));
+                sectionSize: 4,
+                numberOfSections: 6,
+                update: function() {
+                    road.locatePlayer(Kings.game.camera.position);
+                }
+            })
+            Kings.game.addElement(road);
 
             document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
             document.addEventListener( 'keyup', Kings.prototype.onKeyUp, false );
