@@ -10,7 +10,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.sections = [];
         this.numberOfSections = parameters.numberOfSections || 4;
         this.sectionSize = parameters.sectionSize || 4;
-        console.log(this);
         for (var i = 0; i < this.numberOfSections; i++) {
             if(i>1) {
                 this.sections.push(new Kings.RoadSection({
@@ -18,8 +17,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
                     sectionSize: this.sectionSize,
                     texture: this.texture
-                    //hazard: KingsGame.HAZARDS.meteorites,
-                    //dificulty: KingsGame.DIFICULTY.easy
                 }));
             } else {
                 this.sections.push(new Kings.RoadSection({
@@ -69,7 +66,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 )
             ) {
                 this.playerIndexLocation = i;
-                console.log(i);
             }
         }
     },

@@ -23,43 +23,10 @@
 
     require('./Shader.js');
     require('./Graphics.js');
+    require('./Player.js');
     require('./Utils/LoadManager.js');
+    require('./Utils/Keyboard.js');
     require('./GameObjects/Road/Road.js');
-
-    Kings.prototype.keyHandler = function(event) {
-        var up = (event.type == 'keyup');
-
-        if(!up && event.type !== 'keydown')
-            return;
-
-        switch(event.keyCode){
-
-        case 87: // w
-        case 38: // forward
-            Kings.game.camera.position.z += 1;
-            break;
-        case 83: // s
-        case 40: // backward
-            Kings.game.camera.position.z -= 1;
-            break;
-        case 65: // a
-        case 37: // left
-
-            break;
-        case 68: // d
-        case 39: // right
-
-            break;
-        }
-    };
-
-    Kings.prototype.onKeyDown = function(event) {
-        Kings.prototype.keyHandler( event );
-    };
-
-    Kings.prototype.onKeyDown = function(event) {
-        Kings.prototype.keyHandler( event );
-    };
 
     $.fn.initGame = function( parameters ) {
         var self = this;
@@ -74,25 +41,29 @@
         });
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
-            console.log(Kings.AssetBundles[0]);
-            Kings.game.addElement(new Kings.Triangle({
-                position: { x: 0, y: 0, z: 10},
-                texture: Kings.AssetBundles[0].content.logo
-            }));
+            Kings.game.player = new Kings.Player({
+                velocity: 0.5,
+                position: { x: 0, y: 0, z: 0 },
+                shape: new Kings.Triangle({
+                    position: { x: 0, y: 0, z: 3},
+                    texture: Kings.AssetBundles[0].content.logo
+                }),
+                camera: Kings.game.camera
+            });
+            Kings.game.addElement(Kings.game.player);
 
             var road = new Kings.Road({
                 texture: Kings.AssetBundles[0].content.road,
                 position: { x: 0, y: -2, z: 0},
                 sectionSize: 4,
-                numberOfSections: 6,
+                numberOfSections: 10,
                 update: function() {
-                    road.locatePlayer(Kings.game.camera.position);
+                    road.locatePlayer(Kings.game.player.position);
                 }
             })
             Kings.game.addElement(road);
 
-            document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
-            document.addEventListener( 'keyup', Kings.prototype.onKeyUp, false );
+            Kings.keyboard = new Kings.Keyboard();
         });
     };
 }));

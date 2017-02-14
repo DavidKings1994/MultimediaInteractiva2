@@ -2,30 +2,49 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
     Kings.Player = function(parameters) {
-        this.position = parameters.position;
-        this.rotation = parameters.rotation;
-        this.scale = parameters.scale;
-        this.shape = parameters.shape || null;
-        this.texture = parameters.texture || null;
+        Kings.GameObject.call(this, parameters);
+        this.velocity = parameters.velocity || 1;
+        this.camera = parameters.camera;
     };
 
-    Kings.Player.prototype = {
-        constructor: Kings.Player,
+    Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
 
-        update: function() {
-
-        },
-
-        draw: function() {
-            Kings.GL.mvPushMatrix();
-            Kings.GL.mvTranslate(this.position);
-            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
-            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
-            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
-
-            this.shape.draw();
-
-            Kings.GL.mvPopMatrix();
+    Kings.Player.prototype.update = function() {
+        this.position.z += this.velocity;
+        this.camera.position.z = this.position.z;
+        var estado = {
+            up: 0,
+            down: 0,
+            left: 0,
+            right: 0
         }
-    };
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.UP) || Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+            if (Kings.keyboard.current == Kings.keyboard.keys.UP || Kings.keyboard.current == Kings.keyboard.keys.W) {
+                this.velocity += 0.1;
+            }
+        }
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.LEFT) || Kings.keyboard.isDown(Kings.keyboard.keys.A)) {
+            if (Kings.keyboard.current == Kings.keyboard.keys.LEFT || Kings.keyboard.current == Kings.keyboard.keys.A) {
+                this.moveLeft();
+            }
+        }
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.DOWN) || Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+            if (Kings.keyboard.current == Kings.keyboard.keys.DOWN || Kings.keyboard.current == Kings.keyboard.keys.S) {
+                this.velocity -= 0.1;
+            }
+        }
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.RIGHT) || Kings.keyboard.isDown(Kings.keyboard.keys.D)) {
+            if (Kings.keyboard.current == Kings.keyboard.keys.RIGHT || Kings.keyboard.current == Kings.keyboard.keys.D) {
+                this.moveRight();
+            }
+        }
+    }
+
+    Kings.Player.prototype.moveLeft = function() {
+        this.position.x += 0.4;
+    }
+
+    Kings.Player.prototype.moveRight = function() {
+        this.position.x -= 0.4;
+    }
 });

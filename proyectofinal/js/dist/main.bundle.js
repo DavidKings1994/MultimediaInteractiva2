@@ -19009,43 +19009,10 @@
 
 	    __webpack_require__(6);
 	    __webpack_require__(7);
-	    __webpack_require__(11);
-	    __webpack_require__(13);
-
-	    Kings.prototype.keyHandler = function(event) {
-	        var up = (event.type == 'keyup');
-
-	        if(!up && event.type !== 'keydown')
-	            return;
-
-	        switch(event.keyCode){
-
-	        case 87: // w
-	        case 38: // forward
-	            Kings.game.camera.position.z += 1;
-	            break;
-	        case 83: // s
-	        case 40: // backward
-	            Kings.game.camera.position.z -= 1;
-	            break;
-	        case 65: // a
-	        case 37: // left
-
-	            break;
-	        case 68: // d
-	        case 39: // right
-
-	            break;
-	        }
-	    };
-
-	    Kings.prototype.onKeyDown = function(event) {
-	        Kings.prototype.keyHandler( event );
-	    };
-
-	    Kings.prototype.onKeyDown = function(event) {
-	        Kings.prototype.keyHandler( event );
-	    };
+	    __webpack_require__(17);
+	    __webpack_require__(14);
+	    __webpack_require__(18);
+	    __webpack_require__(15);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19060,25 +19027,29 @@
 	        });
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
-	            console.log(Kings.AssetBundles[0]);
-	            Kings.game.addElement(new Kings.Triangle({
-	                position: { x: 0, y: 0, z: 10},
-	                texture: Kings.AssetBundles[0].content.logo
-	            }));
+	            Kings.game.player = new Kings.Player({
+	                velocity: 0.5,
+	                position: { x: 0, y: 0, z: 0 },
+	                shape: new Kings.Triangle({
+	                    position: { x: 0, y: 0, z: 3},
+	                    texture: Kings.AssetBundles[0].content.logo
+	                }),
+	                camera: Kings.game.camera
+	            });
+	            Kings.game.addElement(Kings.game.player);
 
 	            var road = new Kings.Road({
 	                texture: Kings.AssetBundles[0].content.road,
 	                position: { x: 0, y: -2, z: 0},
 	                sectionSize: 4,
-	                numberOfSections: 6,
+	                numberOfSections: 10,
 	                update: function() {
-	                    road.locatePlayer(Kings.game.camera.position);
+	                    road.locatePlayer(Kings.game.player.position);
 	                }
 	            })
 	            Kings.game.addElement(road);
 
-	            document.addEventListener( 'keydown', Kings.prototype.onKeyDown, false );
-	            document.addEventListener( 'keyup', Kings.prototype.onKeyUp, false );
+	            Kings.keyboard = new Kings.Keyboard();
 	        });
 	    };
 	}));
@@ -25781,9 +25752,9 @@
 
 	    __webpack_require__(8);
 	    __webpack_require__(9);
+	    __webpack_require__(11);
 	    __webpack_require__(12);
-	    __webpack_require__(14);
-	    __webpack_require__(16);
+	    __webpack_require__(13);
 
 	    Kings.Graphics = function(parameters) {
 	        window.gl = parameters.canvas.getContext("webgl");
@@ -26153,74 +26124,6 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    Kings.LoadManager = {
-	        loadBundle: function(name, callback) {
-	            var self = this;
-	            this.successCount = 0;
-	            this.errorCount = 0;
-	            this.downloadQueue = [];
-
-	            $.getJSON("./AssetConfig.json", function(json) {
-	                console.log(json);
-	                var bundle = {};
-
-	                var getAssetName = function(path) {
-	                    var filename = path.replace(/^.*[\\\/]/, '');
-	                    return filename.replace(/\.[^/.]+$/, "");
-	                };
-
-	                for (var i = 0; i < json.bundles.length; i++) {
-	                    if(json.bundles[i].name == name) {
-	                        self.downloadQueue = json.bundles[i].contents;
-	                    }
-	                }
-
-	                for (var i = 0; i < self.downloadQueue.length; i++) {
-	                    (function() {
-	                        var path = json.assetRoot + self.downloadQueue[i];
-	                        var texture = gl.createTexture();
-	                        texture.image = new Image();
-	                        texture.image.addEventListener("load", function() {
-	                            self.successCount++;
-	                            bundle[getAssetName(path)] = texture;
-	                            if (self.isDone()) {
-	                                Kings.AssetBundles.push({
-	                                    name: name,
-	                                    content: bundle
-	                                });
-	                                callback();
-	                            }
-	                        }, false);
-	                        texture.image.addEventListener("error", function() {
-	                            self.errorCount++;
-	                            if (self.isDone()) {
-	                                callback();
-	                            }
-	                        }, false);
-	                        texture.image.src = path;
-	                    }());
-	                }
-	            });
-	        },
-
-	        isDone: function() {
-	            return (this.downloadQueue.length == this.successCount + this.errorCount);
-	        },
-
-	        getProgress: function() {
-	            return (this.successCount + this.errorCount) / this.downloadQueue.length;
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 12 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
 	    __webpack_require__(10);
 
 	    Kings.Plane = function(parameters) {
@@ -26365,13 +26268,153 @@
 
 
 /***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.GameObject = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.scale = parameters.scale;
+	        this.shape = parameters.shape || null;
+	        this.texture = parameters.texture || null;
+	    };
+
+	    Kings.GameObject.prototype = {
+	        constructor: Kings.GameObject,
+
+	        update: function() {
+
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+
+	            this.shape.draw();
+
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
 /* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(15);
+	    Kings.Camera = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.aim = parameters.aim || { x: 0, y: 0, z: 10 };
+	    };
+
+	    Kings.Camera.prototype = {
+	        constructor: Kings.Camera,
+
+	        setPosition: function(v) {
+	            this.position = { x: v.x, y: v.y, z: v.z};
+	        },
+
+	        rotate: function() {
+
+	        },
+
+	        update: function() {
+	            Kings.GL.lookAt(
+	                glMatrix.vec3.fromValues(this.position.x, this.position.y, this.position.z),
+	                glMatrix.vec3.fromValues(this.position.x + this.aim.x, this.position.y + this.aim.y, this.position.z + this.aim.z),
+	                glMatrix.vec3.fromValues(0, 1, 0)
+	            );
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.LoadManager = {
+	        loadBundle: function(name, callback) {
+	            var self = this;
+	            this.successCount = 0;
+	            this.errorCount = 0;
+	            this.downloadQueue = [];
+
+	            $.getJSON("./AssetConfig.json", function(json) {
+	                console.log(json);
+	                var bundle = {};
+
+	                var getAssetName = function(path) {
+	                    var filename = path.replace(/^.*[\\\/]/, '');
+	                    return filename.replace(/\.[^/.]+$/, "");
+	                };
+
+	                for (var i = 0; i < json.bundles.length; i++) {
+	                    if(json.bundles[i].name == name) {
+	                        self.downloadQueue = json.bundles[i].contents;
+	                    }
+	                }
+
+	                for (var i = 0; i < self.downloadQueue.length; i++) {
+	                    (function() {
+	                        var path = json.assetRoot + self.downloadQueue[i];
+	                        var texture = gl.createTexture();
+	                        texture.image = new Image();
+	                        texture.image.addEventListener("load", function() {
+	                            self.successCount++;
+	                            bundle[getAssetName(path)] = texture;
+	                            if (self.isDone()) {
+	                                Kings.AssetBundles.push({
+	                                    name: name,
+	                                    content: bundle
+	                                });
+	                                callback();
+	                            }
+	                        }, false);
+	                        texture.image.addEventListener("error", function() {
+	                            self.errorCount++;
+	                            if (self.isDone()) {
+	                                callback();
+	                            }
+	                        }, false);
+	                        texture.image.src = path;
+	                    }());
+	                }
+	            });
+	        },
+
+	        isDone: function() {
+	            return (this.downloadQueue.length == this.successCount + this.errorCount);
+	        },
+
+	        getProgress: function() {
+	            return (this.successCount + this.errorCount) / this.downloadQueue.length;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(16);
 
 	    Kings.Road = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
@@ -26380,7 +26423,6 @@
 	        this.sections = [];
 	        this.numberOfSections = parameters.numberOfSections || 4;
 	        this.sectionSize = parameters.sectionSize || 4;
-	        console.log(this);
 	        for (var i = 0; i < this.numberOfSections; i++) {
 	            if(i>1) {
 	                this.sections.push(new Kings.RoadSection({
@@ -26388,8 +26430,6 @@
 	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
 	                    sectionSize: this.sectionSize,
 	                    texture: this.texture
-	                    //hazard: KingsGame.HAZARDS.meteorites,
-	                    //dificulty: KingsGame.DIFICULTY.easy
 	                }));
 	            } else {
 	                this.sections.push(new Kings.RoadSection({
@@ -26439,7 +26479,6 @@
 	                )
 	            ) {
 	                this.playerIndexLocation = i;
-	                console.log(i);
 	            }
 	        }
 	    },
@@ -26458,44 +26497,7 @@
 
 
 /***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.GameObject = function(parameters) {
-	        this.position = parameters.position;
-	        this.rotation = parameters.rotation;
-	        this.scale = parameters.scale;
-	        this.shape = parameters.shape || null;
-	        this.texture = parameters.texture || null;
-	    };
-
-	    Kings.GameObject.prototype = {
-	        constructor: Kings.GameObject,
-
-	        update: function() {
-
-	        },
-
-	        draw: function() {
-	            Kings.GL.mvPushMatrix();
-	            Kings.GL.mvTranslate(this.position);
-	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
-	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
-	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
-
-	            this.shape.draw();
-
-	            Kings.GL.mvPopMatrix();
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -26521,36 +26523,116 @@
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    Kings.Camera = function(parameters) {
-	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
-	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
-	        this.aim = parameters.aim || { x: 0, y: 0, z: 10 };
+	    Kings.Player = function(parameters) {
+	        Kings.GameObject.call(this, parameters);
+	        this.velocity = parameters.velocity || 1;
+	        this.camera = parameters.camera;
 	    };
 
-	    Kings.Camera.prototype = {
-	        constructor: Kings.Camera,
+	    Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
 
-	        setPosition: function(v) {
-	            this.position = { x: v.x, y: v.y, z: v.z};
-	        },
-
-	        rotate: function() {
-
-	        },
-
-	        update: function() {
-	            Kings.GL.lookAt(
-	                glMatrix.vec3.fromValues(this.position.x, this.position.y, this.position.z),
-	                glMatrix.vec3.fromValues(this.position.x + this.aim.x, this.position.y + this.aim.y, this.position.z + this.aim.z),
-	                glMatrix.vec3.fromValues(0, 1, 0)
-	            );
+	    Kings.Player.prototype.update = function() {
+	        this.position.z += this.velocity;
+	        this.camera.position.z = this.position.z;
+	        var estado = {
+	            up: 0,
+	            down: 0,
+	            left: 0,
+	            right: 0
 	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.UP) || Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+	            if (Kings.keyboard.current == Kings.keyboard.keys.UP || Kings.keyboard.current == Kings.keyboard.keys.W) {
+	                this.velocity += 0.1;
+	            }
+	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.LEFT) || Kings.keyboard.isDown(Kings.keyboard.keys.A)) {
+	            if (Kings.keyboard.current == Kings.keyboard.keys.LEFT || Kings.keyboard.current == Kings.keyboard.keys.A) {
+	                this.moveLeft();
+	            }
+	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.DOWN) || Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+	            if (Kings.keyboard.current == Kings.keyboard.keys.DOWN || Kings.keyboard.current == Kings.keyboard.keys.S) {
+	                this.velocity -= 0.1;
+	            }
+	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.RIGHT) || Kings.keyboard.isDown(Kings.keyboard.keys.D)) {
+	            if (Kings.keyboard.current == Kings.keyboard.keys.RIGHT || Kings.keyboard.current == Kings.keyboard.keys.D) {
+	                this.moveRight();
+	            }
+	        }
+	    }
+
+	    Kings.Player.prototype.moveLeft = function() {
+	        this.position.x += 0.4;
+	    }
+
+	    Kings.Player.prototype.moveRight = function() {
+	        this.position.x -= 0.4;
+	    }
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Keyboard = function(mode) {
+	        var self = this;
+	        this.pressedKeys = {};
+	        this.current = null;
+	        this.past = null;
+	        this.keys = {
+	            BACKSPACE: 8,
+	            TAB:       9,
+	            RETURN:   13,
+	            ESC:      27,
+	            SPACE:    32,
+	            PAGEUP:   33,
+	            PAGEDOWN: 34,
+	            END:      35,
+	            HOME:     36,
+	            LEFT:     37,
+	            UP:       38,
+	            RIGHT:    39,
+	            DOWN:     40,
+	            INSERT:   45,
+	            DELETE:   46,
+	            ZERO:     48, ONE: 49, TWO: 50, THREE: 51, FOUR: 52, FIVE: 53, SIX: 54, SEVEN: 55, EIGHT: 56, NINE: 57,
+	            A:        65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
+	            TILDA:    192
+	        };
+	        document.addEventListener( 'keydown', function(evt) { self.onKeyDown(evt) }, false );
+	        document.addEventListener( 'keyup', function(evt) { self.onKeyUp(evt) }, false );
+	    };
+
+	    Kings.Keyboard.prototype = {
+	        constructor: Kings.Keyboard,
+
+	        isDown: function(keyCode) {
+	            return this.pressedKeys[keyCode];
+	        },
+
+	        onKeyDown: function(event) {
+	            this.pressedKeys[event.keyCode] = true;
+	            this.past = this.current;
+	            this.current = event.keyCode;
+	        },
+
+	        onKeyUp: function(event) {
+	            delete this.pressedKeys[event.keyCode];
+	            if (this.current == event.keyCode) {
+	                this.current = this.past;
+	            }
+	        },
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 

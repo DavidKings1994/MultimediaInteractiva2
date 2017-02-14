@@ -2,8 +2,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
     Kings.GameObject = function(parameters) {
-        this.position = parameters.position;
-        this.rotation = parameters.rotation;
+        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
         this.scale = parameters.scale;
         this.shape = parameters.shape || null;
         this.texture = parameters.texture || null;
