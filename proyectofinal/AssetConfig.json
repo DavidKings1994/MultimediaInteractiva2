@@ -5,7 +5,11 @@
             "name": "core",
             "contents": [
                 "img/logo.png",
-                "textures/road.jpg"
+                "textures/road.jpg",
+                "textures/crate.jpg",
+                "textures/ground1.jpg",
+                "textures/ground2.jpg",
+                "textures/lava.jpg"
             ]
         },
         {

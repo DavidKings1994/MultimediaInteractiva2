@@ -10,6 +10,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
 
     Kings.Player.prototype.update = function() {
+        this.shape.update();
         this.position.z += this.velocity;
         this.camera.position.z = this.position.z;
         var estado = {
@@ -20,7 +21,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
         if (Kings.keyboard.isDown(Kings.keyboard.keys.UP) || Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
             if (Kings.keyboard.current == Kings.keyboard.keys.UP || Kings.keyboard.current == Kings.keyboard.keys.W) {
-                this.velocity += 0.1;
+                this.speedUp();
             }
         }
         if (Kings.keyboard.isDown(Kings.keyboard.keys.LEFT) || Kings.keyboard.isDown(Kings.keyboard.keys.A)) {
@@ -30,7 +31,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
         if (Kings.keyboard.isDown(Kings.keyboard.keys.DOWN) || Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
             if (Kings.keyboard.current == Kings.keyboard.keys.DOWN || Kings.keyboard.current == Kings.keyboard.keys.S) {
-                this.velocity -= 0.1;
+                this.slowDown();
             }
         }
         if (Kings.keyboard.isDown(Kings.keyboard.keys.RIGHT) || Kings.keyboard.isDown(Kings.keyboard.keys.D)) {
@@ -41,10 +42,22 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     }
 
     Kings.Player.prototype.moveLeft = function() {
-        this.position.x += 0.4;
-    }
+        this.position.x += 0.1;
+    };
 
     Kings.Player.prototype.moveRight = function() {
-        this.position.x -= 0.4;
-    }
+        this.position.x -= 0.1;
+    };
+
+    Kings.Player.prototype.slowDown = function() {
+        if (this.velocity > 0.3) {
+            this.velocity -= 0.1;
+        }
+    };
+
+    Kings.Player.prototype.speedUp = function() {
+        if (this.velocity < 1.0) {
+            this.velocity += 0.1;
+        }
+    };
 });

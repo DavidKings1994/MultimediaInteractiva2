@@ -4,6 +4,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     require('./Utils/MatrixOperations.js');
     require('./Geometry/Triangle.js');
     require('./Geometry/Plane.js');
+    require('./Geometry/Cube.js');
+    require('./Geometry/Grid.js');
     require('./GameObjects/Gameobject.js');
     require('./GameObjects/Camera.js');
 

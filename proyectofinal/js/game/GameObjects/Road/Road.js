@@ -27,12 +27,32 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 }));
             }
         }
+        this.terrainLeft = new Kings.Terrain({
+            position: { x: 23, y: -2.0, z: 0},
+            rotation: { x: 90, y: 0, z: 0},
+            texture: Kings.AssetBundles[0].content.lava,
+            width: 40.0,
+            height: 40.0,
+            cols: 10.0,
+            rows: 10.0
+        });
+        this.terrainRight = new Kings.Terrain({
+            position: { x: -23, y: -2.0, z: 0},
+            rotation: { x: 90, y: 0, z: 0},
+            texture: Kings.AssetBundles[0].content.lava,
+            width: 40.0,
+            height: 40.0,
+            cols: 10.0,
+            rows: 10.0
+        });
     };
 
     Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
 
     Kings.Road.prototype.update = function(v) {
         this.gameUpdate();
+        this.terrainRight.update();
+        this.terrainLeft.update();
         if(this.playerIndexLocation > 1) {
             this.sections.push(new Kings.RoadSection({
                 id: this.sections[this.numberOfSections - 1].id + 1,
@@ -49,6 +69,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Road.prototype.draw = function() {
+        this.terrainRight.draw();
+        this.terrainLeft.draw();
         for (var i = 0; i < this.sections.length; i++) {
             this.sections[i].draw();
         }

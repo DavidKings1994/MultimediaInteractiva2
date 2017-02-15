@@ -19009,10 +19009,11 @@
 
 	    __webpack_require__(6);
 	    __webpack_require__(7);
+	    __webpack_require__(16);
 	    __webpack_require__(17);
-	    __webpack_require__(14);
 	    __webpack_require__(18);
-	    __webpack_require__(15);
+	    __webpack_require__(19);
+	    __webpack_require__(21);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19030,9 +19031,10 @@
 	            Kings.game.player = new Kings.Player({
 	                velocity: 0.5,
 	                position: { x: 0, y: 0, z: 0 },
-	                shape: new Kings.Triangle({
-	                    position: { x: 0, y: 0, z: 3},
-	                    texture: Kings.AssetBundles[0].content.logo
+	                shape: new Kings.Cube({
+	                    position: { x: 0, y: -0.5, z: 2},
+	                    texture: Kings.AssetBundles[0].content.crate,
+	                    size: 1
 	                }),
 	                camera: Kings.game.camera
 	            });
@@ -19045,6 +19047,8 @@
 	                numberOfSections: 10,
 	                update: function() {
 	                    road.locatePlayer(Kings.game.player.position);
+	                    road.terrainRight.position.z = Kings.game.player.position.z + 25;
+	                    road.terrainLeft.position.z = Kings.game.player.position.z + 25;
 	                }
 	            })
 	            Kings.game.addElement(road);
@@ -25755,6 +25759,8 @@
 	    __webpack_require__(11);
 	    __webpack_require__(12);
 	    __webpack_require__(13);
+	    __webpack_require__(14);
+	    __webpack_require__(15);
 
 	    Kings.Graphics = function(parameters) {
 	        window.gl = parameters.canvas.getContext("webgl");
@@ -26274,6 +26280,473 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
+	    __webpack_require__(10);
+
+	    Kings.Cube = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.size = parameters.size || 1;
+	        this.color = parameters.color || { r: 1, g: 1, b: 1, a: 1 };
+	        this.texture = parameters.texture || null;
+	        if (this.texture != null) {
+	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.textureCoordAttribute = Kings.textureShader.getAttributeLocation('aTextureCoord');
+	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	            Kings.Texture.handleTexture(this.texture);
+	        } else {
+	            this.vertexPositionAttribute = Kings.colorShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.vertexColorAttribute = Kings.colorShader.getAttributeLocation('aVertexColor');
+	            gl.enableVertexAttribArray(this.vertexColorAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	        }
+	        this.initBuffers();
+	    };
+
+	    Kings.Cube.prototype = {
+	        constructor: Kings.Cube,
+
+	        initBuffers: function() {
+	            if (this.texture != null) {
+	                this.planeTextureCoordBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	                var textureCoords = [
+	                    0.0, 0.0,
+	                    1.0, 0.0,
+	                    0.0, 1.0,
+	                    1.0, 1.0,
+
+	                    0.0, 0.0,
+	                    1.0, 0.0,
+	                    0.0, 1.0,
+	                    1.0, 1.0,
+
+	                    0.0, 0.0,
+	                    1.0, 0.0,
+	                    0.0, 1.0,
+	                    1.0, 1.0,
+
+	                    0.0, 0.0,
+	                    1.0, 0.0,
+	                    0.0, 1.0,
+	                    1.0, 1.0,
+
+	                    0.0, 0.0,
+	                    1.0, 0.0,
+	                    0.0, 1.0,
+	                    1.0, 1.0,
+
+	                    0.0, 0.0,
+	                    1.0, 0.0,
+	                    0.0, 1.0,
+	                    1.0, 1.0,
+	                ];
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	                this.planeTextureCoordBuffer.itemSize = 2;
+	                this.planeTextureCoordBuffer.numItems = 24;
+
+	            } else {
+	                this.planeVertexColorBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+	                var colors = [
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                    this.color.r, this.color.g, this.color.b, this.color.a,
+	                ];
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+	                this.planeVertexColorBuffer.itemSize = 4;
+	                this.planeVertexColorBuffer.numItems = 24;
+	            }
+
+	            this.planeVertexPositionBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            var vertices = [
+	                //front
+	                this.position.x - (this.size / 2), this.position.y - (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y - (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x - (this.size / 2), this.position.y + (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y + (this.size / 2), this.position.z - (this.size / 2),
+	                //back
+	                this.position.x - (this.size / 2), this.position.y - (this.size / 2), this.position.z + (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y - (this.size / 2), this.position.z + (this.size / 2),
+	                this.position.x - (this.size / 2), this.position.y + (this.size / 2), this.position.z + (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y + (this.size / 2), this.position.z + (this.size / 2),
+	                //right
+	                this.position.x + (this.size / 2), this.position.y - (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y - (this.size / 2), this.position.z + (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y + (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y + (this.size / 2), this.position.z + (this.size / 2),
+	                //left
+	                this.position.x - (this.size / 2), this.position.y - (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x - (this.size / 2), this.position.y - (this.size / 2), this.position.z + (this.size / 2),
+	                this.position.x - (this.size / 2), this.position.y + (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x - (this.size / 2), this.position.y + (this.size / 2), this.position.z + (this.size / 2),
+	                //top
+	                this.position.x - (this.size / 2), this.position.y + (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y + (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x - (this.size / 2), this.position.y + (this.size / 2), this.position.z + (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y + (this.size / 2), this.position.z + (this.size / 2),
+	                //bottom
+	                this.position.x - (this.size / 2), this.position.y - (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y - (this.size / 2), this.position.z - (this.size / 2),
+	                this.position.x - (this.size / 2), this.position.y - (this.size / 2), this.position.z + (this.size / 2),
+	                this.position.x + (this.size / 2), this.position.y - (this.size / 2), this.position.z + (this.size / 2),
+	            ];
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	            this.planeVertexPositionBuffer.itemSize = 3;
+	            this.planeVertexPositionBuffer.numItems = 24;
+
+	            this.planeVertexNormalBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
+	            var vertexNormals = [
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  1.0,
+	            ];
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	            this.planeVertexNormalBuffer.itemSize = 3;
+	            this.planeVertexNormalBuffer.numItems = 24;
+	        },
+
+	        update: function() {
+
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
+	            gl.vertexAttribPointer(this.vertexNormalAttribute, this.planeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            if (this.texture != null) {
+	                gl.useProgram(Kings.textureShader.getProgram());
+	                gl.activeTexture(gl.TEXTURE0);
+	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
+
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
+	                glMatrix.vec3.scale(adjustedLD, -1);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                Kings.GL.setMatrixUniforms(Kings.textureShader);
+	            } else {
+	                gl.useProgram(Kings.colorShader.getProgram());
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
+	                glMatrix.vec3.scale(adjustedLD, -1);
+	                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+
+	                Kings.GL.setMatrixUniforms(Kings.colorShader);
+	            }
+
+	            gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.planeVertexPositionBuffer.numItems);
+
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(10);
+
+	    Kings.Grid = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.width = parameters.width || 1.0;
+	        this.height = parameters.height || 1.0;
+	        this.rows = parameters.rows || 10.0;
+	        this.cols = parameters.cols || 10.0;
+	        this.color = parameters.color || { r: 1, g: 1, b: 1, a: 1 };
+	        this.texture = parameters.texture || null;
+	        if (this.texture != null) {
+	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.textureCoordAttribute = Kings.textureShader.getAttributeLocation('aTextureCoord');
+	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	            Kings.Texture.handleTexture(this.texture);
+	        } else {
+	            this.vertexPositionAttribute = Kings.colorShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.vertexColorAttribute = Kings.colorShader.getAttributeLocation('aVertexColor');
+	            gl.enableVertexAttribArray(this.vertexColorAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	        }
+	        this.initBuffers();
+	    };
+
+	    Kings.Grid.prototype = {
+	        constructor: Kings.Grid,
+
+	        initBuffers: function() {
+	            var stepx = this.width / this.cols;
+	            var stepy = this.height / this.rows;
+
+	            if (this.texture != null) {
+	                this.gridTextureCoordBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridTextureCoordBuffer);
+	                var textureCoords = [];
+	                for (var y = 0; y < this.rows; y++) {
+	                    for (var x = 0; x < this.cols; x++) {
+	                        textureCoords = textureCoords.concat([
+	                            0.0, 0.0,
+	                            1.0, 0.0,
+	                            0.0, 1.0,
+
+	                            1.0, 0.0,
+	                            1.0, 1.0,
+	                            0.0, 1.0,
+	                        ]);
+	                    }
+	                }
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	                this.gridTextureCoordBuffer.itemSize = 2;
+	                this.gridTextureCoordBuffer.numItems = 6 * (this.cols * this.rows);
+
+	                this.gridVertexPositionBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexPositionBuffer);
+	                var vertices = [];
+	                for (var y = 0; y < this.rows; y++) {
+	                    for (var x = 0; x < this.cols; x++) {
+	                        vertices = vertices.concat([
+	                            (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + 0), 0,
+	                            (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + 0), 0,
+	                            (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0,
+
+	                            (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + 0), 0,
+	                            (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0,
+	                            (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0,
+	                        ]);
+	                    }
+	                }
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	                this.gridVertexPositionBuffer.itemSize = 3;
+	                this.gridVertexPositionBuffer.numItems = 6 * (this.cols * this.rows);
+
+	                this.gridVertexNormalBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexNormalBuffer);
+	                var vertexNormals = [];
+	                for (var y = 0; y < this.rows; y++) {
+	                    for (var x = 0; x < this.cols; x++) {
+	                        vertexNormals = vertexNormals.concat([
+	                            0.0,  0.0,  1.0,
+	                            0.0,  0.0,  1.0,
+	                            0.0,  0.0,  1.0,
+
+	                            0.0,  0.0,  1.0,
+	                            0.0,  0.0,  1.0,
+	                            0.0,  0.0,  1.0,
+	                        ]);
+	                    }
+	                }
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	                this.gridVertexNormalBuffer.itemSize = 3;
+	                this.gridVertexNormalBuffer.numItems = 6 * (this.cols * this.rows);
+
+	            } else {
+	                this.gridVertexColorBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexColorBuffer);
+	                var colors = [];
+	                for (var y = 0; y < this.rows; y++) {
+	                    for (var x = 0; x < this.cols; x++) {
+	                        colors = textureCoords.concat([
+	                            this.color.r, this.color.g, this.color.b, this.color.a,
+	                            this.color.r, this.color.g, this.color.b, this.color.a,
+	                            this.color.r, this.color.g, this.color.b, this.color.a,
+	                            this.color.r, this.color.g, this.color.b, this.color.a,
+	                        ]);
+	                    }
+	                }
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+	                this.gridVertexColorBuffer.itemSize = 4;
+	                this.gridVertexColorBuffer.numItems = 4 * (this.cols * this.rows);
+
+	                this.gridVertexPositionBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexPositionBuffer);
+	                var vertices = [];
+	                for (var y = 0; y < this.rows; y++) {
+	                    for (var x = 0; x < this.cols; x++) {
+	                        vertices = vertices.concat([
+	                            (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + 0), 0,
+	                            (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + 0), 0,
+	                            (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0,
+	                            (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0
+	                        ]);
+	                    }
+	                }
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	                this.gridVertexPositionBuffer.itemSize = 3;
+	                this.gridVertexPositionBuffer.numItems = 4 * (this.cols * this.rows);
+
+	                this.gridVertexNormalBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexNormalBuffer);
+	                var vertexNormals = [];
+	                for (var y = 0; y < this.rows; y++) {
+	                    for (var x = 0; x < this.cols; x++) {
+	                        vertexNormals = vertexNormals.concat([
+	                            0.0,  0.0,  1.0,
+	                            0.0,  0.0,  1.0,
+	                            0.0,  0.0,  1.0,
+	                            0.0,  0.0,  1.0
+	                        ]);
+	                    }
+	                }
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	                this.gridVertexNormalBuffer.itemSize = 3;
+	                this.gridVertexNormalBuffer.numItems = 4 * (this.cols * this.rows);
+	            }
+	        },
+
+	        update: function() {
+
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexPositionBuffer);
+	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.gridVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexNormalBuffer);
+	            gl.vertexAttribPointer(this.vertexNormalAttribute, this.gridVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            if (this.texture != null) {
+	                gl.useProgram(Kings.textureShader.getProgram());
+	                gl.activeTexture(gl.TEXTURE0);
+	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
+
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
+	                glMatrix.vec3.scale(adjustedLD, -1);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridTextureCoordBuffer);
+	                gl.vertexAttribPointer(this.textureCoordAttribute, this.gridTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                Kings.GL.setMatrixUniforms(Kings.textureShader);
+	            } else {
+	                gl.useProgram(Kings.colorShader.getProgram());
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexColorBuffer);
+	                gl.vertexAttribPointer(this.vertexColorAttribute, this.gridVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
+	                glMatrix.vec3.scale(adjustedLD, -1);
+	                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+
+	                Kings.GL.setMatrixUniforms(Kings.colorShader);
+	            }
+	            gl.drawArrays(gl.TRIANGLES, 0, this.gridVertexPositionBuffer.numItems);
+
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
 	    Kings.GameObject = function(parameters) {
 	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
 	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
@@ -26305,7 +26778,7 @@
 
 
 /***/ },
-/* 13 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -26340,7 +26813,76 @@
 
 
 /***/ },
-/* 14 */
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Player = function(parameters) {
+	        Kings.GameObject.call(this, parameters);
+	        this.velocity = parameters.velocity || 1;
+	        this.camera = parameters.camera;
+	    };
+
+	    Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Player.prototype.update = function() {
+	        this.shape.update();
+	        this.position.z += this.velocity;
+	        this.camera.position.z = this.position.z;
+	        var estado = {
+	            up: 0,
+	            down: 0,
+	            left: 0,
+	            right: 0
+	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.UP) || Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+	            if (Kings.keyboard.current == Kings.keyboard.keys.UP || Kings.keyboard.current == Kings.keyboard.keys.W) {
+	                this.speedUp();
+	            }
+	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.LEFT) || Kings.keyboard.isDown(Kings.keyboard.keys.A)) {
+	            if (Kings.keyboard.current == Kings.keyboard.keys.LEFT || Kings.keyboard.current == Kings.keyboard.keys.A) {
+	                this.moveLeft();
+	            }
+	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.DOWN) || Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+	            if (Kings.keyboard.current == Kings.keyboard.keys.DOWN || Kings.keyboard.current == Kings.keyboard.keys.S) {
+	                this.slowDown();
+	            }
+	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.RIGHT) || Kings.keyboard.isDown(Kings.keyboard.keys.D)) {
+	            if (Kings.keyboard.current == Kings.keyboard.keys.RIGHT || Kings.keyboard.current == Kings.keyboard.keys.D) {
+	                this.moveRight();
+	            }
+	        }
+	    }
+
+	    Kings.Player.prototype.moveLeft = function() {
+	        this.position.x += 0.1;
+	    };
+
+	    Kings.Player.prototype.moveRight = function() {
+	        this.position.x -= 0.1;
+	    };
+
+	    Kings.Player.prototype.slowDown = function() {
+	        if (this.velocity > 0.3) {
+	            this.velocity -= 0.1;
+	        }
+	    };
+
+	    Kings.Player.prototype.speedUp = function() {
+	        if (this.velocity < 1.0) {
+	            this.velocity += 0.1;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -26408,177 +26950,6 @@
 
 
 /***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    __webpack_require__(16);
-
-	    Kings.Road = function(parameters) {
-	        Kings.GameObject.call(this, parameters);
-	        this.gameUpdate = function() { parameters.update() };
-	        this.playerIndexLocation = 0;
-	        this.sections = [];
-	        this.numberOfSections = parameters.numberOfSections || 4;
-	        this.sectionSize = parameters.sectionSize || 4;
-	        for (var i = 0; i < this.numberOfSections; i++) {
-	            if(i>1) {
-	                this.sections.push(new Kings.RoadSection({
-	                    id: i,
-	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
-	                    sectionSize: this.sectionSize,
-	                    texture: this.texture
-	                }));
-	            } else {
-	                this.sections.push(new Kings.RoadSection({
-	                    id: i,
-	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
-	                    sectionSize: this.sectionSize,
-	                    texture: this.texture
-	                }));
-	            }
-	        }
-	    };
-
-	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.Road.prototype.update = function(v) {
-	        this.gameUpdate();
-	        if(this.playerIndexLocation > 1) {
-	            this.sections.push(new Kings.RoadSection({
-	                id: this.sections[this.numberOfSections - 1].id + 1,
-	                position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize * 2) },
-	                sectionSize: this.sectionSize,
-	                texture: this.texture
-	            }));
-	            this.sections[0].destroy();
-	            this.sections.splice(0,1);
-	        }
-	        for (var i = 0; i < this.sections.length; i++) {
-	            this.sections[i].update();
-	        }
-	    };
-
-	    Kings.Road.prototype.draw = function() {
-	        for (var i = 0; i < this.sections.length; i++) {
-	            this.sections[i].draw();
-	        }
-	    };
-
-	    Kings.Road.prototype.locatePlayer = function(v) {
-	        for (var i = 0; i < this.sections.length; i++) {
-	            if(
-	                (
-	                    v.x > (this.sections[i].position.x - this.sectionSize) &&
-	                    v.x < (this.sections[i].position.x + this.sectionSize)
-	                ) && (
-	                    v.z > (this.sections[i].position.z - this.sectionSize) &&
-	                    v.z < (this.sections[i].position.z + this.sectionSize)
-	                )
-	            ) {
-	                this.playerIndexLocation = i;
-	            }
-	        }
-	    },
-
-	    Kings.Road.prototype.insideRoad = function(position) {
-	        if((position.x > -this.sectionSize && position.x < this.sectionSize)) {
-	            return true;
-	        }
-	        return false;
-	    },
-
-	    Kings.Road.prototype.CreateSection = function() {
-
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 16 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.RoadSection = function(parameters) {
-	        this.id = parameters.id;
-	        parameters.rotation = { x: 90, y: 0, z: 0};
-	        parameters.shape = new Kings.Plane({
-	            height: parameters.sectionSize,
-	            width: parameters.sectionSize,
-	            texture: parameters.texture
-	        });
-	        Kings.GameObject.call(this, parameters);
-	    };
-
-	    Kings.RoadSection.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.RoadSection.prototype.destroy = function() {
-
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 17 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Player = function(parameters) {
-	        Kings.GameObject.call(this, parameters);
-	        this.velocity = parameters.velocity || 1;
-	        this.camera = parameters.camera;
-	    };
-
-	    Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.Player.prototype.update = function() {
-	        this.position.z += this.velocity;
-	        this.camera.position.z = this.position.z;
-	        var estado = {
-	            up: 0,
-	            down: 0,
-	            left: 0,
-	            right: 0
-	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.UP) || Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-	            if (Kings.keyboard.current == Kings.keyboard.keys.UP || Kings.keyboard.current == Kings.keyboard.keys.W) {
-	                this.velocity += 0.1;
-	            }
-	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.LEFT) || Kings.keyboard.isDown(Kings.keyboard.keys.A)) {
-	            if (Kings.keyboard.current == Kings.keyboard.keys.LEFT || Kings.keyboard.current == Kings.keyboard.keys.A) {
-	                this.moveLeft();
-	            }
-	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.DOWN) || Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
-	            if (Kings.keyboard.current == Kings.keyboard.keys.DOWN || Kings.keyboard.current == Kings.keyboard.keys.S) {
-	                this.velocity -= 0.1;
-	            }
-	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.RIGHT) || Kings.keyboard.isDown(Kings.keyboard.keys.D)) {
-	            if (Kings.keyboard.current == Kings.keyboard.keys.RIGHT || Kings.keyboard.current == Kings.keyboard.keys.D) {
-	                this.moveRight();
-	            }
-	        }
-	    }
-
-	    Kings.Player.prototype.moveLeft = function() {
-	        this.position.x += 0.4;
-	    }
-
-	    Kings.Player.prototype.moveRight = function() {
-	        this.position.x -= 0.4;
-	    }
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
 /* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -26633,6 +27004,289 @@
 	                this.current = this.past;
 	            }
 	        },
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(20);
+
+	    Kings.Road = function(parameters) {
+	        Kings.GameObject.call(this, parameters);
+	        this.gameUpdate = function() { parameters.update() };
+	        this.playerIndexLocation = 0;
+	        this.sections = [];
+	        this.numberOfSections = parameters.numberOfSections || 4;
+	        this.sectionSize = parameters.sectionSize || 4;
+	        for (var i = 0; i < this.numberOfSections; i++) {
+	            if(i>1) {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                }));
+	            } else {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                }));
+	            }
+	        }
+	        this.terrainLeft = new Kings.Terrain({
+	            position: { x: 23, y: -2.0, z: 0},
+	            rotation: { x: 90, y: 0, z: 0},
+	            texture: Kings.AssetBundles[0].content.lava,
+	            width: 40.0,
+	            height: 40.0,
+	            cols: 10.0,
+	            rows: 10.0
+	        });
+	        this.terrainRight = new Kings.Terrain({
+	            position: { x: -23, y: -2.0, z: 0},
+	            rotation: { x: 90, y: 0, z: 0},
+	            texture: Kings.AssetBundles[0].content.lava,
+	            width: 40.0,
+	            height: 40.0,
+	            cols: 10.0,
+	            rows: 10.0
+	        });
+	    };
+
+	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Road.prototype.update = function(v) {
+	        this.gameUpdate();
+	        this.terrainRight.update();
+	        this.terrainLeft.update();
+	        if(this.playerIndexLocation > 1) {
+	            this.sections.push(new Kings.RoadSection({
+	                id: this.sections[this.numberOfSections - 1].id + 1,
+	                position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize * 2) },
+	                sectionSize: this.sectionSize,
+	                texture: this.texture
+	            }));
+	            this.sections[0].destroy();
+	            this.sections.splice(0,1);
+	        }
+	        for (var i = 0; i < this.sections.length; i++) {
+	            this.sections[i].update();
+	        }
+	    };
+
+	    Kings.Road.prototype.draw = function() {
+	        this.terrainRight.draw();
+	        this.terrainLeft.draw();
+	        for (var i = 0; i < this.sections.length; i++) {
+	            this.sections[i].draw();
+	        }
+	    };
+
+	    Kings.Road.prototype.locatePlayer = function(v) {
+	        for (var i = 0; i < this.sections.length; i++) {
+	            if(
+	                (
+	                    v.x > (this.sections[i].position.x - this.sectionSize) &&
+	                    v.x < (this.sections[i].position.x + this.sectionSize)
+	                ) && (
+	                    v.z > (this.sections[i].position.z - this.sectionSize) &&
+	                    v.z < (this.sections[i].position.z + this.sectionSize)
+	                )
+	            ) {
+	                this.playerIndexLocation = i;
+	            }
+	        }
+	    },
+
+	    Kings.Road.prototype.insideRoad = function(position) {
+	        if((position.x > -this.sectionSize && position.x < this.sectionSize)) {
+	            return true;
+	        }
+	        return false;
+	    },
+
+	    Kings.Road.prototype.CreateSection = function() {
+
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.RoadSection = function(parameters) {
+	        this.id = parameters.id;
+	        parameters.rotation = { x: 90, y: 0, z: 0};
+	        parameters.shape = new Kings.Plane({
+	            height: parameters.sectionSize,
+	            width: parameters.sectionSize,
+	            texture: parameters.texture
+	        });
+	        Kings.GameObject.call(this, parameters);
+	    };
+
+	    Kings.RoadSection.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.RoadSection.prototype.destroy = function() {
+
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(10);
+	    __webpack_require__(22);
+	    __webpack_require__(23);
+	    __webpack_require__(13);
+
+	    Kings.Terrain = function(parameters) {
+	        Kings.Grid.call(this, parameters);
+	        this.zValues = [];
+	        this.zPosition = 0;
+	    };
+
+	    Kings.Terrain.prototype = Object.create(Kings.Grid.prototype);
+
+	    Kings.Terrain.prototype.constructor = Kings.Terrain;
+
+	    Kings.Terrain.prototype.update = function() {
+	        var yoff = 0;
+	        for (var y = 0; y < this.rows+1; y++) {
+	            this.zValues[y] = [];
+	            var xoff = this.zPosition;
+	            for (var x = 0; x < this.cols+1; x++) {
+	                this.zValues[y][x] = Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, 7);
+	                xoff += 0.35;
+	            }
+	            yoff += 0.35;
+	        }
+	        this.zPosition += 0.02;
+
+	        var stepx = this.width / this.cols;
+	        var stepy = this.height / this.rows;
+	        this.gridVertexPositionBuffer = gl.createBuffer();
+	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexPositionBuffer);
+	        var vertices = [];
+	        for (var y = 0; y < this.rows; y++) {
+	            for (var x = 0; x < this.cols; x++) {
+	                vertices = vertices.concat([
+	                    (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + 0), 0 + this.zValues[x][y],
+	                    (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + 0), 0 + this.zValues[x+1][y],
+	                    (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0 + this.zValues[x][y+1],
+
+	                    (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + 0), 0 + this.zValues[x+1][y],
+	                    (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0 + this.zValues[x+1][y+1],
+	                    (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0 + this.zValues[x][y+1],
+	                ]);
+	            }
+	        }
+	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	        this.gridVertexPositionBuffer.itemSize = 3;
+	        this.gridVertexPositionBuffer.numItems = 6 * (this.cols * this.rows);
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.PerlinNoise = {
+	        noise: function(x, y, z) {
+	            var p = new Array(512)
+	            var permutation = [ 151,160,137,91,90,15,
+	                131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
+	                190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
+	                88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
+	                77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
+	                102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
+	                135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
+	                5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
+	                223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
+	                129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
+	                251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
+	                49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
+	                138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
+	            ];
+	            for (var i=0; i < 256 ; i++)
+	            p[256+i] = p[i] = permutation[i];
+
+	            var X = Math.floor(x) & 255,
+	            Y = Math.floor(y) & 255,
+	            Z = Math.floor(z) & 255;
+	            x -= Math.floor(x);
+	            y -= Math.floor(y);
+	            z -= Math.floor(z);
+	            var    u = this.fade(x),
+	            v = this.fade(y),
+	            w = this.fade(z);
+	            var A = p[X  ]+Y, AA = p[A]+Z, AB = p[A+1]+Z,
+	            B = p[X+1]+Y, BA = p[B]+Z, BB = p[B+1]+Z;
+
+	            return this.scale(this.lerp(w, this.lerp(v, this.lerp(u, this.grad(p[AA  ], x  , y  , z   ), 
+	            this.grad(p[BA  ], x-1, y  , z   )),
+	            this.lerp(u, this.grad(p[AB  ], x  , y-1, z   ),
+	            this.grad(p[BB  ], x-1, y-1, z   ))),
+	            this.lerp(v, this.lerp(u, this.grad(p[AA+1], x  , y  , z-1 ),
+	            this.grad(p[BA+1], x-1, y  , z-1 )),
+	            this.lerp(u, this.grad(p[AB+1], x  , y-1, z-1 ),
+	            this.grad(p[BB+1], x-1, y-1, z-1 )))));
+	        },
+
+	        fade: function(t) {
+	            return t * t * t * (t * (t * 6 - 15) + 10);
+	        },
+
+	        lerp: function( t, a, b) {
+	            return a + t * (b - a);
+	        },
+
+	        grad: function(hash, x, y, z) {
+	            var h = hash & 15;
+	            var u = h<8 ? x : y,
+	            v = h<4 ? y : h==12||h==14 ? x : z;
+	            return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
+	        },
+
+	        scale: function(n) {
+	            return (1 + n)/2;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Processing = {
+	        map: function(value, low1, high1, low2, high2) {
+	            return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
+	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 

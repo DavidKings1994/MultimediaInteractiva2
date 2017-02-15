@@ -27,6 +27,7 @@
     require('./Utils/LoadManager.js');
     require('./Utils/Keyboard.js');
     require('./GameObjects/Road/Road.js');
+    require('./Geometry/Terrain.js');
 
     $.fn.initGame = function( parameters ) {
         var self = this;
@@ -44,9 +45,10 @@
             Kings.game.player = new Kings.Player({
                 velocity: 0.5,
                 position: { x: 0, y: 0, z: 0 },
-                shape: new Kings.Triangle({
-                    position: { x: 0, y: 0, z: 3},
-                    texture: Kings.AssetBundles[0].content.logo
+                shape: new Kings.Cube({
+                    position: { x: 0, y: -0.5, z: 2},
+                    texture: Kings.AssetBundles[0].content.crate,
+                    size: 1
                 }),
                 camera: Kings.game.camera
             });
@@ -59,6 +61,8 @@
                 numberOfSections: 10,
                 update: function() {
                     road.locatePlayer(Kings.game.player.position);
+                    road.terrainRight.position.z = Kings.game.player.position.z + 25;
+                    road.terrainLeft.position.z = Kings.game.player.position.z + 25;
                 }
             })
             Kings.game.addElement(road);
