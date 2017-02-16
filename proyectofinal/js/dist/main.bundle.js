@@ -19009,11 +19009,11 @@
 
 	    __webpack_require__(6);
 	    __webpack_require__(7);
-	    __webpack_require__(16);
 	    __webpack_require__(17);
 	    __webpack_require__(18);
-	    __webpack_require__(19);
-	    __webpack_require__(21);
+	    __webpack_require__(22);
+	    __webpack_require__(23);
+	    __webpack_require__(25);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19028,14 +19028,11 @@
 	        });
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
+	            console.log(Kings.AssetBundles[0]);
 	            Kings.game.player = new Kings.Player({
 	                velocity: 0.5,
-	                position: { x: 0, y: 0, z: 0 },
-	                shape: new Kings.Cube({
-	                    position: { x: 0, y: -0.5, z: 2},
-	                    texture: Kings.AssetBundles[0].content.crate,
-	                    size: 1
-	                }),
+	                position: { x: 0, y: -2, z: 0 },
+	                shape: Kings.AssetBundles[0].content.HarleyDavidson,
 	                camera: Kings.game.camera
 	            });
 	            Kings.game.addElement(Kings.game.player);
@@ -19047,8 +19044,8 @@
 	                numberOfSections: 10,
 	                update: function() {
 	                    road.locatePlayer(Kings.game.player.position);
-	                    road.terrainRight.position.z = Kings.game.player.position.z + 25;
-	                    road.terrainLeft.position.z = Kings.game.player.position.z + 25;
+	                    road.terrainRight.position.z = Kings.game.player.position.z + 22;
+	                    road.terrainLeft.position.z = Kings.game.player.position.z + 22;
 	                }
 	            })
 	            Kings.game.addElement(road);
@@ -25761,6 +25758,7 @@
 	    __webpack_require__(13);
 	    __webpack_require__(14);
 	    __webpack_require__(15);
+	    __webpack_require__(16);
 
 	    Kings.Graphics = function(parameters) {
 	        window.gl = parameters.canvas.getContext("webgl");
@@ -25894,9 +25892,9 @@
 	            gl.uniformMatrix4fv(shader.getUniform('uMVMatrix'), false, Kings.mvMatrix);
 
 	            var normalMatrix = glMatrix.mat3.create();
-	            glMatrix.mat3.fromMat4(normalMatrix, Kings.mvMatrix);
-	            glMatrix.mat3.invert(normalMatrix, normalMatrix);
-	            glMatrix.mat3.transpose(normalMatrix, normalMatrix);
+	            glMatrix.mat3.normalFromMat4(normalMatrix, Kings.mvMatrix);
+	            // glMatrix.mat3.invert(normalMatrix, normalMatrix);
+	            // glMatrix.mat3.transpose(normalMatrix, normalMatrix);
 	            gl.uniformMatrix3fv(shader.getUniform('uNMatrix'), false, normalMatrix);
 	        },
 
@@ -26053,10 +26051,9 @@
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
 	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var lightingDirection = [0.0, -1.0, -1.0];
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-	                glMatrix.vec3.scale(adjustedLD, -1);
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
 	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
 	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
@@ -26069,13 +26066,12 @@
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [1.0, -1.0, -1.0];
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [0.0, -1.0, -1.0];
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-	                glMatrix.vec3.scale(adjustedLD, -1);
-	                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
@@ -26096,19 +26092,18 @@
 	    var Kings = window.Kings || {};
 
 	    Kings.Texture = {
-	        loadTexture: function(path) {
+	        loadTexture: function(path, callback) {
 	            var self = this;
 	            var ready = false;
-	            texture = gl.createTexture();
+	            var texture = gl.createTexture();
 	            texture.image = new Image();
-	            texture.image.onload = function() {
-	                ready = true;
-	            }
+	            texture.image.addEventListener("load", function() {
+	                callback(texture);
+	            }, false);
+	            texture.image.addEventListener("error", function() {
+	                callback(texture);
+	            }, false);
 	            texture.image.src = path;
-	            while(!ready) {
-
-	            }
-	            return texture;
 	        },
 
 	        handleTexture: function(texture) {
@@ -26204,10 +26199,10 @@
 	            this.planeVertexNormalBuffer = gl.createBuffer();
 	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
 	            var vertexNormals = [
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  -1.0,
+	                0.0,  0.0,  -1.0,
+	                0.0,  0.0,  -1.0,
+	                0.0,  0.0,  -1.0,
 	            ];
 	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
 	            this.planeVertexNormalBuffer.itemSize = 3;
@@ -26238,10 +26233,9 @@
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
 	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var lightingDirection = [0.0, -1.0, -1.0];
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-	                glMatrix.vec3.scale(adjustedLD, -1);
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
 	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
 	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
@@ -26254,13 +26248,12 @@
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [1.0, -1.0, -1.0];
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [0.0, -1.0, -1.0];
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-	                glMatrix.vec3.scale(adjustedLD, -1);
-	                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
@@ -26429,35 +26422,35 @@
 	            this.planeVertexNormalBuffer = gl.createBuffer();
 	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
 	            var vertexNormals = [
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
+	                0.0,  0.0,  -1.0,
+	                0.0,  0.0,  -1.0,
+	                0.0,  0.0,  -1.0,
+	                0.0,  0.0,  -1.0,
 
 	                0.0,  0.0,  1.0,
 	                0.0,  0.0,  1.0,
 	                0.0,  0.0,  1.0,
 	                0.0,  0.0,  1.0,
 
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
+	                1.0,  0.0,  0.0,
+	                1.0,  0.0,  0.0,
+	                1.0,  0.0,  0.0,
+	                1.0,  0.0,  0.0,
 
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
+	                -1.0,  0.0,  0.0,
+	                -1.0,  0.0,  0.0,
+	                -1.0,  0.0,  0.0,
+	                -1.0,  0.0,  0.0,
 
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
+	                0.0,  1.0,  0.0,
+	                0.0,  1.0,  0.0,
+	                0.0,  1.0,  0.0,
+	                0.0,  1.0,  0.0,
 
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
-	                0.0,  0.0,  1.0,
+	                0.0,  -1.0,  0.0,
+	                0.0,  -1.0,  0.0,
+	                0.0,  -1.0,  0.0,
+	                0.0,  -1.0,  0.0,
 	            ];
 	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
 	            this.planeVertexNormalBuffer.itemSize = 3;
@@ -26488,10 +26481,9 @@
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
 	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var lightingDirection = [0.0, -1.0, -1.0];
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-	                glMatrix.vec3.scale(adjustedLD, -1);
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
 	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
 	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
@@ -26504,13 +26496,12 @@
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [1.0, -1.0, -1.0];
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [0.0, -1.0, -1.0];
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-	                glMatrix.vec3.scale(adjustedLD, -1);
-	                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
@@ -26613,14 +26604,25 @@
 	                var vertexNormals = [];
 	                for (var y = 0; y < this.rows; y++) {
 	                    for (var x = 0; x < this.cols; x++) {
+	                        var offset = (((x * y) + x) * 6 * 3);
+	                        var normal1 = Kings.Processing.calculateNormal(
+	                            [vertices[offset], vertices[offset+1], vertices[offset+2]],
+	                            [vertices[offset+3], vertices[offset+4], vertices[offset+5]],
+	                            [vertices[offset+6], vertices[offset+7], vertices[offset+8]]
+	                        );
+	                        var normal2 = Kings.Processing.calculateNormal(
+	                            [vertices[offset+9], vertices[offset+10], vertices[offset+11]],
+	                            [vertices[offset+12], vertices[offset+13], vertices[offset+14]],
+	                            [vertices[offset+15], vertices[offset+16], vertices[offset+17]]
+	                        )
 	                        vertexNormals = vertexNormals.concat([
-	                            0.0,  0.0,  1.0,
-	                            0.0,  0.0,  1.0,
-	                            0.0,  0.0,  1.0,
+	                            normal1[0], normal1[1], normal1[2],
+	                            normal1[0], normal1[1], normal1[2],
+	                            normal1[0], normal1[1], normal1[2],
 
-	                            0.0,  0.0,  1.0,
-	                            0.0,  0.0,  1.0,
-	                            0.0,  0.0,  1.0,
+	                            normal2[0], normal2[1], normal2[2],
+	                            normal2[0], normal2[1], normal2[2],
+	                            normal2[0], normal2[1], normal2[2],
 	                        ]);
 	                    }
 	                }
@@ -26706,10 +26708,9 @@
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
 	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [1.0, -1.0, -1.0];
+	                var lightingDirection = [0.0, -1.0, -1.0];
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-	                glMatrix.vec3.scale(adjustedLD, -1);
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
 	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
 	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
@@ -26722,13 +26723,12 @@
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.gridVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [1.0, -1.0, -1.0];
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [0.0, -1.0, -1.0];
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-	                glMatrix.vec3.scale(adjustedLD, -1);
-	                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
@@ -26819,9 +26819,33 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
+	    Kings.Processing = {
+	        map: function(value, low1, high1, low2, high2) {
+	            return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
+	        },
+
+	        calculateNormal: function(p1, p2, p3) {
+	            var v1 = glMatrix.vec3.fromValues(p1[0] - p3[0], p1[1] - p3[1], p1[2] - p3[2]);
+	            var v2 = glMatrix.vec3.fromValues(p1[0] - p2[0], p1[1] - p2[1], p1[2] - p2[2]);
+	            var normal = glMatrix.vec3.create();
+	            glMatrix.vec3.cross(normal, v1, v2);
+	            glMatrix.vec3.normalize(normal, normal);
+	            return normal;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
 	    Kings.Player = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
-	        this.velocity = parameters.velocity || 1;
+	        this.velocity = parameters.velocity || 0;
 	        this.camera = parameters.camera;
 	    };
 
@@ -26830,7 +26854,7 @@
 	    Kings.Player.prototype.update = function() {
 	        this.shape.update();
 	        this.position.z += this.velocity;
-	        this.camera.position.z = this.position.z;
+	        this.camera.position.z = this.position.z - 5;
 	        var estado = {
 	            up: 0,
 	            down: 0,
@@ -26882,11 +26906,14 @@
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
+
+	    __webpack_require__(19);
+	    __webpack_require__(20);
 
 	    Kings.LoadManager = {
 	        loadBundle: function(name, callback) {
@@ -26896,7 +26923,6 @@
 	            this.downloadQueue = [];
 
 	            $.getJSON("./AssetConfig.json", function(json) {
-	                console.log(json);
 	                var bundle = {};
 
 	                var getAssetName = function(path) {
@@ -26913,29 +26939,74 @@
 	                for (var i = 0; i < self.downloadQueue.length; i++) {
 	                    (function() {
 	                        var path = json.assetRoot + self.downloadQueue[i];
-	                        var texture = gl.createTexture();
-	                        texture.image = new Image();
-	                        texture.image.addEventListener("load", function() {
-	                            self.successCount++;
-	                            bundle[getAssetName(path)] = texture;
-	                            if (self.isDone()) {
-	                                Kings.AssetBundles.push({
-	                                    name: name,
-	                                    content: bundle
+	                        var type = self.getFileExtension(path);
+	                        switch (type) {
+	                            case 'png':
+	                            case 'jpg': {
+	                                var texture = gl.createTexture();
+	                                texture.image = new Image();
+	                                texture.image.addEventListener("load", function() {
+	                                    self.successCount++;
+	                                    bundle[getAssetName(path)] = texture;
+	                                    if (self.isDone()) {
+	                                        Kings.AssetBundles.push({
+	                                            name: name,
+	                                            content: bundle
+	                                        });
+	                                        callback();
+	                                    }
+	                                }, false);
+	                                texture.image.addEventListener("error", function() {
+	                                    self.errorCount++;
+	                                    if (self.isDone()) {
+	                                        callback();
+	                                    }
+	                                }, false);
+	                                texture.image.src = path;
+	                                break;
+	                            }
+	                            case 'obj': {
+	                                var mtlpath = path.substring(0, path.lastIndexOf('/') + 1);
+	                                var completePath = mtlpath + getAssetName(path);
+	                                completePath += '.mtl';
+	                                self.readTextFile(completePath, function(data) {
+	                                    Kings.ObjLoader.loadMtl(data, mtlpath, function(materials) {
+	                                        self.readTextFile(path, function(data) {
+	                                            Kings.ObjLoader.loadObj(data, materials, function(model) {
+	                                                bundle[getAssetName(path)] = model;
+	                                                self.successCount++;
+	                                                console.log('finally');
+	                                            });
+	                                        });
+	                                    });
 	                                });
-	                                callback();
+	                                break;
 	                            }
-	                        }, false);
-	                        texture.image.addEventListener("error", function() {
-	                            self.errorCount++;
-	                            if (self.isDone()) {
-	                                callback();
+	                            case 'wav': {
+	                                break;
 	                            }
-	                        }, false);
-	                        texture.image.src = path;
+	                        }
 	                    }());
 	                }
 	            });
+	        },
+
+	        readTextFile: function(file, callback) {
+	            var self = this;
+	            var rawFile = new XMLHttpRequest();
+	            rawFile.open("GET", file, false);
+	            rawFile.onreadystatechange = function () {
+	                if(rawFile.readyState === 4) {
+	                    if(rawFile.status === 200 || rawFile.status == 0) {
+	                        callback(rawFile.responseText);
+	                    }
+	                }
+	            }
+	            rawFile.send(null);
+	        },
+
+	        getFileExtension: function(filename) {
+	            return filename.substr(filename.lastIndexOf('.')+1);
 	        },
 
 	        isDone: function() {
@@ -26950,7 +27021,340 @@
 
 
 /***/ },
-/* 18 */
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(20);
+	    __webpack_require__(21);
+	    __webpack_require__(10);
+
+	    Kings.ObjLoader = {
+	        loadMtl: function(input, path, callback) {
+	            var lines = input.split(/\r?\n/);
+	            var materials = [];
+	            var onQueue = 0;
+	            var done = 0;
+	            for (var i = 0; i < lines.length; i++) {
+	                if(lines[i].charAt(0) != '#'){
+	                    var data = lines[i].split(' ');
+	                    switch (data[0]) {
+	                        case 'map_Kd': {
+	                            (function(){
+	                                var num = onQueue;
+	                                Kings.Texture.loadTexture(path + data[1], function(texture) {
+	                                    console.log(materials[num].name);
+	                                    materials[num].texture = texture;
+	                                    done++;
+	                                    if (done == onQueue) {
+	                                        callback(materials);
+	                                    }
+	                                });
+	                            }());
+	                            onQueue++;
+	                            break;
+	                        }
+	                        case 'newmtl': {
+	                            (function(){
+	                                materials.push({
+	                                    name: data[1]
+	                                });
+	                            }());
+	                            break;
+	                        }
+	                    }
+	                }
+	            }
+	        },
+
+	        loadObj: function(input, materials, callback) {
+	            var lines = input.split(/\r?\n/);
+	            var step = 'start';
+	            var groups = [];
+	            groups.push({
+	                faces: [],
+	                texture: null
+	            });
+	            var vertex = [];
+	            var normals = [];
+	            var textureCoords = [];
+	            for (var i = 0; i < lines.length; i++) {
+	                if(lines[i].charAt(0) != '#'){
+	                    var data = lines[i].split(' ');
+	                    console.log(data);
+	                    (function(){
+	                        switch (data[0]) {
+	                            case 'usemtl': {
+	                                for (var j = 0; j < materials.length; j++) {
+	                                    if (materials[j].name == data[1]) {
+	                                        groups[groups.length - 1].name = materials[j].name;
+	                                        groups[groups.length - 1].texture = materials[j].texture;
+	                                    }
+	                                }
+	                                break;
+	                            }
+	                            case 'v': {
+	                                if (step != 'start') {
+	                                    groups.push({
+	                                        faces: [],
+	                                        texture: null
+	                                    });
+	                                    step = 'start';
+	                                }
+	                                vertex.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
+	                                break;
+	                            }
+	                            case 'vt': {
+	                                textureCoords.push(parseFloat(data[1]), parseFloat(data[2]));
+	                                break;
+	                            }
+	                            case 'vn': {
+	                                normals.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
+	                                break;
+	                            }
+	                            case 'f': {
+	                                step = 'end';
+	                                var v = [];
+	                                var t = [];
+	                                var n = [];
+	                                for (var k = 1; k < data.length; k++) {
+	                                    var indices = data[k].split('/');
+	                                    v.push(parseFloat(indices[0]));
+	                                    t.push(parseFloat(indices[1]));
+	                                    n.push(parseFloat(indices[2]));
+	                                }
+	                                groups[groups.length - 1].faces.push(new Kings.Face({
+	                                    vertex: v,
+	                                    normal: n,
+	                                    textureCoord: t
+	                                }));
+	                                break;
+	                            }
+	                        }
+	                    }());
+	                }
+	            }
+	            console.log(groups);
+	            for (var i = 0; i < groups.length; i++) {
+	                var v = [];
+	                var t = [];
+	                var n = [];
+	                for (var j = 0; j < groups[i].faces.length; j++) {
+	                    v.push(
+	                        vertex[((groups[i].faces[j].vertex[0] - 1) * 3) + 0],
+	                        vertex[((groups[i].faces[j].vertex[0] - 1) * 3) + 1],
+	                        vertex[((groups[i].faces[j].vertex[0] - 1) * 3) + 2],
+
+	                        vertex[((groups[i].faces[j].vertex[1] - 1) * 3) + 0],
+	                        vertex[((groups[i].faces[j].vertex[1] - 1) * 3) + 1],
+	                        vertex[((groups[i].faces[j].vertex[1] - 1) * 3) + 2],
+
+	                        vertex[((groups[i].faces[j].vertex[2] - 1) * 3) + 0],
+	                        vertex[((groups[i].faces[j].vertex[2] - 1) * 3) + 1],
+	                        vertex[((groups[i].faces[j].vertex[2] - 1) * 3) + 2]
+	                    );
+	                    n.push(
+	                        normals[((groups[i].faces[j].normal[0] - 1) * 3) + 0],
+	                        normals[((groups[i].faces[j].normal[0] - 1) * 3) + 1],
+	                        normals[((groups[i].faces[j].normal[0] - 1) * 3) + 2],
+
+	                        normals[((groups[i].faces[j].normal[1] - 1) * 3) + 0],
+	                        normals[((groups[i].faces[j].normal[1] - 1) * 3) + 1],
+	                        normals[((groups[i].faces[j].normal[1] - 1) * 3) + 2],
+
+	                        normals[((groups[i].faces[j].normal[2] - 1) * 3) + 0],
+	                        normals[((groups[i].faces[j].normal[2] - 1) * 3) + 1],
+	                        normals[((groups[i].faces[j].normal[2] - 1) * 3) + 2]
+	                    );
+	                    t.push(
+	                        textureCoords[((groups[i].faces[j].textureCoord[0] - 1) * 2) + 0],
+	                        textureCoords[((groups[i].faces[j].textureCoord[0] - 1) * 2) + 1],
+
+	                        textureCoords[((groups[i].faces[j].textureCoord[1] - 1) * 2) + 0],
+	                        textureCoords[((groups[i].faces[j].textureCoord[1] - 1) * 2) + 1],
+
+	                        textureCoords[((groups[i].faces[j].textureCoord[2] - 1) * 2) + 0],
+	                        textureCoords[((groups[i].faces[j].textureCoord[2] - 1) * 2) + 1]
+	                    );
+	                }
+	                groups[i].vertex = v;
+	                groups[i].normals = n;
+	                groups[i].textureCoords = t;
+	            }
+	            var g = [];
+	            for (var i = 1; i < groups.length; i++) {
+	                g.push(new Kings.Model({
+	                    vertices: groups[i].vertex,
+	                    textureCoords: groups[i].textureCoords,
+	                    vertexNormals: groups[i].normals,
+	                    texture: groups[i].texture,
+	                    name: groups[i].name,
+	                }));
+	            }
+	            var model = new Kings.Model({
+	                vertices: groups[0].vertex,
+	                textureCoords: groups[0].textureCoords,
+	                vertexNormals: groups[0].normals,
+	                texture: groups[0].texture,
+	                name: groups[0].name,
+	                groups: g
+	            });
+	            callback(model);
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Model = function(parameters) {
+	        this.name = parameters.name || '';
+	        this.groups = parameters.groups || [];
+	        this.texture = parameters.texture || null;
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        if (this.texture != null) {
+	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.textureCoordAttribute = Kings.textureShader.getAttributeLocation('aTextureCoord');
+	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	            Kings.Texture.handleTexture(this.texture);
+	        } else {
+	            this.vertexPositionAttribute = Kings.colorShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.vertexColorAttribute = Kings.colorShader.getAttributeLocation('aVertexColor');
+	            gl.enableVertexAttribArray(this.vertexColorAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	        }
+	        this.initBuffers(parameters.textureCoords, parameters.colors, parameters.vertices, parameters.vertexNormals);
+	    };
+
+	    Kings.Model.prototype = {
+	        constructor: Kings.Model,
+
+	        initBuffers: function(textureCoords, colors, vertices, vertexNormals) {
+	            if (this.texture != null) {
+	                this.planeTextureCoordBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	                this.planeTextureCoordBuffer.itemSize = 2;
+	                this.planeTextureCoordBuffer.numItems = textureCoords.length / 2;
+
+	            } else {
+	                this.planeVertexColorBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+	                this.planeVertexColorBuffer.itemSize = 4;
+	                this.planeVertexColorBuffer.numItems = colors.length / 4;
+	            }
+
+	            this.planeVertexPositionBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	            this.planeVertexPositionBuffer.itemSize = 3;
+	            this.planeVertexPositionBuffer.numItems = vertices.length / 3;
+
+	            this.planeVertexNormalBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	            this.planeVertexNormalBuffer.itemSize = 3;
+	            this.planeVertexNormalBuffer.numItems = vertexNormals.length / 3;
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
+	            gl.vertexAttribPointer(this.vertexNormalAttribute, this.planeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            if (this.texture != null) {
+	                gl.useProgram(Kings.textureShader.getProgram());
+	                gl.activeTexture(gl.TEXTURE0);
+	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
+
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [0.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                Kings.GL.setMatrixUniforms(Kings.textureShader);
+	            } else {
+	                gl.useProgram(Kings.colorShader.getProgram());
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+	                var lightingDirection = [0.0, -1.0, -1.0];
+	                var adjustedLD = glMatrix.vec3.create();
+	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+
+	                Kings.GL.setMatrixUniforms(Kings.colorShader);
+	            }
+
+	            gl.drawArrays(gl.TRIANGLES, 0, this.planeVertexPositionBuffer.numItems);
+
+	            for (var i = 0; i < this.groups.length; i++) {
+	                this.groups[i].draw();
+	            }
+
+	            Kings.GL.mvPopMatrix();
+	        },
+
+	        update: function() {
+	            for (var i = 0; i < this.groups.length; i++) {
+	                this.groups[i].update();
+	            }
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Face = function(parameters) {
+	        this.vertex = parameters.vertex;
+	        this.normal = parameters.normal;
+	        this.textureCoord = parameters.textureCoord;
+	    };
+
+	    Kings.Face.prototype = {
+	        constructor: Kings.Face,
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27009,13 +27413,13 @@
 
 
 /***/ },
-/* 19 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(20);
+	    __webpack_require__(24);
 
 	    Kings.Road = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
@@ -27120,7 +27524,7 @@
 
 
 /***/ },
-/* 20 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27146,15 +27550,15 @@
 
 
 /***/ },
-/* 21 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
 	    __webpack_require__(10);
-	    __webpack_require__(22);
-	    __webpack_require__(23);
+	    __webpack_require__(26);
+	    __webpack_require__(16);
 	    __webpack_require__(13);
 
 	    Kings.Terrain = function(parameters) {
@@ -27178,7 +27582,7 @@
 	            }
 	            yoff += 0.35;
 	        }
-	        this.zPosition += 0.02;
+	        this.zPosition += 0.05;
 
 	        var stepx = this.width / this.cols;
 	        var stepy = this.height / this.rows;
@@ -27201,12 +27605,43 @@
 	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 	        this.gridVertexPositionBuffer.itemSize = 3;
 	        this.gridVertexPositionBuffer.numItems = 6 * (this.cols * this.rows);
+
+	        this.gridVertexNormalBuffer = gl.createBuffer();
+	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexNormalBuffer);
+	        var vertexNormals = [];
+	        for (var y = 0; y < this.rows; y++) {
+	            for (var x = 0; x < this.cols; x++) {
+	                var offset = (((x * y) + x) * 6 * 3);
+	                var normal1 = Kings.Processing.calculateNormal(
+	                    [vertices[offset], vertices[offset+1], vertices[offset+2]],
+	                    [vertices[offset+3], vertices[offset+4], vertices[offset+5]],
+	                    [vertices[offset+6], vertices[offset+7], vertices[offset+8]]
+	                );
+	                var normal2 = Kings.Processing.calculateNormal(
+	                    [vertices[offset+9], vertices[offset+10], vertices[offset+11]],
+	                    [vertices[offset+12], vertices[offset+13], vertices[offset+14]],
+	                    [vertices[offset+15], vertices[offset+16], vertices[offset+17]]
+	                )
+	                vertexNormals = vertexNormals.concat([
+	                    normal1[0], normal1[1], normal1[2],
+	                    normal1[0], normal1[1], normal1[2],
+	                    normal1[0], normal1[1], normal1[2],
+
+	                    normal2[0], normal2[1], normal2[2],
+	                    normal2[0], normal2[1], normal2[2],
+	                    normal2[0], normal2[1], normal2[2],
+	                ]);
+	            }
+	        }
+	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	        this.gridVertexNormalBuffer.itemSize = 3;
+	        this.gridVertexNormalBuffer.numItems = 6 * (this.cols * this.rows);
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
-/* 22 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27271,21 +27706,6 @@
 
 	        scale: function(n) {
 	            return (1 + n)/2;
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Processing = {
-	        map: function(value, low1, high1, low2, high2) {
-	            return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));

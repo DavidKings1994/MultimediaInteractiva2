@@ -15,9 +15,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             gl.uniformMatrix4fv(shader.getUniform('uMVMatrix'), false, Kings.mvMatrix);
 
             var normalMatrix = glMatrix.mat3.create();
-            glMatrix.mat3.fromMat4(normalMatrix, Kings.mvMatrix);
-            glMatrix.mat3.invert(normalMatrix, normalMatrix);
-            glMatrix.mat3.transpose(normalMatrix, normalMatrix);
+            glMatrix.mat3.normalFromMat4(normalMatrix, Kings.mvMatrix);
+            // glMatrix.mat3.invert(normalMatrix, normalMatrix);
+            // glMatrix.mat3.transpose(normalMatrix, normalMatrix);
             gl.uniformMatrix3fv(shader.getUniform('uNMatrix'), false, normalMatrix);
         },
 

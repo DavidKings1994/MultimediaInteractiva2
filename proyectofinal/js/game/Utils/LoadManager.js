@@ -1,6 +1,9 @@
 define(['jquery', 'glMatrix'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
+    require('./../Geometry/Models/ObjLoader.js');
+    require('./../Geometry/Models/Model.js');
+
     Kings.LoadManager = {
         loadBundle: function(name, callback) {
             var self = this;
@@ -9,7 +12,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.downloadQueue = [];
 
             $.getJSON("./AssetConfig.json", function(json) {
-                console.log(json);
                 var bundle = {};
 
                 var getAssetName = function(path) {
@@ -26,29 +28,74 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 for (var i = 0; i < self.downloadQueue.length; i++) {
                     (function() {
                         var path = json.assetRoot + self.downloadQueue[i];
-                        var texture = gl.createTexture();
-                        texture.image = new Image();
-                        texture.image.addEventListener("load", function() {
-                            self.successCount++;
-                            bundle[getAssetName(path)] = texture;
-                            if (self.isDone()) {
-                                Kings.AssetBundles.push({
-                                    name: name,
-                                    content: bundle
+                        var type = self.getFileExtension(path);
+                        switch (type) {
+                            case 'png':
+                            case 'jpg': {
+                                var texture = gl.createTexture();
+                                texture.image = new Image();
+                                texture.image.addEventListener("load", function() {
+                                    self.successCount++;
+                                    bundle[getAssetName(path)] = texture;
+                                    if (self.isDone()) {
+                                        Kings.AssetBundles.push({
+                                            name: name,
+                                            content: bundle
+                                        });
+                                        callback();
+                                    }
+                                }, false);
+                                texture.image.addEventListener("error", function() {
+                                    self.errorCount++;
+                                    if (self.isDone()) {
+                                        callback();
+                                    }
+                                }, false);
+                                texture.image.src = path;
+                                break;
+                            }
+                            case 'obj': {
+                                var mtlpath = path.substring(0, path.lastIndexOf('/') + 1);
+                                var completePath = mtlpath + getAssetName(path);
+                                completePath += '.mtl';
+                                self.readTextFile(completePath, function(data) {
+                                    Kings.ObjLoader.loadMtl(data, mtlpath, function(materials) {
+                                        self.readTextFile(path, function(data) {
+                                            Kings.ObjLoader.loadObj(data, materials, function(model) {
+                                                bundle[getAssetName(path)] = model;
+                                                self.successCount++;
+                                                console.log('finally');
+                                            });
+                                        });
+                                    });
                                 });
-                                callback();
+                                break;
                             }
-                        }, false);
-                        texture.image.addEventListener("error", function() {
-                            self.errorCount++;
-                            if (self.isDone()) {
-                                callback();
+                            case 'wav': {
+                                break;
                             }
-                        }, false);
-                        texture.image.src = path;
+                        }
                     }());
                 }
             });
+        },
+
+        readTextFile: function(file, callback) {
+            var self = this;
+            var rawFile = new XMLHttpRequest();
+            rawFile.open("GET", file, false);
+            rawFile.onreadystatechange = function () {
+                if(rawFile.readyState === 4) {
+                    if(rawFile.status === 200 || rawFile.status == 0) {
+                        callback(rawFile.responseText);
+                    }
+                }
+            }
+            rawFile.send(null);
+        },
+
+        getFileExtension: function(filename) {
+            return filename.substr(filename.lastIndexOf('.')+1);
         },
 
         isDone: function() {

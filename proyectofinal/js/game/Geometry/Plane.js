@@ -75,10 +75,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.planeVertexNormalBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
             var vertexNormals = [
-                0.0,  0.0,  1.0,
-                0.0,  0.0,  1.0,
-                0.0,  0.0,  1.0,
-                0.0,  0.0,  1.0,
+                0.0,  0.0,  -1.0,
+                0.0,  0.0,  -1.0,
+                0.0,  0.0,  -1.0,
+                0.0,  0.0,  -1.0,
             ];
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
             this.planeVertexNormalBuffer.itemSize = 3;
@@ -109,10 +109,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
                 gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-                var lightingDirection = [1.0, -1.0, -1.0];
+                var lightingDirection = [0.0, -1.0, -1.0];
                 var adjustedLD = glMatrix.vec3.create();
-                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-                glMatrix.vec3.scale(adjustedLD, -1);
+                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
                 gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
                 gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
@@ -125,13 +124,12 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
                 gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-                var lightingDirection = [1.0, -1.0, -1.0];
+                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+                var lightingDirection = [0.0, -1.0, -1.0];
                 var adjustedLD = glMatrix.vec3.create();
-                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-                glMatrix.vec3.scale(adjustedLD, -1);
-                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
-                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
                 Kings.GL.setMatrixUniforms(Kings.colorShader);
             }

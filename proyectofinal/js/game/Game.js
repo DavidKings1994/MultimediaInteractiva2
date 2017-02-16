@@ -42,14 +42,11 @@
         });
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
+            console.log(Kings.AssetBundles[0]);
             Kings.game.player = new Kings.Player({
                 velocity: 0.5,
-                position: { x: 0, y: 0, z: 0 },
-                shape: new Kings.Cube({
-                    position: { x: 0, y: -0.5, z: 2},
-                    texture: Kings.AssetBundles[0].content.crate,
-                    size: 1
-                }),
+                position: { x: 0, y: -2, z: 0 },
+                shape: Kings.AssetBundles[0].content.HarleyDavidson,
                 camera: Kings.game.camera
             });
             Kings.game.addElement(Kings.game.player);
@@ -61,8 +58,8 @@
                 numberOfSections: 10,
                 update: function() {
                     road.locatePlayer(Kings.game.player.position);
-                    road.terrainRight.position.z = Kings.game.player.position.z + 25;
-                    road.terrainLeft.position.z = Kings.game.player.position.z + 25;
+                    road.terrainRight.position.z = Kings.game.player.position.z + 22;
+                    road.terrainLeft.position.z = Kings.game.player.position.z + 22;
                 }
             })
             Kings.game.addElement(road);

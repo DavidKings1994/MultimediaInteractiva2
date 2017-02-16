@@ -8,6 +8,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     require('./Geometry/Grid.js');
     require('./GameObjects/Gameobject.js');
     require('./GameObjects/Camera.js');
+    require('./Processing/Utils.js');
 
     Kings.Graphics = function(parameters) {
         window.gl = parameters.canvas.getContext("webgl");

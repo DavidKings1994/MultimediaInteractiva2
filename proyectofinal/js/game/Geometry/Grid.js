@@ -84,14 +84,25 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 var vertexNormals = [];
                 for (var y = 0; y < this.rows; y++) {
                     for (var x = 0; x < this.cols; x++) {
+                        var offset = (((x * y) + x) * 6 * 3);
+                        var normal1 = Kings.Processing.calculateNormal(
+                            [vertices[offset], vertices[offset+1], vertices[offset+2]],
+                            [vertices[offset+3], vertices[offset+4], vertices[offset+5]],
+                            [vertices[offset+6], vertices[offset+7], vertices[offset+8]]
+                        );
+                        var normal2 = Kings.Processing.calculateNormal(
+                            [vertices[offset+9], vertices[offset+10], vertices[offset+11]],
+                            [vertices[offset+12], vertices[offset+13], vertices[offset+14]],
+                            [vertices[offset+15], vertices[offset+16], vertices[offset+17]]
+                        )
                         vertexNormals = vertexNormals.concat([
-                            0.0,  0.0,  1.0,
-                            0.0,  0.0,  1.0,
-                            0.0,  0.0,  1.0,
+                            normal1[0], normal1[1], normal1[2],
+                            normal1[0], normal1[1], normal1[2],
+                            normal1[0], normal1[1], normal1[2],
 
-                            0.0,  0.0,  1.0,
-                            0.0,  0.0,  1.0,
-                            0.0,  0.0,  1.0,
+                            normal2[0], normal2[1], normal2[2],
+                            normal2[0], normal2[1], normal2[2],
+                            normal2[0], normal2[1], normal2[2],
                         ]);
                     }
                 }
@@ -177,10 +188,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
                 gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-                var lightingDirection = [1.0, -1.0, -1.0];
+                var lightingDirection = [0.0, -1.0, -1.0];
                 var adjustedLD = glMatrix.vec3.create();
-                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-                glMatrix.vec3.scale(adjustedLD, -1);
+                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
                 gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
                 gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
@@ -193,13 +203,12 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexColorBuffer);
                 gl.vertexAttribPointer(this.vertexColorAttribute, this.gridVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-                gl.uniform3f(Kings.colorShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-                var lightingDirection = [1.0, -1.0, -1.0];
+                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
+                var lightingDirection = [0.0, -1.0, -1.0];
                 var adjustedLD = glMatrix.vec3.create();
-                glMatrix.vec3.normalize(lightingDirection, adjustedLD);
-                glMatrix.vec3.scale(adjustedLD, -1);
-                gl.uniform3fv(Kings.colorShader.getUniform('uLightingDirection'), adjustedLD);
-                gl.uniform3f(Kings.colorShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
+                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
 
                 Kings.GL.setMatrixUniforms(Kings.colorShader);
             }

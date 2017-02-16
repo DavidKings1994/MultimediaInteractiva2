@@ -3,7 +3,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     Kings.Player = function(parameters) {
         Kings.GameObject.call(this, parameters);
-        this.velocity = parameters.velocity || 1;
+        this.velocity = parameters.velocity || 0;
         this.camera = parameters.camera;
     };
 
@@ -12,7 +12,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Player.prototype.update = function() {
         this.shape.update();
         this.position.z += this.velocity;
-        this.camera.position.z = this.position.z;
+        this.camera.position.z = this.position.z - 5;
         var estado = {
             up: 0,
             down: 0,

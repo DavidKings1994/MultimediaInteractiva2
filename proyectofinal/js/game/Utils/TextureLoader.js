@@ -2,19 +2,18 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
     Kings.Texture = {
-        loadTexture: function(path) {
+        loadTexture: function(path, callback) {
             var self = this;
             var ready = false;
-            texture = gl.createTexture();
+            var texture = gl.createTexture();
             texture.image = new Image();
-            texture.image.onload = function() {
-                ready = true;
-            }
+            texture.image.addEventListener("load", function() {
+                callback(texture);
+            }, false);
+            texture.image.addEventListener("error", function() {
+                callback(texture);
+            }, false);
             texture.image.src = path;
-            while(!ready) {
-
-            }
-            return texture;
         },
 
         handleTexture: function(texture) {
