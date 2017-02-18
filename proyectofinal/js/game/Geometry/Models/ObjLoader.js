@@ -43,7 +43,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             }
         },
 
-        loadObj: function(input, materials, callback) {
+        loadObj: function(input, materials, mainMesh, callback) {
             var lines = input.split(/\r?\n/);
             var step = 'start';
             var groups = [];
@@ -63,13 +63,12 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                             case 'usemtl': {
                                 for (var j = 0; j < materials.length; j++) {
                                     if (materials[j].name == data[1]) {
-                                        groups[groups.length - 1].name = materials[j].name;
                                         groups[groups.length - 1].texture = materials[j].texture;
                                     }
                                 }
                                 break;
                             }
-                            case 'v': {
+                            case 'o': {
                                 if (step != 'start') {
                                     groups.push({
                                         faces: [],
@@ -77,6 +76,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                                     });
                                     step = 'start';
                                 }
+                                groups[groups.length - 1].name = data[1];
+                                break;
+                            }
+                            case 'v': {
                                 vertex.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
                                 break;
                             }
@@ -157,25 +160,59 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 groups[i].normals = n;
                 groups[i].textureCoords = t;
             }
-            var g = [];
-            for (var i = 1; i < groups.length; i++) {
-                g.push(new Kings.Model({
-                    vertices: groups[i].vertex,
-                    textureCoords: groups[i].textureCoords,
-                    vertexNormals: groups[i].normals,
-                    texture: groups[i].texture,
-                    name: groups[i].name,
-                }));
+            if (mainMesh != null) {
+                var index = 0;
+                for (var i = 0; i < groups.length; i++) {
+                    if (groups[i].name == mainMesh) {
+                        index = i;
+                    }
+                }
+                if (index != 0) {
+                    var g = [];
+                    for (var i = 0; i < groups.length; i++) {
+                        if (i != index) {
+                            g.push(new Kings.Model({
+                                vertices: groups[i].vertex,
+                                textureCoords: groups[i].textureCoords,
+                                vertexNormals: groups[i].normals,
+                                texture: groups[i].texture,
+                                name: groups[i].name,
+                            }));
+                        }
+                    }
+                    var model = new Kings.Model({
+                        vertices: groups[index].vertex,
+                        textureCoords: groups[index].textureCoords,
+                        vertexNormals: groups[index].normals,
+                        texture: groups[index].texture,
+                        name: groups[index].name,
+                        groups: g
+                    });
+                    callback(model);
+                } else {
+                    callback(null);
+                }
+            } else {
+                var g = [];
+                for (var i = 1; i < groups.length; i++) {
+                    g.push(new Kings.Model({
+                        vertices: groups[i].vertex,
+                        textureCoords: groups[i].textureCoords,
+                        vertexNormals: groups[i].normals,
+                        texture: groups[i].texture,
+                        name: groups[i].name,
+                    }));
+                }
+                var model = new Kings.Model({
+                    vertices: groups[0].vertex,
+                    textureCoords: groups[0].textureCoords,
+                    vertexNormals: groups[0].normals,
+                    texture: groups[0].texture,
+                    name: groups[0].name,
+                    groups: g
+                });
+                callback(model);
             }
-            var model = new Kings.Model({
-                vertices: groups[0].vertex,
-                textureCoords: groups[0].textureCoords,
-                vertexNormals: groups[0].normals,
-                texture: groups[0].texture,
-                name: groups[0].name,
-                groups: g
-            });
-            callback(model);
         }
     };
 });

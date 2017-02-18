@@ -61,7 +61,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                                 self.readTextFile(completePath, function(data) {
                                     Kings.ObjLoader.loadMtl(data, mtlpath, function(materials) {
                                         self.readTextFile(path, function(data) {
-                                            Kings.ObjLoader.loadObj(data, materials, function(model) {
+                                            Kings.ObjLoader.loadObj(data, materials, getAssetName(path), function(model) {
                                                 bundle[getAssetName(path)] = model;
                                                 self.successCount++;
                                                 console.log('finally');

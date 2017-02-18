@@ -19032,7 +19032,7 @@
 	            Kings.game.player = new Kings.Player({
 	                velocity: 0.5,
 	                position: { x: 0, y: -2, z: 0 },
-	                shape: Kings.AssetBundles[0].content.HarleyDavidson,
+	                shape: Kings.AssetBundles[0].content.HarleyDavidson1,
 	                camera: Kings.game.camera
 	            });
 	            Kings.game.addElement(Kings.game.player);
@@ -26753,13 +26753,30 @@
 	        this.scale = parameters.scale;
 	        this.shape = parameters.shape || null;
 	        this.texture = parameters.texture || null;
+	        this.updates = [];
 	    };
 
 	    Kings.GameObject.prototype = {
 	        constructor: Kings.GameObject,
 
-	        update: function() {
+	        removeUpdateFunction: function(index) {
+	            this.updates.splice(index, 1);
+	        },
 
+	        addUpdateFunction: function(callback) {
+	            var f = function(){
+	                return function(){
+	                    callback();
+	                };
+	            };
+	            this.updates.push(f());
+	            return this.updates.length - 1;
+	        },
+
+	        update: function() {
+	            for (var i = 0; i < this.updates.length; i++) {
+	                this.updates[i]();
+	            }
 	        },
 
 	        draw: function() {
@@ -26844,44 +26861,138 @@
 	    var Kings = window.Kings || {};
 
 	    Kings.Player = function(parameters) {
+	        var self = this;
 	        Kings.GameObject.call(this, parameters);
+	        this.live = true;
 	        this.velocity = parameters.velocity || 0;
 	        this.camera = parameters.camera;
+	        this.turningSpeed = 5;
+	        for (var i = 0; i < this.shape.groups.length; i++) {
+	            if(this.shape.groups[i].name == 'backWheel_HarleyDavidson.007') {
+	                (function() {
+	                    var index = (i + 0);
+	                    self.shape.groups[i].offset = { x: 0, y: 0.6363, z: 0.0171 };
+	                    self.addUpdateFunction(function(){
+	                        self.shape.groups[index].rotation.x += 10 * self.velocity;
+	                    });
+	                }());
+	            }
+	            if(this.shape.groups[i].name == 'frontWheel_HarleyDavidson.006') {
+	                (function() {
+	                    var index = (i + 0);
+	                    self.shape.groups[i].offset = { x: 0, y: 0.64168, z: 3.23467 };
+	                    self.addUpdateFunction(function(){
+	                        self.shape.groups[index].rotation.x += 10 * self.velocity;
+	                    });
+	                }());
+	            }
+	        }
+	        self.trashFunction = -1;
 	    };
 
 	    Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
 
 	    Kings.Player.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
 	        this.shape.update();
-	        this.position.z += this.velocity;
-	        this.camera.position.z = this.position.z - 5;
-	        var estado = {
-	            up: 0,
-	            down: 0,
-	            left: 0,
-	            right: 0
+	        if (this.live) {
+	            this.position.z += this.velocity;
 	        }
+	        this.camera.position.z = this.position.z - 5;
+	        var moving = false;
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.UP) || Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
 	            if (Kings.keyboard.current == Kings.keyboard.keys.UP || Kings.keyboard.current == Kings.keyboard.keys.W) {
 	                this.speedUp();
+	                this.explode();
 	            }
 	        }
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.LEFT) || Kings.keyboard.isDown(Kings.keyboard.keys.A)) {
 	            if (Kings.keyboard.current == Kings.keyboard.keys.LEFT || Kings.keyboard.current == Kings.keyboard.keys.A) {
+	                moving = true;
+	                if (this.rotation.z > -20) {
+	                    this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
+	                }
 	                this.moveLeft();
 	            }
 	        }
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.DOWN) || Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
 	            if (Kings.keyboard.current == Kings.keyboard.keys.DOWN || Kings.keyboard.current == Kings.keyboard.keys.S) {
 	                this.slowDown();
+	                moving = true;
+	                if (this.rotation.x > -45) {
+	                    this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 20, 1, 2);
+	                }
+	                this.restart();
 	            }
 	        }
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.RIGHT) || Kings.keyboard.isDown(Kings.keyboard.keys.D)) {
 	            if (Kings.keyboard.current == Kings.keyboard.keys.RIGHT || Kings.keyboard.current == Kings.keyboard.keys.D) {
+	                moving = true;
+	                if (this.rotation.z < 20) {
+	                    this.rotation.z += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
+	                }
 	                this.moveRight();
 	            }
 	        }
-	    }
+	        if (!moving) {
+	            if (this.rotation.x < 0) {
+	                this.rotation.x += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 20, 1, 2);
+	            }
+	            if (this.rotation.z > 0) {
+	                this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
+	            } else if (this.rotation.z < 0) {
+	                this.rotation.z += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
+	            }
+	            if (this.rotation.z < 3 && this.rotation.z > -3) {
+	                this.rotation.z = 0;
+	            }
+	        }
+	    };
+
+	    Kings.Player.prototype.explode = function() {
+	        var self = this;
+	        if (this.live) {
+	            this.directions = [];
+	            for (var i = 0; i <= this.shape.groups.length; i++) {
+	                var dx = Math.random() < 0.5 ? 1 : -1;
+	                var dz = Math.random() < 0.5 ? 1 : -1;
+	                this.directions.push({ x: Math.random() * dx, y: 0.5, z: Math.random() * dz });
+	            }
+	            (function() {
+	                self.trashFunction = self.addUpdateFunction(function(){
+	                    if (self.position.y >= -2) {
+	                        self.position.y += self.directions[self.directions.length - 1].y - 0.05;
+	                    }
+	                    self.directions[self.directions.length - 1].y -= Math.abs(self.position.y) * 0.05;
+	                    for (var i = 0; i < self.shape.groups.length; i++) {
+	                        self.shape.groups[i].position.x += self.directions[i].x;
+	                        //self.shape.groups[i].position.y += self.directions[i].y * Math.random();
+	                        self.shape.groups[i].position.z += self.directions[i].z;
+	                        self.directions[i].y -= self.directions[i].y * 0.05;
+	                    }
+	                });
+	            }());
+	            this.live = false;
+	        }
+	    };
+
+	    Kings.Player.prototype.restart = function() {
+	        if (!this.live) {
+	            if (this.trashFunction != -1) {
+	                this.removeUpdateFunction(this.trashFunction);
+	                this.position.x = 0;
+	                this.position.y = -2;
+	                this.position.z = 0;
+	                for (var i = 0; i < this.shape.groups.length; i++) {
+	                    this.directions = [];
+	                    this.shape.groups[i].position.x = 0;
+	                    this.shape.groups[i].position.y = 0;
+	                    this.shape.groups[i].position.z = 0;
+	                }
+	            }
+	            this.live = true;
+	        }
+	    };
 
 	    Kings.Player.prototype.moveLeft = function() {
 	        this.position.x += 0.1;
@@ -26892,14 +27003,14 @@
 	    };
 
 	    Kings.Player.prototype.slowDown = function() {
-	        if (this.velocity > 0.3) {
-	            this.velocity -= 0.1;
+	        if (this.velocity > 0.5) {
+	            this.velocity -= 0.05;
 	        }
 	    };
 
 	    Kings.Player.prototype.speedUp = function() {
 	        if (this.velocity < 1.0) {
-	            this.velocity += 0.1;
+	            this.velocity += 0.05;
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -26972,7 +27083,7 @@
 	                                self.readTextFile(completePath, function(data) {
 	                                    Kings.ObjLoader.loadMtl(data, mtlpath, function(materials) {
 	                                        self.readTextFile(path, function(data) {
-	                                            Kings.ObjLoader.loadObj(data, materials, function(model) {
+	                                            Kings.ObjLoader.loadObj(data, materials, getAssetName(path), function(model) {
 	                                                bundle[getAssetName(path)] = model;
 	                                                self.successCount++;
 	                                                console.log('finally');
@@ -27069,7 +27180,7 @@
 	            }
 	        },
 
-	        loadObj: function(input, materials, callback) {
+	        loadObj: function(input, materials, mainMesh, callback) {
 	            var lines = input.split(/\r?\n/);
 	            var step = 'start';
 	            var groups = [];
@@ -27089,13 +27200,12 @@
 	                            case 'usemtl': {
 	                                for (var j = 0; j < materials.length; j++) {
 	                                    if (materials[j].name == data[1]) {
-	                                        groups[groups.length - 1].name = materials[j].name;
 	                                        groups[groups.length - 1].texture = materials[j].texture;
 	                                    }
 	                                }
 	                                break;
 	                            }
-	                            case 'v': {
+	                            case 'o': {
 	                                if (step != 'start') {
 	                                    groups.push({
 	                                        faces: [],
@@ -27103,6 +27213,10 @@
 	                                    });
 	                                    step = 'start';
 	                                }
+	                                groups[groups.length - 1].name = data[1];
+	                                break;
+	                            }
+	                            case 'v': {
 	                                vertex.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
 	                                break;
 	                            }
@@ -27183,25 +27297,59 @@
 	                groups[i].normals = n;
 	                groups[i].textureCoords = t;
 	            }
-	            var g = [];
-	            for (var i = 1; i < groups.length; i++) {
-	                g.push(new Kings.Model({
-	                    vertices: groups[i].vertex,
-	                    textureCoords: groups[i].textureCoords,
-	                    vertexNormals: groups[i].normals,
-	                    texture: groups[i].texture,
-	                    name: groups[i].name,
-	                }));
+	            if (mainMesh != null) {
+	                var index = 0;
+	                for (var i = 0; i < groups.length; i++) {
+	                    if (groups[i].name == mainMesh) {
+	                        index = i;
+	                    }
+	                }
+	                if (index != 0) {
+	                    var g = [];
+	                    for (var i = 0; i < groups.length; i++) {
+	                        if (i != index) {
+	                            g.push(new Kings.Model({
+	                                vertices: groups[i].vertex,
+	                                textureCoords: groups[i].textureCoords,
+	                                vertexNormals: groups[i].normals,
+	                                texture: groups[i].texture,
+	                                name: groups[i].name,
+	                            }));
+	                        }
+	                    }
+	                    var model = new Kings.Model({
+	                        vertices: groups[index].vertex,
+	                        textureCoords: groups[index].textureCoords,
+	                        vertexNormals: groups[index].normals,
+	                        texture: groups[index].texture,
+	                        name: groups[index].name,
+	                        groups: g
+	                    });
+	                    callback(model);
+	                } else {
+	                    callback(null);
+	                }
+	            } else {
+	                var g = [];
+	                for (var i = 1; i < groups.length; i++) {
+	                    g.push(new Kings.Model({
+	                        vertices: groups[i].vertex,
+	                        textureCoords: groups[i].textureCoords,
+	                        vertexNormals: groups[i].normals,
+	                        texture: groups[i].texture,
+	                        name: groups[i].name,
+	                    }));
+	                }
+	                var model = new Kings.Model({
+	                    vertices: groups[0].vertex,
+	                    textureCoords: groups[0].textureCoords,
+	                    vertexNormals: groups[0].normals,
+	                    texture: groups[0].texture,
+	                    name: groups[0].name,
+	                    groups: g
+	                });
+	                callback(model);
 	            }
-	            var model = new Kings.Model({
-	                vertices: groups[0].vertex,
-	                textureCoords: groups[0].textureCoords,
-	                vertexNormals: groups[0].normals,
-	                texture: groups[0].texture,
-	                name: groups[0].name,
-	                groups: g
-	            });
-	            callback(model);
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -27220,6 +27368,7 @@
 	        this.texture = parameters.texture || null;
 	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
 	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.offset = parameters.offset || { x: 0, y: 0, z: 0 };
 	        if (this.texture != null) {
 	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
 	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
@@ -27274,9 +27423,11 @@
 	        draw: function() {
 	            Kings.GL.mvPushMatrix();
 	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvTranslate(this.offset);
 	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
 	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
 	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+	            Kings.GL.mvTranslate({ x: -this.offset.x, y: -this.offset.y, z: -this.offset.z} );
 
 	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
 	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);

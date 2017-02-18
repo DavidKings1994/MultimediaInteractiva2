@@ -7,13 +7,30 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.scale = parameters.scale;
         this.shape = parameters.shape || null;
         this.texture = parameters.texture || null;
+        this.updates = [];
     };
 
     Kings.GameObject.prototype = {
         constructor: Kings.GameObject,
 
-        update: function() {
+        removeUpdateFunction: function(index) {
+            this.updates.splice(index, 1);
+        },
 
+        addUpdateFunction: function(callback) {
+            var f = function(){
+                return function(){
+                    callback();
+                };
+            };
+            this.updates.push(f());
+            return this.updates.length - 1;
+        },
+
+        update: function() {
+            for (var i = 0; i < this.updates.length; i++) {
+                this.updates[i]();
+            }
         },
 
         draw: function() {

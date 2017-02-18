@@ -7,6 +7,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.texture = parameters.texture || null;
         this.position = parameters.position || { x: 0, y: 0, z: 0 };
         this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+        this.offset = parameters.offset || { x: 0, y: 0, z: 0 };
         if (this.texture != null) {
             this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
             gl.enableVertexAttribArray(this.vertexPositionAttribute);
@@ -61,9 +62,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         draw: function() {
             Kings.GL.mvPushMatrix();
             Kings.GL.mvTranslate(this.position);
+            Kings.GL.mvTranslate(this.offset);
             Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
             Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
             Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+            Kings.GL.mvTranslate({ x: -this.offset.x, y: -this.offset.y, z: -this.offset.z} );
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
             gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);

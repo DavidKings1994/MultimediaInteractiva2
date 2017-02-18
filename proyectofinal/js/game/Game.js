@@ -46,7 +46,7 @@
             Kings.game.player = new Kings.Player({
                 velocity: 0.5,
                 position: { x: 0, y: -2, z: 0 },
-                shape: Kings.AssetBundles[0].content.HarleyDavidson,
+                shape: Kings.AssetBundles[0].content.HarleyDavidson1,
                 camera: Kings.game.camera
             });
             Kings.game.addElement(Kings.game.player);
