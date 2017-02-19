@@ -44,7 +44,7 @@
         Kings.LoadManager.loadBundle('core', function() {
             console.log(Kings.AssetBundles[0]);
             Kings.game.player = new Kings.Player({
-                velocity: 0.5,
+                velocity: 0.7,
                 position: { x: 0, y: -2, z: 0 },
                 shape: Kings.AssetBundles[0].content.HarleyDavidson1,
                 camera: Kings.game.camera

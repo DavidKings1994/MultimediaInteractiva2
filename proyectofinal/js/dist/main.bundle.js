@@ -19030,7 +19030,7 @@
 	        Kings.LoadManager.loadBundle('core', function() {
 	            console.log(Kings.AssetBundles[0]);
 	            Kings.game.player = new Kings.Player({
-	                velocity: 0.5,
+	                velocity: 0.7,
 	                position: { x: 0, y: -2, z: 0 },
 	                shape: Kings.AssetBundles[0].content.HarleyDavidson1,
 	                camera: Kings.game.camera
@@ -26864,16 +26864,22 @@
 	        var self = this;
 	        Kings.GameObject.call(this, parameters);
 	        this.live = true;
-	        this.velocity = parameters.velocity || 0;
+	        this.velocity = (parameters.velocity + 0) || 0;
+	        this.baseVelocity = (parameters.velocity + 0) || 0;
 	        this.camera = parameters.camera;
 	        this.turningSpeed = 5;
+	        this.jumping = false;
+	        this.onFloor = true;
+	        this.jumpHeightFix = 2;
+	        this.DPress = 0;
+	        this.APress = 0;
 	        for (var i = 0; i < this.shape.groups.length; i++) {
 	            if(this.shape.groups[i].name == 'backWheel_HarleyDavidson.007') {
 	                (function() {
 	                    var index = (i + 0);
 	                    self.shape.groups[i].offset = { x: 0, y: 0.6363, z: 0.0171 };
 	                    self.addUpdateFunction(function(){
-	                        self.shape.groups[index].rotation.x += 10 * self.velocity;
+	                        self.shape.groups[index].rotation.x += 25 * self.velocity;
 	                    });
 	                }());
 	            }
@@ -26882,7 +26888,7 @@
 	                    var index = (i + 0);
 	                    self.shape.groups[i].offset = { x: 0, y: 0.64168, z: 3.23467 };
 	                    self.addUpdateFunction(function(){
-	                        self.shape.groups[index].rotation.x += 10 * self.velocity;
+	                        self.shape.groups[index].rotation.x += 25 * self.velocity;
 	                    });
 	                }());
 	            }
@@ -26900,44 +26906,74 @@
 	        }
 	        this.camera.position.z = this.position.z - 5;
 	        var moving = false;
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.UP) || Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-	            if (Kings.keyboard.current == Kings.keyboard.keys.UP || Kings.keyboard.current == Kings.keyboard.keys.W) {
+	        var backflip = false;
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
+	            this.restart();
+	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.E)) {
+	            this.explode();
+	        }
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+	            if (Kings.keyboard.getLastKeyPressed() == Kings.keyboard.keys.W) {
 	                this.speedUp();
-	                this.explode();
 	            }
 	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.LEFT) || Kings.keyboard.isDown(Kings.keyboard.keys.A)) {
-	            if (Kings.keyboard.current == Kings.keyboard.keys.LEFT || Kings.keyboard.current == Kings.keyboard.keys.A) {
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+	            if (!Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+	                this.slowDown();
+	                backflip = true;
+	                if (this.rotation.x > -45) {
+	                    this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 1, 2);
+	                }
+	            }
+	        }
+	        var direction = Kings.keyboard.firstKeyPressed(Kings.keyboard.keys.A, Kings.keyboard.keys.D);
+	        if (direction != null) {
+	            if (direction == Kings.keyboard.keys.A) {
 	                moving = true;
 	                if (this.rotation.z > -20) {
 	                    this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
 	                }
-	                this.moveLeft();
-	            }
-	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.DOWN) || Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
-	            if (Kings.keyboard.current == Kings.keyboard.keys.DOWN || Kings.keyboard.current == Kings.keyboard.keys.S) {
-	                this.slowDown();
-	                moving = true;
-	                if (this.rotation.x > -45) {
-	                    this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 20, 1, 2);
-	                }
-	                this.restart();
-	            }
-	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.RIGHT) || Kings.keyboard.isDown(Kings.keyboard.keys.D)) {
-	            if (Kings.keyboard.current == Kings.keyboard.keys.RIGHT || Kings.keyboard.current == Kings.keyboard.keys.D) {
+	                this.moveA();
+	            } else if (direction == Kings.keyboard.keys.D) {
 	                moving = true;
 	                if (this.rotation.z < 20) {
 	                    this.rotation.z += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
 	                }
-	                this.moveRight();
+	                this.moveD();
 	            }
 	        }
-	        if (!moving) {
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.SPACE)) {
+	            if (Kings.keyboard.getLastKeyPressed() == Kings.keyboard.keys.SPACE) {
+	                if (!this.jumping && this.onFloor) {
+	                    this.jumping = true;
+	                    this.onFloor = false;
+	                }
+	            }
+	        }
+
+	        if (this.live) {
+	            if (this.jumping) {
+	                if (this.position.y < -0.5) {
+	                    this.position.y += Math.abs(this.position.y) * 0.1;
+	                } else {
+	                    this.jumping = false;
+	                }
+	            } else if (this.position.y > -2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2) && !this.jumping && !this.onFloor) {
+	                this.position.y -= Math.abs(this.position.y) * 0.1;
+	            } else {
+	                this.position.y = (-2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2));
+	                this.onFloor = true;
+	            }
+	        }
+
+	        if(!backflip) {
 	            if (this.rotation.x < 0) {
 	                this.rotation.x += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 20, 1, 2);
 	            }
+	        }
+
+	        if (!moving) {
 	            if (this.rotation.z > 0) {
 	                this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
 	            } else if (this.rotation.z < 0) {
@@ -26945,6 +26981,14 @@
 	            }
 	            if (this.rotation.z < 3 && this.rotation.z > -3) {
 	                this.rotation.z = 0;
+	            }
+	        }
+
+	        if (!Kings.keyboard.isDown(Kings.keyboard.keys.S) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+	            if (this.velocity > this.baseVelocity) {
+	                this.velocity -= 0.05;
+	            } else if (this.velocity < this.baseVelocity) {
+	                this.velocity += 0.05;
 	            }
 	        }
 	    };
@@ -26966,7 +27010,6 @@
 	                    self.directions[self.directions.length - 1].y -= Math.abs(self.position.y) * 0.05;
 	                    for (var i = 0; i < self.shape.groups.length; i++) {
 	                        self.shape.groups[i].position.x += self.directions[i].x;
-	                        //self.shape.groups[i].position.y += self.directions[i].y * Math.random();
 	                        self.shape.groups[i].position.z += self.directions[i].z;
 	                        self.directions[i].y -= self.directions[i].y * 0.05;
 	                    }
@@ -26994,16 +27037,16 @@
 	        }
 	    };
 
-	    Kings.Player.prototype.moveLeft = function() {
+	    Kings.Player.prototype.moveA = function() {
 	        this.position.x += 0.1;
 	    };
 
-	    Kings.Player.prototype.moveRight = function() {
+	    Kings.Player.prototype.moveD = function() {
 	        this.position.x -= 0.1;
 	    };
 
 	    Kings.Player.prototype.slowDown = function() {
-	        if (this.velocity > 0.5) {
+	        if (this.velocity > 0.3) {
 	            this.velocity -= 0.05;
 	        }
 	    };
@@ -27080,13 +27123,16 @@
 	                                var mtlpath = path.substring(0, path.lastIndexOf('/') + 1);
 	                                var completePath = mtlpath + getAssetName(path);
 	                                completePath += '.mtl';
+	                                var startDate = new Date();
 	                                self.readTextFile(completePath, function(data) {
 	                                    Kings.ObjLoader.loadMtl(data, mtlpath, function(materials) {
 	                                        self.readTextFile(path, function(data) {
 	                                            Kings.ObjLoader.loadObj(data, materials, getAssetName(path), function(model) {
 	                                                bundle[getAssetName(path)] = model;
 	                                                self.successCount++;
-	                                                console.log('finally');
+	                                                var endDate   = new Date();
+	                                                var seconds = (endDate.getTime() - startDate.getTime()) / 1000;
+	                                                console.log('loaded model: ' + getAssetName(path) + ' in ' + seconds + 's');
 	                                            });
 	                                        });
 	                                    });
@@ -27156,7 +27202,6 @@
 	                            (function(){
 	                                var num = onQueue;
 	                                Kings.Texture.loadTexture(path + data[1], function(texture) {
-	                                    console.log(materials[num].name);
 	                                    materials[num].texture = texture;
 	                                    done++;
 	                                    if (done == onQueue) {
@@ -27192,65 +27237,61 @@
 	            var normals = [];
 	            var textureCoords = [];
 	            for (var i = 0; i < lines.length; i++) {
-	                if(lines[i].charAt(0) != '#'){
-	                    var data = lines[i].split(' ');
-	                    console.log(data);
-	                    (function(){
-	                        switch (data[0]) {
-	                            case 'usemtl': {
-	                                for (var j = 0; j < materials.length; j++) {
-	                                    if (materials[j].name == data[1]) {
-	                                        groups[groups.length - 1].texture = materials[j].texture;
-	                                    }
+	                var data = lines[i].split(' ');
+	                (function(){
+	                    switch (data[0]) {
+	                        case 'usemtl': {
+	                            for (var j = 0; j < materials.length; j++) {
+	                                if (materials[j].name == data[1]) {
+	                                    groups[groups.length - 1].texture = materials[j].texture;
 	                                }
-	                                break;
 	                            }
-	                            case 'o': {
-	                                if (step != 'start') {
-	                                    groups.push({
-	                                        faces: [],
-	                                        texture: null
-	                                    });
-	                                    step = 'start';
-	                                }
-	                                groups[groups.length - 1].name = data[1];
-	                                break;
-	                            }
-	                            case 'v': {
-	                                vertex.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
-	                                break;
-	                            }
-	                            case 'vt': {
-	                                textureCoords.push(parseFloat(data[1]), parseFloat(data[2]));
-	                                break;
-	                            }
-	                            case 'vn': {
-	                                normals.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
-	                                break;
-	                            }
-	                            case 'f': {
-	                                step = 'end';
-	                                var v = [];
-	                                var t = [];
-	                                var n = [];
-	                                for (var k = 1; k < data.length; k++) {
-	                                    var indices = data[k].split('/');
-	                                    v.push(parseFloat(indices[0]));
-	                                    t.push(parseFloat(indices[1]));
-	                                    n.push(parseFloat(indices[2]));
-	                                }
-	                                groups[groups.length - 1].faces.push(new Kings.Face({
-	                                    vertex: v,
-	                                    normal: n,
-	                                    textureCoord: t
-	                                }));
-	                                break;
-	                            }
+	                            break;
 	                        }
-	                    }());
-	                }
+	                        case 'o': {
+	                            if (step != 'start') {
+	                                groups.push({
+	                                    faces: [],
+	                                    texture: null
+	                                });
+	                                step = 'start';
+	                            }
+	                            groups[groups.length - 1].name = data[1];
+	                            break;
+	                        }
+	                        case 'v': {
+	                            vertex.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
+	                            break;
+	                        }
+	                        case 'vt': {
+	                            textureCoords.push(parseFloat(data[1]), parseFloat(data[2]));
+	                            break;
+	                        }
+	                        case 'vn': {
+	                            normals.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
+	                            break;
+	                        }
+	                        case 'f': {
+	                            step = 'end';
+	                            var v = [];
+	                            var t = [];
+	                            var n = [];
+	                            for (var k = 1; k < data.length; k++) {
+	                                var indices = data[k].split('/');
+	                                v.push(parseFloat(indices[0]));
+	                                t.push(parseFloat(indices[1]));
+	                                n.push(parseFloat(indices[2]));
+	                            }
+	                            groups[groups.length - 1].faces.push(new Kings.Face({
+	                                vertex: v,
+	                                normal: n,
+	                                textureCoord: t
+	                            }));
+	                            break;
+	                        }
+	                    }
+	                }());
 	            }
-	            console.log(groups);
 	            for (var i = 0; i < groups.length; i++) {
 	                var v = [];
 	                var t = [];
@@ -27514,8 +27555,6 @@
 	    Kings.Keyboard = function(mode) {
 	        var self = this;
 	        this.pressedKeys = {};
-	        this.current = null;
-	        this.past = null;
 	        this.keys = {
 	            BACKSPACE: 8,
 	            TAB:       9,
@@ -27536,6 +27575,7 @@
 	            A:        65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
 	            TILDA:    192
 	        };
+	        this.stake = [];
 	        document.addEventListener( 'keydown', function(evt) { self.onKeyDown(evt) }, false );
 	        document.addEventListener( 'keyup', function(evt) { self.onKeyUp(evt) }, false );
 	    };
@@ -27549,16 +27589,40 @@
 
 	        onKeyDown: function(event) {
 	            this.pressedKeys[event.keyCode] = true;
-	            this.past = this.current;
-	            this.current = event.keyCode;
+	            this.stake.unshift(event.keyCode);
+	            if (this.stake.length > 10) {
+	                this.stake.pop();
+	            }
 	        },
 
 	        onKeyUp: function(event) {
 	            delete this.pressedKeys[event.keyCode];
-	            if (this.current == event.keyCode) {
-	                this.current = this.past;
-	            }
+	            this.stake.unshift(this.getLastKeyPressed());
 	        },
+
+	        getLastKeyPressed: function() {
+	            for (var i = 0; i < this.stake.length; i++) {
+	                if (this.pressedKeys[this.stake[i]]) {
+	                    return this.stake[i];
+	                }
+	            }
+	            return null;
+	        },
+
+	        firstKeyPressed: function(key1, key2) {
+	            for (var i = 0; i < this.stake.length; i++) {
+	                if (this.stake[i] == key1) {
+	                    if (this.pressedKeys[this.stake[i]]) {
+	                        return this.stake[i];
+	                    }
+	                } else if (this.stake[i] == key2) {
+	                    if (this.pressedKeys[this.stake[i]]) {
+	                        return this.stake[i];
+	                    }
+	                }
+	            }
+	            return null;
+	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 

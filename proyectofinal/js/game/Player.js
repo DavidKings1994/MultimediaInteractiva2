@@ -5,16 +5,22 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         var self = this;
         Kings.GameObject.call(this, parameters);
         this.live = true;
-        this.velocity = parameters.velocity || 0;
+        this.velocity = (parameters.velocity + 0) || 0;
+        this.baseVelocity = (parameters.velocity + 0) || 0;
         this.camera = parameters.camera;
         this.turningSpeed = 5;
+        this.jumping = false;
+        this.onFloor = true;
+        this.jumpHeightFix = 2;
+        this.DPress = 0;
+        this.APress = 0;
         for (var i = 0; i < this.shape.groups.length; i++) {
             if(this.shape.groups[i].name == 'backWheel_HarleyDavidson.007') {
                 (function() {
                     var index = (i + 0);
                     self.shape.groups[i].offset = { x: 0, y: 0.6363, z: 0.0171 };
                     self.addUpdateFunction(function(){
-                        self.shape.groups[index].rotation.x += 10 * self.velocity;
+                        self.shape.groups[index].rotation.x += 25 * self.velocity;
                     });
                 }());
             }
@@ -23,7 +29,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     var index = (i + 0);
                     self.shape.groups[i].offset = { x: 0, y: 0.64168, z: 3.23467 };
                     self.addUpdateFunction(function(){
-                        self.shape.groups[index].rotation.x += 10 * self.velocity;
+                        self.shape.groups[index].rotation.x += 25 * self.velocity;
                     });
                 }());
             }
@@ -41,44 +47,74 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
         this.camera.position.z = this.position.z - 5;
         var moving = false;
-        if (Kings.keyboard.isDown(Kings.keyboard.keys.UP) || Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-            if (Kings.keyboard.current == Kings.keyboard.keys.UP || Kings.keyboard.current == Kings.keyboard.keys.W) {
+        var backflip = false;
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
+            this.restart();
+        }
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.E)) {
+            this.explode();
+        }
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+            if (Kings.keyboard.getLastKeyPressed() == Kings.keyboard.keys.W) {
                 this.speedUp();
-                this.explode();
             }
         }
-        if (Kings.keyboard.isDown(Kings.keyboard.keys.LEFT) || Kings.keyboard.isDown(Kings.keyboard.keys.A)) {
-            if (Kings.keyboard.current == Kings.keyboard.keys.LEFT || Kings.keyboard.current == Kings.keyboard.keys.A) {
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+            if (!Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+                this.slowDown();
+                backflip = true;
+                if (this.rotation.x > -45) {
+                    this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 1, 2);
+                }
+            }
+        }
+        var direction = Kings.keyboard.firstKeyPressed(Kings.keyboard.keys.A, Kings.keyboard.keys.D);
+        if (direction != null) {
+            if (direction == Kings.keyboard.keys.A) {
                 moving = true;
                 if (this.rotation.z > -20) {
                     this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
                 }
-                this.moveLeft();
-            }
-        }
-        if (Kings.keyboard.isDown(Kings.keyboard.keys.DOWN) || Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
-            if (Kings.keyboard.current == Kings.keyboard.keys.DOWN || Kings.keyboard.current == Kings.keyboard.keys.S) {
-                this.slowDown();
-                moving = true;
-                if (this.rotation.x > -45) {
-                    this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 20, 1, 2);
-                }
-                this.restart();
-            }
-        }
-        if (Kings.keyboard.isDown(Kings.keyboard.keys.RIGHT) || Kings.keyboard.isDown(Kings.keyboard.keys.D)) {
-            if (Kings.keyboard.current == Kings.keyboard.keys.RIGHT || Kings.keyboard.current == Kings.keyboard.keys.D) {
+                this.moveA();
+            } else if (direction == Kings.keyboard.keys.D) {
                 moving = true;
                 if (this.rotation.z < 20) {
                     this.rotation.z += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
                 }
-                this.moveRight();
+                this.moveD();
             }
         }
-        if (!moving) {
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.SPACE)) {
+            if (Kings.keyboard.getLastKeyPressed() == Kings.keyboard.keys.SPACE) {
+                if (!this.jumping && this.onFloor) {
+                    this.jumping = true;
+                    this.onFloor = false;
+                }
+            }
+        }
+
+        if (this.live) {
+            if (this.jumping) {
+                if (this.position.y < -0.5) {
+                    this.position.y += Math.abs(this.position.y) * 0.1;
+                } else {
+                    this.jumping = false;
+                }
+            } else if (this.position.y > -2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2) && !this.jumping && !this.onFloor) {
+                this.position.y -= Math.abs(this.position.y) * 0.1;
+            } else {
+                this.position.y = (-2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2));
+                this.onFloor = true;
+            }
+        }
+
+        if(!backflip) {
             if (this.rotation.x < 0) {
                 this.rotation.x += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 20, 1, 2);
             }
+        }
+
+        if (!moving) {
             if (this.rotation.z > 0) {
                 this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
             } else if (this.rotation.z < 0) {
@@ -86,6 +122,14 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             }
             if (this.rotation.z < 3 && this.rotation.z > -3) {
                 this.rotation.z = 0;
+            }
+        }
+
+        if (!Kings.keyboard.isDown(Kings.keyboard.keys.S) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+            if (this.velocity > this.baseVelocity) {
+                this.velocity -= 0.05;
+            } else if (this.velocity < this.baseVelocity) {
+                this.velocity += 0.05;
             }
         }
     };
@@ -107,7 +151,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     self.directions[self.directions.length - 1].y -= Math.abs(self.position.y) * 0.05;
                     for (var i = 0; i < self.shape.groups.length; i++) {
                         self.shape.groups[i].position.x += self.directions[i].x;
-                        //self.shape.groups[i].position.y += self.directions[i].y * Math.random();
                         self.shape.groups[i].position.z += self.directions[i].z;
                         self.directions[i].y -= self.directions[i].y * 0.05;
                     }
@@ -135,16 +178,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
     };
 
-    Kings.Player.prototype.moveLeft = function() {
+    Kings.Player.prototype.moveA = function() {
         this.position.x += 0.1;
     };
 
-    Kings.Player.prototype.moveRight = function() {
+    Kings.Player.prototype.moveD = function() {
         this.position.x -= 0.1;
     };
 
     Kings.Player.prototype.slowDown = function() {
-        if (this.velocity > 0.5) {
+        if (this.velocity > 0.3) {
             this.velocity -= 0.05;
         }
     };

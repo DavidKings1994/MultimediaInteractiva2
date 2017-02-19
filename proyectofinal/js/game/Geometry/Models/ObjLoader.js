@@ -19,7 +19,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                             (function(){
                                 var num = onQueue;
                                 Kings.Texture.loadTexture(path + data[1], function(texture) {
-                                    console.log(materials[num].name);
                                     materials[num].texture = texture;
                                     done++;
                                     if (done == onQueue) {
@@ -55,65 +54,61 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             var normals = [];
             var textureCoords = [];
             for (var i = 0; i < lines.length; i++) {
-                if(lines[i].charAt(0) != '#'){
-                    var data = lines[i].split(' ');
-                    console.log(data);
-                    (function(){
-                        switch (data[0]) {
-                            case 'usemtl': {
-                                for (var j = 0; j < materials.length; j++) {
-                                    if (materials[j].name == data[1]) {
-                                        groups[groups.length - 1].texture = materials[j].texture;
-                                    }
+                var data = lines[i].split(' ');
+                (function(){
+                    switch (data[0]) {
+                        case 'usemtl': {
+                            for (var j = 0; j < materials.length; j++) {
+                                if (materials[j].name == data[1]) {
+                                    groups[groups.length - 1].texture = materials[j].texture;
                                 }
-                                break;
                             }
-                            case 'o': {
-                                if (step != 'start') {
-                                    groups.push({
-                                        faces: [],
-                                        texture: null
-                                    });
-                                    step = 'start';
-                                }
-                                groups[groups.length - 1].name = data[1];
-                                break;
-                            }
-                            case 'v': {
-                                vertex.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
-                                break;
-                            }
-                            case 'vt': {
-                                textureCoords.push(parseFloat(data[1]), parseFloat(data[2]));
-                                break;
-                            }
-                            case 'vn': {
-                                normals.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
-                                break;
-                            }
-                            case 'f': {
-                                step = 'end';
-                                var v = [];
-                                var t = [];
-                                var n = [];
-                                for (var k = 1; k < data.length; k++) {
-                                    var indices = data[k].split('/');
-                                    v.push(parseFloat(indices[0]));
-                                    t.push(parseFloat(indices[1]));
-                                    n.push(parseFloat(indices[2]));
-                                }
-                                groups[groups.length - 1].faces.push(new Kings.Face({
-                                    vertex: v,
-                                    normal: n,
-                                    textureCoord: t
-                                }));
-                                break;
-                            }
+                            break;
                         }
-                    }());
-                }
+                        case 'o': {
+                            if (step != 'start') {
+                                groups.push({
+                                    faces: [],
+                                    texture: null
+                                });
+                                step = 'start';
+                            }
+                            groups[groups.length - 1].name = data[1];
+                            break;
+                        }
+                        case 'v': {
+                            vertex.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
+                            break;
+                        }
+                        case 'vt': {
+                            textureCoords.push(parseFloat(data[1]), parseFloat(data[2]));
+                            break;
+                        }
+                        case 'vn': {
+                            normals.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
+                            break;
+                        }
+                        case 'f': {
+                            step = 'end';
+                            var v = [];
+                            var t = [];
+                            var n = [];
+                            for (var k = 1; k < data.length; k++) {
+                                var indices = data[k].split('/');
+                                v.push(parseFloat(indices[0]));
+                                t.push(parseFloat(indices[1]));
+                                n.push(parseFloat(indices[2]));
+                            }
+                            groups[groups.length - 1].faces.push(new Kings.Face({
+                                vertex: v,
+                                normal: n,
+                                textureCoord: t
+                            }));
+                            break;
+                        }
+                    }
+                }());
             }
-            console.log(groups);
             for (var i = 0; i < groups.length; i++) {
                 var v = [];
                 var t = [];

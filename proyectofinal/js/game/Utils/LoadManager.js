@@ -58,13 +58,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                                 var mtlpath = path.substring(0, path.lastIndexOf('/') + 1);
                                 var completePath = mtlpath + getAssetName(path);
                                 completePath += '.mtl';
+                                var startDate = new Date();
                                 self.readTextFile(completePath, function(data) {
                                     Kings.ObjLoader.loadMtl(data, mtlpath, function(materials) {
                                         self.readTextFile(path, function(data) {
                                             Kings.ObjLoader.loadObj(data, materials, getAssetName(path), function(model) {
                                                 bundle[getAssetName(path)] = model;
                                                 self.successCount++;
-                                                console.log('finally');
+                                                var endDate   = new Date();
+                                                var seconds = (endDate.getTime() - startDate.getTime()) / 1000;
+                                                console.log('loaded model: ' + getAssetName(path) + ' in ' + seconds + 's');
                                             });
                                         });
                                     });
