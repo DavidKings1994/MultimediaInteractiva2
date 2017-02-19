@@ -19042,20 +19042,27 @@
 	            var road = new Kings.Road({
 	                texture: Kings.AssetBundles[0].content.road,
 	                position: { x: 0, y: -2, z: 0},
-	                sectionSize: 4,
+	                sectionSize: 6,
 	                numberOfSections: 10,
 	                update: function() {
 	                    road.locatePlayer(Kings.game.player.position);
-	                    road.terrainRight.position.z = Kings.game.player.position.z + 22;
-	                    road.terrainLeft.position.z = Kings.game.player.position.z + 22;
+	                    if (Kings.game.player.live) {
+	                        road.terrainRight.pase = Kings.game.player.velocity * 0.2;
+	                        road.terrainLeft.pase = Kings.game.player.velocity * 0.2;
+	                    } else {
+	                        road.terrainRight.pase = 0;
+	                        road.terrainLeft.pase = 0;
+	                    }
+	                    road.terrainRight.position.z = Kings.game.player.position.z + 35;
+	                    road.terrainLeft.position.z = Kings.game.player.position.z + 35;
 	                }
 	            })
 	            Kings.game.addElement(road);
 
 	            // var barrier = new Kings.GameObject({
 	            //     position: { x: 0, y: -2, z: 0 },
-	            //     rotation: { x: 0, y: -180, z: 0 },
-	            //     shape: Kings.AssetBundles[0].content.barriere
+	            //     rotation: { x: 0, y: 0, z: 0 },
+	            //     shape: Kings.AssetBundles[0].content.oildrum
 	            // });
 	            // barrier.addUpdateFunction(function() {
 	            //     barrier.position.z = Kings.game.player.position.z + 5;
@@ -19075,7 +19082,7 @@
 	            // var barrier3 = new Kings.GameObject({
 	            //     position: { x: -3, y: -2, z: 0 },
 	            //     rotation: { x: 0, y: -180, z: 0 },
-	            //     shape: Kings.AssetBundles[0].content.barriere
+	            //     shape: Kings.AssetBundles[0].content.cone
 	            // });
 	            // barrier3.addUpdateFunction(function() {
 	            //     barrier3.position.z = Kings.game.player.position.z + 5;
@@ -27054,15 +27061,16 @@
 	                            self.shape.groups[i].position.z += self.directions[i].z;
 	                            self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
 	                        }
-	                    } else {
-	                        self.directions[0].y -= Math.abs(self.position.y) * 0.05;
-	                        for (var i = 0; i < self.shape.groups.length; i++) {
-	                            self.shape.groups[i].position.x += self.directions[i].x;
-	                            self.shape.groups[i].position.y += self.directions[i].y;
-	                            self.shape.groups[i].position.z += self.directions[i].z;
-	                            self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
-	                        }
 	                    }
+	                    // else {
+	                    //     self.directions[0].y -= Math.abs(self.position.y) * 0.05;
+	                    //     for (var i = 0; i < self.shape.groups.length; i++) {
+	                    //         self.shape.groups[i].position.x += self.directions[i].x;
+	                    //         self.shape.groups[i].position.y += self.directions[i].y;
+	                    //         self.shape.groups[i].position.z += self.directions[i].z;
+	                    //         self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
+	                    //     }
+	                    // }
 	                });
 	            }());
 	            this.live = false;
@@ -27158,6 +27166,7 @@
 	                                texture.image.addEventListener("load", function() {
 	                                    self.successCount++;
 	                                    bundle[getAssetName(path)] = texture;
+	                                    console.log('loaded texture: ' + getAssetName(path));
 	                                    if (self.isDone()) {
 	                                        Kings.AssetBundles.push({
 	                                            name: name,
@@ -27168,6 +27177,7 @@
 	                                }, false);
 	                                texture.image.addEventListener("error", function() {
 	                                    self.errorCount++;
+	                                    console.log('error texture: ' + getAssetName(path));
 	                                    if (self.isDone()) {
 	                                        Kings.AssetBundles.push({
 	                                            name: name,
@@ -27209,17 +27219,16 @@
 	                            case 'wav':
 	                            case 'mp3': {
 	                                var audio = new Audio(path);
-	                                audio.addEventListener('canplaythrough', function() {
-	                                   bundle[getAssetName(path)] = audio;
-	                                   self.successCount++;
-	                                   if (self.isDone()) {
-	                                       Kings.AssetBundles.push({
-	                                           name: name,
-	                                           content: bundle
-	                                       });
-	                                       callback();
-	                                   }
-	                                }, false);
+	                                bundle[getAssetName(path)] = audio;
+	                                console.log('loaded audio: ' + getAssetName(path));
+	                                self.successCount++;
+	                                if (self.isDone()) {
+	                                    Kings.AssetBundles.push({
+	                                        name: name,
+	                                        content: bundle
+	                                    });
+	                                    callback();
+	                                }
 	                                break;
 	                            }
 	                        }
@@ -27759,22 +27768,26 @@
 	            }
 	        }
 	        this.terrainLeft = new Kings.Terrain({
-	            position: { x: 23, y: -2.0, z: 0},
+	            position: { x: 16, y: this.position.y, z: 0},
 	            rotation: { x: 90, y: 0, z: 0},
-	            texture: Kings.AssetBundles[0].content.lava,
-	            width: 40.0,
-	            height: 40.0,
+	            texture: Kings.AssetBundles[0].content.ground2,
+	            width: 20.0,
+	            height: 80.0,
 	            cols: 10.0,
-	            rows: 10.0
+	            rows: 10.0,
+	            maxHeight: 10,
+	            staticEdge: 'bottom'
 	        });
 	        this.terrainRight = new Kings.Terrain({
-	            position: { x: -23, y: -2.0, z: 0},
+	            position: { x: -16, y: this.position.y, z: 0},
 	            rotation: { x: 90, y: 0, z: 0},
-	            texture: Kings.AssetBundles[0].content.lava,
-	            width: 40.0,
-	            height: 40.0,
+	            texture: Kings.AssetBundles[0].content.ground2,
+	            width: 20.0,
+	            height: 80.0,
 	            cols: 10.0,
-	            rows: 10.0
+	            rows: 10.0,
+	            maxHeight: 10,
+	            staticEdge: 'top'
 	        });
 	    };
 
@@ -27810,10 +27823,11 @@
 	    Kings.Road.prototype.locatePlayer = function(v) {
 	        for (var i = 0; i < this.sections.length; i++) {
 	            if(
+	                // (
+	                //     v.x > (this.sections[i].position.x - this.sectionSize) &&
+	                //     v.x < (this.sections[i].position.x + this.sectionSize)
+	                // ) &&
 	                (
-	                    v.x > (this.sections[i].position.x - this.sectionSize) &&
-	                    v.x < (this.sections[i].position.x + this.sectionSize)
-	                ) && (
 	                    v.z > (this.sections[i].position.z - this.sectionSize) &&
 	                    v.z < (this.sections[i].position.z + this.sectionSize)
 	                )
@@ -27876,8 +27890,11 @@
 
 	    Kings.Terrain = function(parameters) {
 	        Kings.Grid.call(this, parameters);
+	        this.staticEdge = parameters.staticEdge || '';
+	        this.maxHeight = parameters.maxHeight || 5;
 	        this.zValues = [];
 	        this.zPosition = 0;
+	        this.pase = 0.05 || parameters.pase;
 	    };
 
 	    Kings.Terrain.prototype = Object.create(Kings.Grid.prototype);
@@ -27890,15 +27907,61 @@
 	            this.zValues[y] = [];
 	            var xoff = this.zPosition;
 	            for (var x = 0; x < this.cols+1; x++) {
-	                this.zValues[y][x] = Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, 7);
+	                if (this.staticEdge != '') {
+	                    switch (this.staticEdge) {
+	                        case 'right': {
+	                            var softness = 1 - Kings.Processing.map(x, 0, this.cols, 0, 1);
+	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+	                            break;
+	                        }
+	                        case 'left': {
+	                            var softness = Kings.Processing.map(x, 0, this.cols + 1, 0, 1);
+	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+	                            break;
+	                        }
+	                        case 'top': {
+	                            var softness = 1 - Kings.Processing.map(y, 0, this.rows, 0, 1);
+	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+	                            break;
+	                        }
+	                        case 'bottom': {
+	                            var softness = Kings.Processing.map(y, 0, this.rows + 1, 0, 1);
+	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+	                            break;
+	                        }
+	                    }
+	                } else {
+	                    this.zValues[y][x] = Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight);
+	                }
 	                xoff += 0.35;
 	            }
 	            yoff += 0.35;
 	        }
-	        this.zPosition += 0.05;
+	        this.zPosition += this.pase;//0.05;
 
 	        var stepx = this.width / this.cols;
 	        var stepy = this.height / this.rows;
+
+	        this.gridTextureCoordBuffer = gl.createBuffer();
+	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridTextureCoordBuffer);
+	        var textureCoords = [];
+	        for (var y = 0; y < this.rows; y++) {
+	            for (var x = 0; x < this.cols; x++) {
+	                textureCoords = textureCoords.concat([
+	                    0.0, 0.0 + this.zPosition,
+	                    1.0, 0.0 + this.zPosition,
+	                    0.0, 1.0 + this.zPosition,
+
+	                    1.0, 0.0 + this.zPosition,
+	                    1.0, 1.0 + this.zPosition,
+	                    0.0, 1.0 + this.zPosition,
+	                ]);
+	            }
+	        }
+	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	        this.gridTextureCoordBuffer.itemSize = 2;
+	        this.gridTextureCoordBuffer.numItems = 6 * (this.cols * this.rows);
+
 	        this.gridVertexPositionBuffer = gl.createBuffer();
 	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexPositionBuffer);
 	        var vertices = [];

@@ -8,8 +8,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     Kings.Terrain = function(parameters) {
         Kings.Grid.call(this, parameters);
+        this.staticEdge = parameters.staticEdge || '';
+        this.maxHeight = parameters.maxHeight || 5;
         this.zValues = [];
         this.zPosition = 0;
+        this.pase = 0.05 || parameters.pase;
     };
 
     Kings.Terrain.prototype = Object.create(Kings.Grid.prototype);
@@ -22,15 +25,61 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.zValues[y] = [];
             var xoff = this.zPosition;
             for (var x = 0; x < this.cols+1; x++) {
-                this.zValues[y][x] = Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, 7);
+                if (this.staticEdge != '') {
+                    switch (this.staticEdge) {
+                        case 'right': {
+                            var softness = 1 - Kings.Processing.map(x, 0, this.cols, 0, 1);
+                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+                            break;
+                        }
+                        case 'left': {
+                            var softness = Kings.Processing.map(x, 0, this.cols + 1, 0, 1);
+                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+                            break;
+                        }
+                        case 'top': {
+                            var softness = 1 - Kings.Processing.map(y, 0, this.rows, 0, 1);
+                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+                            break;
+                        }
+                        case 'bottom': {
+                            var softness = Kings.Processing.map(y, 0, this.rows + 1, 0, 1);
+                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+                            break;
+                        }
+                    }
+                } else {
+                    this.zValues[y][x] = Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight);
+                }
                 xoff += 0.35;
             }
             yoff += 0.35;
         }
-        this.zPosition += 0.05;
+        this.zPosition += this.pase;//0.05;
 
         var stepx = this.width / this.cols;
         var stepy = this.height / this.rows;
+
+        this.gridTextureCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridTextureCoordBuffer);
+        var textureCoords = [];
+        for (var y = 0; y < this.rows; y++) {
+            for (var x = 0; x < this.cols; x++) {
+                textureCoords = textureCoords.concat([
+                    0.0, 0.0 + this.zPosition,
+                    1.0, 0.0 + this.zPosition,
+                    0.0, 1.0 + this.zPosition,
+
+                    1.0, 0.0 + this.zPosition,
+                    1.0, 1.0 + this.zPosition,
+                    0.0, 1.0 + this.zPosition,
+                ]);
+            }
+        }
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+        this.gridTextureCoordBuffer.itemSize = 2;
+        this.gridTextureCoordBuffer.numItems = 6 * (this.cols * this.rows);
+
         this.gridVertexPositionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexPositionBuffer);
         var vertices = [];

@@ -163,15 +163,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                             self.shape.groups[i].position.z += self.directions[i].z;
                             self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
                         }
-                    } else {
-                        self.directions[0].y -= Math.abs(self.position.y) * 0.05;
-                        for (var i = 0; i < self.shape.groups.length; i++) {
-                            self.shape.groups[i].position.x += self.directions[i].x;
-                            self.shape.groups[i].position.y += self.directions[i].y;
-                            self.shape.groups[i].position.z += self.directions[i].z;
-                            self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
-                        }
                     }
+                    // else {
+                    //     self.directions[0].y -= Math.abs(self.position.y) * 0.05;
+                    //     for (var i = 0; i < self.shape.groups.length; i++) {
+                    //         self.shape.groups[i].position.x += self.directions[i].x;
+                    //         self.shape.groups[i].position.y += self.directions[i].y;
+                    //         self.shape.groups[i].position.z += self.directions[i].z;
+                    //         self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
+                    //     }
+                    // }
                 });
             }());
             this.live = false;

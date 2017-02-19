@@ -13,7 +13,9 @@
                 "sounds/motorIddle.mp3",
                 "sounds/motorAccel.mp3",
                 "models/Harley-Davidson/HarleyDavidson1.obj",
-                "models/barriere/barriere.obj"
+                "models/barriere/barriere.obj",
+                "models/oildrum/oildrum.obj",
+                "models/cone/cone.obj"
             ]
         },
         {

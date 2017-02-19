@@ -28,22 +28,26 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             }
         }
         this.terrainLeft = new Kings.Terrain({
-            position: { x: 23, y: -2.0, z: 0},
+            position: { x: 16, y: this.position.y, z: 0},
             rotation: { x: 90, y: 0, z: 0},
-            texture: Kings.AssetBundles[0].content.lava,
-            width: 40.0,
-            height: 40.0,
+            texture: Kings.AssetBundles[0].content.ground2,
+            width: 20.0,
+            height: 80.0,
             cols: 10.0,
-            rows: 10.0
+            rows: 10.0,
+            maxHeight: 10,
+            staticEdge: 'bottom'
         });
         this.terrainRight = new Kings.Terrain({
-            position: { x: -23, y: -2.0, z: 0},
+            position: { x: -16, y: this.position.y, z: 0},
             rotation: { x: 90, y: 0, z: 0},
-            texture: Kings.AssetBundles[0].content.lava,
-            width: 40.0,
-            height: 40.0,
+            texture: Kings.AssetBundles[0].content.ground2,
+            width: 20.0,
+            height: 80.0,
             cols: 10.0,
-            rows: 10.0
+            rows: 10.0,
+            maxHeight: 10,
+            staticEdge: 'top'
         });
     };
 
@@ -79,10 +83,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Road.prototype.locatePlayer = function(v) {
         for (var i = 0; i < this.sections.length; i++) {
             if(
+                // (
+                //     v.x > (this.sections[i].position.x - this.sectionSize) &&
+                //     v.x < (this.sections[i].position.x + this.sectionSize)
+                // ) &&
                 (
-                    v.x > (this.sections[i].position.x - this.sectionSize) &&
-                    v.x < (this.sections[i].position.x + this.sectionSize)
-                ) && (
                     v.z > (this.sections[i].position.z - this.sectionSize) &&
                     v.z < (this.sections[i].position.z + this.sectionSize)
                 )

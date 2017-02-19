@@ -37,6 +37,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                                 texture.image.addEventListener("load", function() {
                                     self.successCount++;
                                     bundle[getAssetName(path)] = texture;
+                                    console.log('loaded texture: ' + getAssetName(path));
                                     if (self.isDone()) {
                                         Kings.AssetBundles.push({
                                             name: name,
@@ -47,6 +48,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                                 }, false);
                                 texture.image.addEventListener("error", function() {
                                     self.errorCount++;
+                                    console.log('error texture: ' + getAssetName(path));
                                     if (self.isDone()) {
                                         Kings.AssetBundles.push({
                                             name: name,
@@ -88,17 +90,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                             case 'wav':
                             case 'mp3': {
                                 var audio = new Audio(path);
-                                audio.addEventListener('canplaythrough', function() {
-                                   bundle[getAssetName(path)] = audio;
-                                   self.successCount++;
-                                   if (self.isDone()) {
-                                       Kings.AssetBundles.push({
-                                           name: name,
-                                           content: bundle
-                                       });
-                                       callback();
-                                   }
-                                }, false);
+                                bundle[getAssetName(path)] = audio;
+                                console.log('loaded audio: ' + getAssetName(path));
+                                self.successCount++;
+                                if (self.isDone()) {
+                                    Kings.AssetBundles.push({
+                                        name: name,
+                                        content: bundle
+                                    });
+                                    callback();
+                                }
                                 break;
                             }
                         }

@@ -56,20 +56,27 @@
             var road = new Kings.Road({
                 texture: Kings.AssetBundles[0].content.road,
                 position: { x: 0, y: -2, z: 0},
-                sectionSize: 4,
+                sectionSize: 6,
                 numberOfSections: 10,
                 update: function() {
                     road.locatePlayer(Kings.game.player.position);
-                    road.terrainRight.position.z = Kings.game.player.position.z + 22;
-                    road.terrainLeft.position.z = Kings.game.player.position.z + 22;
+                    if (Kings.game.player.live) {
+                        road.terrainRight.pase = Kings.game.player.velocity * 0.2;
+                        road.terrainLeft.pase = Kings.game.player.velocity * 0.2;
+                    } else {
+                        road.terrainRight.pase = 0;
+                        road.terrainLeft.pase = 0;
+                    }
+                    road.terrainRight.position.z = Kings.game.player.position.z + 35;
+                    road.terrainLeft.position.z = Kings.game.player.position.z + 35;
                 }
             })
             Kings.game.addElement(road);
 
             // var barrier = new Kings.GameObject({
             //     position: { x: 0, y: -2, z: 0 },
-            //     rotation: { x: 0, y: -180, z: 0 },
-            //     shape: Kings.AssetBundles[0].content.barriere
+            //     rotation: { x: 0, y: 0, z: 0 },
+            //     shape: Kings.AssetBundles[0].content.oildrum
             // });
             // barrier.addUpdateFunction(function() {
             //     barrier.position.z = Kings.game.player.position.z + 5;
@@ -89,7 +96,7 @@
             // var barrier3 = new Kings.GameObject({
             //     position: { x: -3, y: -2, z: 0 },
             //     rotation: { x: 0, y: -180, z: 0 },
-            //     shape: Kings.AssetBundles[0].content.barriere
+            //     shape: Kings.AssetBundles[0].content.cone
             // });
             // barrier3.addUpdateFunction(function() {
             //     barrier3.position.z = Kings.game.player.position.z + 5;
