@@ -47,6 +47,8 @@
                 velocity: 0.7,
                 position: { x: 0, y: -2, z: 0 },
                 shape: Kings.AssetBundles[0].content.HarleyDavidson1,
+                motorSound: Kings.AssetBundles[0].content.motorIddle,
+                motorAccelSound: Kings.AssetBundles[0].content.motorAccel,
                 camera: Kings.game.camera
             });
             Kings.game.addElement(Kings.game.player);
@@ -63,6 +65,36 @@
                 }
             })
             Kings.game.addElement(road);
+
+            // var barrier = new Kings.GameObject({
+            //     position: { x: 0, y: -2, z: 0 },
+            //     rotation: { x: 0, y: -180, z: 0 },
+            //     shape: Kings.AssetBundles[0].content.barriere
+            // });
+            // barrier.addUpdateFunction(function() {
+            //     barrier.position.z = Kings.game.player.position.z + 5;
+            // });
+            // Kings.game.addElement(barrier);
+            //
+            // var barrier2 = new Kings.GameObject({
+            //     position: { x: 3, y: -2, z: 0 },
+            //     rotation: { x: 0, y: -180, z: 0 },
+            //     shape: Kings.AssetBundles[0].content.barriere
+            // });
+            // barrier2.addUpdateFunction(function() {
+            //     barrier2.position.z = Kings.game.player.position.z + 5;
+            // });
+            // Kings.game.addElement(barrier2);
+            //
+            // var barrier3 = new Kings.GameObject({
+            //     position: { x: -3, y: -2, z: 0 },
+            //     rotation: { x: 0, y: -180, z: 0 },
+            //     shape: Kings.AssetBundles[0].content.barriere
+            // });
+            // barrier3.addUpdateFunction(function() {
+            //     barrier3.position.z = Kings.game.player.position.z + 5;
+            // });
+            // Kings.game.addElement(barrier3);
 
             Kings.keyboard = new Kings.Keyboard();
         });

@@ -19033,6 +19033,8 @@
 	                velocity: 0.7,
 	                position: { x: 0, y: -2, z: 0 },
 	                shape: Kings.AssetBundles[0].content.HarleyDavidson1,
+	                motorSound: Kings.AssetBundles[0].content.motorIddle,
+	                motorAccelSound: Kings.AssetBundles[0].content.motorAccel,
 	                camera: Kings.game.camera
 	            });
 	            Kings.game.addElement(Kings.game.player);
@@ -19049,6 +19051,36 @@
 	                }
 	            })
 	            Kings.game.addElement(road);
+
+	            // var barrier = new Kings.GameObject({
+	            //     position: { x: 0, y: -2, z: 0 },
+	            //     rotation: { x: 0, y: -180, z: 0 },
+	            //     shape: Kings.AssetBundles[0].content.barriere
+	            // });
+	            // barrier.addUpdateFunction(function() {
+	            //     barrier.position.z = Kings.game.player.position.z + 5;
+	            // });
+	            // Kings.game.addElement(barrier);
+	            //
+	            // var barrier2 = new Kings.GameObject({
+	            //     position: { x: 3, y: -2, z: 0 },
+	            //     rotation: { x: 0, y: -180, z: 0 },
+	            //     shape: Kings.AssetBundles[0].content.barriere
+	            // });
+	            // barrier2.addUpdateFunction(function() {
+	            //     barrier2.position.z = Kings.game.player.position.z + 5;
+	            // });
+	            // Kings.game.addElement(barrier2);
+	            //
+	            // var barrier3 = new Kings.GameObject({
+	            //     position: { x: -3, y: -2, z: 0 },
+	            //     rotation: { x: 0, y: -180, z: 0 },
+	            //     shape: Kings.AssetBundles[0].content.barriere
+	            // });
+	            // barrier3.addUpdateFunction(function() {
+	            //     barrier3.position.z = Kings.game.player.position.z + 5;
+	            // });
+	            // Kings.game.addElement(barrier3);
 
 	            Kings.keyboard = new Kings.Keyboard();
 	        });
@@ -26864,6 +26896,8 @@
 	        var self = this;
 	        Kings.GameObject.call(this, parameters);
 	        this.live = true;
+	        this.motorSound = parameters.motorSound;
+	        this.motorAccelSound = parameters.motorAccelSound;
 	        this.velocity = (parameters.velocity + 0) || 0;
 	        this.baseVelocity = (parameters.velocity + 0) || 0;
 	        this.camera = parameters.camera;
@@ -26894,6 +26928,13 @@
 	            }
 	        }
 	        self.trashFunction = -1;
+	        this.motorSound.loop = true;
+	        this.motorSound.addEventListener('timeupdate', function() {
+	            if(self.motorSound.currentTime > 10) {
+	                self.motorSound.currentTime = 2;
+	            }
+	        });
+	        this.motorSound.play();
 	    };
 
 	    Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
@@ -26914,7 +26955,7 @@
 	            this.explode();
 	        }
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-	            if (Kings.keyboard.getLastKeyPressed() == Kings.keyboard.keys.W) {
+	            if (!Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
 	                this.speedUp();
 	            }
 	        }
@@ -26994,6 +27035,7 @@
 	    };
 
 	    Kings.Player.prototype.explode = function() {
+	        this.motorSound.pause();
 	        var self = this;
 	        if (this.live) {
 	            this.directions = [];
@@ -27006,12 +27048,20 @@
 	                self.trashFunction = self.addUpdateFunction(function(){
 	                    if (self.position.y >= -2) {
 	                        self.position.y += self.directions[self.directions.length - 1].y - 0.05;
-	                    }
-	                    self.directions[self.directions.length - 1].y -= Math.abs(self.position.y) * 0.05;
-	                    for (var i = 0; i < self.shape.groups.length; i++) {
-	                        self.shape.groups[i].position.x += self.directions[i].x;
-	                        self.shape.groups[i].position.z += self.directions[i].z;
-	                        self.directions[i].y -= self.directions[i].y * 0.05;
+	                        self.directions[self.directions.length - 1].y -= Math.abs(self.position.y) * 0.05;
+	                        for (var i = 0; i < self.shape.groups.length; i++) {
+	                            self.shape.groups[i].position.x += self.directions[i].x;
+	                            self.shape.groups[i].position.z += self.directions[i].z;
+	                            self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
+	                        }
+	                    } else {
+	                        self.directions[0].y -= Math.abs(self.position.y) * 0.05;
+	                        for (var i = 0; i < self.shape.groups.length; i++) {
+	                            self.shape.groups[i].position.x += self.directions[i].x;
+	                            self.shape.groups[i].position.y += self.directions[i].y;
+	                            self.shape.groups[i].position.z += self.directions[i].z;
+	                            self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
+	                        }
 	                    }
 	                });
 	            }());
@@ -27020,6 +27070,8 @@
 	    };
 
 	    Kings.Player.prototype.restart = function() {
+	        this.motorSound.currentTime = 0;
+	        this.motorSound.play();
 	        if (!this.live) {
 	            if (this.trashFunction != -1) {
 	                this.removeUpdateFunction(this.trashFunction);
@@ -27038,11 +27090,11 @@
 	    };
 
 	    Kings.Player.prototype.moveA = function() {
-	        this.position.x += 0.1;
+	        this.position.x += 0.15;
 	    };
 
 	    Kings.Player.prototype.moveD = function() {
-	        this.position.x -= 0.1;
+	        this.position.x -= 0.15;
 	    };
 
 	    Kings.Player.prototype.slowDown = function() {
@@ -27052,6 +27104,10 @@
 	    };
 
 	    Kings.Player.prototype.speedUp = function() {
+	        if (this.motorAccelSound.currentTime > 0.25) {
+	            this.motorAccelSound.currentTime = 0.15;
+	        }
+	        this.motorAccelSound.play();
 	        if (this.velocity < 1.0) {
 	            this.velocity += 0.05;
 	        }
@@ -27113,6 +27169,10 @@
 	                                texture.image.addEventListener("error", function() {
 	                                    self.errorCount++;
 	                                    if (self.isDone()) {
+	                                        Kings.AssetBundles.push({
+	                                            name: name,
+	                                            content: bundle
+	                                        });
 	                                        callback();
 	                                    }
 	                                }, false);
@@ -27133,13 +27193,33 @@
 	                                                var endDate   = new Date();
 	                                                var seconds = (endDate.getTime() - startDate.getTime()) / 1000;
 	                                                console.log('loaded model: ' + getAssetName(path) + ' in ' + seconds + 's');
+	                                                if (self.isDone()) {
+	                                                    Kings.AssetBundles.push({
+	                                                        name: name,
+	                                                        content: bundle
+	                                                    });
+	                                                    callback();
+	                                                }
 	                                            });
 	                                        });
 	                                    });
 	                                });
 	                                break;
 	                            }
-	                            case 'wav': {
+	                            case 'wav':
+	                            case 'mp3': {
+	                                var audio = new Audio(path);
+	                                audio.addEventListener('canplaythrough', function() {
+	                                   bundle[getAssetName(path)] = audio;
+	                                   self.successCount++;
+	                                   if (self.isDone()) {
+	                                       Kings.AssetBundles.push({
+	                                           name: name,
+	                                           content: bundle
+	                                       });
+	                                       callback();
+	                                   }
+	                                }, false);
 	                                break;
 	                            }
 	                        }
@@ -27368,7 +27448,25 @@
 	                    });
 	                    callback(model);
 	                } else {
-	                    callback(null);
+	                    var g = [];
+	                    for (var i = 1; i < groups.length; i++) {
+	                        g.push(new Kings.Model({
+	                            vertices: groups[i].vertex,
+	                            textureCoords: groups[i].textureCoords,
+	                            vertexNormals: groups[i].normals,
+	                            texture: groups[i].texture,
+	                            name: groups[i].name,
+	                        }));
+	                    }
+	                    var model = new Kings.Model({
+	                        vertices: groups[0].vertex,
+	                        textureCoords: groups[0].textureCoords,
+	                        vertexNormals: groups[0].normals,
+	                        texture: groups[0].texture,
+	                        name: groups[0].name,
+	                        groups: g
+	                    });
+	                    callback(model);
 	                }
 	            } else {
 	                var g = [];

@@ -48,6 +48,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                                 texture.image.addEventListener("error", function() {
                                     self.errorCount++;
                                     if (self.isDone()) {
+                                        Kings.AssetBundles.push({
+                                            name: name,
+                                            content: bundle
+                                        });
                                         callback();
                                     }
                                 }, false);
@@ -68,13 +72,33 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                                                 var endDate   = new Date();
                                                 var seconds = (endDate.getTime() - startDate.getTime()) / 1000;
                                                 console.log('loaded model: ' + getAssetName(path) + ' in ' + seconds + 's');
+                                                if (self.isDone()) {
+                                                    Kings.AssetBundles.push({
+                                                        name: name,
+                                                        content: bundle
+                                                    });
+                                                    callback();
+                                                }
                                             });
                                         });
                                     });
                                 });
                                 break;
                             }
-                            case 'wav': {
+                            case 'wav':
+                            case 'mp3': {
+                                var audio = new Audio(path);
+                                audio.addEventListener('canplaythrough', function() {
+                                   bundle[getAssetName(path)] = audio;
+                                   self.successCount++;
+                                   if (self.isDone()) {
+                                       Kings.AssetBundles.push({
+                                           name: name,
+                                           content: bundle
+                                       });
+                                       callback();
+                                   }
+                                }, false);
                                 break;
                             }
                         }

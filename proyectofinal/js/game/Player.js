@@ -5,6 +5,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         var self = this;
         Kings.GameObject.call(this, parameters);
         this.live = true;
+        this.motorSound = parameters.motorSound;
+        this.motorAccelSound = parameters.motorAccelSound;
         this.velocity = (parameters.velocity + 0) || 0;
         this.baseVelocity = (parameters.velocity + 0) || 0;
         this.camera = parameters.camera;
@@ -35,6 +37,13 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             }
         }
         self.trashFunction = -1;
+        this.motorSound.loop = true;
+        this.motorSound.addEventListener('timeupdate', function() {
+            if(self.motorSound.currentTime > 10) {
+                self.motorSound.currentTime = 2;
+            }
+        });
+        this.motorSound.play();
     };
 
     Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
@@ -55,7 +64,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.explode();
         }
         if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-            if (Kings.keyboard.getLastKeyPressed() == Kings.keyboard.keys.W) {
+            if (!Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
                 this.speedUp();
             }
         }
@@ -135,6 +144,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.explode = function() {
+        this.motorSound.pause();
         var self = this;
         if (this.live) {
             this.directions = [];
@@ -147,12 +157,20 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 self.trashFunction = self.addUpdateFunction(function(){
                     if (self.position.y >= -2) {
                         self.position.y += self.directions[self.directions.length - 1].y - 0.05;
-                    }
-                    self.directions[self.directions.length - 1].y -= Math.abs(self.position.y) * 0.05;
-                    for (var i = 0; i < self.shape.groups.length; i++) {
-                        self.shape.groups[i].position.x += self.directions[i].x;
-                        self.shape.groups[i].position.z += self.directions[i].z;
-                        self.directions[i].y -= self.directions[i].y * 0.05;
+                        self.directions[self.directions.length - 1].y -= Math.abs(self.position.y) * 0.05;
+                        for (var i = 0; i < self.shape.groups.length; i++) {
+                            self.shape.groups[i].position.x += self.directions[i].x;
+                            self.shape.groups[i].position.z += self.directions[i].z;
+                            self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
+                        }
+                    } else {
+                        self.directions[0].y -= Math.abs(self.position.y) * 0.05;
+                        for (var i = 0; i < self.shape.groups.length; i++) {
+                            self.shape.groups[i].position.x += self.directions[i].x;
+                            self.shape.groups[i].position.y += self.directions[i].y;
+                            self.shape.groups[i].position.z += self.directions[i].z;
+                            self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
+                        }
                     }
                 });
             }());
@@ -161,6 +179,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.restart = function() {
+        this.motorSound.currentTime = 0;
+        this.motorSound.play();
         if (!this.live) {
             if (this.trashFunction != -1) {
                 this.removeUpdateFunction(this.trashFunction);
@@ -179,11 +199,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.moveA = function() {
-        this.position.x += 0.1;
+        this.position.x += 0.15;
     };
 
     Kings.Player.prototype.moveD = function() {
-        this.position.x -= 0.1;
+        this.position.x -= 0.15;
     };
 
     Kings.Player.prototype.slowDown = function() {
@@ -193,6 +213,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.speedUp = function() {
+        if (this.motorAccelSound.currentTime > 0.25) {
+            this.motorAccelSound.currentTime = 0.15;
+        }
+        this.motorAccelSound.play();
         if (this.velocity < 1.0) {
             this.velocity += 0.05;
         }

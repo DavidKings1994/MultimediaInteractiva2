@@ -185,7 +185,25 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     });
                     callback(model);
                 } else {
-                    callback(null);
+                    var g = [];
+                    for (var i = 1; i < groups.length; i++) {
+                        g.push(new Kings.Model({
+                            vertices: groups[i].vertex,
+                            textureCoords: groups[i].textureCoords,
+                            vertexNormals: groups[i].normals,
+                            texture: groups[i].texture,
+                            name: groups[i].name,
+                        }));
+                    }
+                    var model = new Kings.Model({
+                        vertices: groups[0].vertex,
+                        textureCoords: groups[0].textureCoords,
+                        vertexNormals: groups[0].normals,
+                        texture: groups[0].texture,
+                        name: groups[0].name,
+                        groups: g
+                    });
+                    callback(model);
                 }
             } else {
                 var g = [];
