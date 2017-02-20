@@ -14,14 +14,14 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             if(i>1) {
                 this.sections.push(new Kings.RoadSection({
                     id: i,
-                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
+                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
                     sectionSize: this.sectionSize,
                     texture: this.texture
                 }));
             } else {
                 this.sections.push(new Kings.RoadSection({
                     id: i,
-                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
+                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
                     sectionSize: this.sectionSize,
                     texture: this.texture
                 }));
@@ -60,7 +60,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         if(this.playerIndexLocation > 1) {
             this.sections.push(new Kings.RoadSection({
                 id: this.sections[this.numberOfSections - 1].id + 1,
-                position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize * 2) },
+                position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize) },
                 sectionSize: this.sectionSize,
                 texture: this.texture
             }));

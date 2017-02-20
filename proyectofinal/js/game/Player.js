@@ -94,11 +94,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             }
         }
         if (Kings.keyboard.isDown(Kings.keyboard.keys.SPACE)) {
-            if (Kings.keyboard.getLastKeyPressed() == Kings.keyboard.keys.SPACE) {
-                if (!this.jumping && this.onFloor) {
-                    this.jumping = true;
-                    this.onFloor = false;
-                }
+            if (!this.jumping && this.onFloor) {
+                this.jumping = true;
+                this.onFloor = false;
             }
         }
 
@@ -118,7 +116,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
 
         if(!backflip) {
-            if (this.rotation.x < 0) {
+            if (this.rotation.x < -4) {
                 this.rotation.x += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 20, 1, 2);
             }
         }

@@ -40,6 +40,8 @@
 
             }
         });
+        var grayscale = require('./Processing/Postprocessing/Shaders/Grayscale.js');
+        Kings.game.renderer.addEffect(grayscale);
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
             console.log(Kings.AssetBundles[0]);
@@ -56,7 +58,7 @@
             var road = new Kings.Road({
                 texture: Kings.AssetBundles[0].content.road,
                 position: { x: 0, y: -2, z: 0},
-                sectionSize: 6,
+                sectionSize: 12,
                 numberOfSections: 10,
                 update: function() {
                     road.locatePlayer(Kings.game.player.position);

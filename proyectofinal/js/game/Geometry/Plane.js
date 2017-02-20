@@ -63,10 +63,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.planeVertexPositionBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
             var vertices = [
-                this.position.x - this.width, this.position.y - this.height, this.position.z,
-                this.position.x + this.width, this.position.y - this.height, this.position.z,
-                this.position.x - this.width, this.position.y + this.height, this.position.z,
-                this.position.x + this.width, this.position.y + this.height, this.position.z,
+                this.position.x - (this.width / 2), this.position.y - (this.height / 2), this.position.z,
+                this.position.x + (this.width / 2), this.position.y - (this.height / 2), this.position.z,
+                this.position.x - (this.width / 2), this.position.y + (this.height / 2), this.position.z,
+                this.position.x + (this.width / 2), this.position.y + (this.height / 2), this.position.z,
             ];
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
             this.planeVertexPositionBuffer.itemSize = 3;

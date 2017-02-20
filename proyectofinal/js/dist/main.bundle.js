@@ -19009,11 +19009,11 @@
 
 	    __webpack_require__(6);
 	    __webpack_require__(7);
-	    __webpack_require__(17);
 	    __webpack_require__(18);
-	    __webpack_require__(22);
+	    __webpack_require__(19);
 	    __webpack_require__(23);
-	    __webpack_require__(25);
+	    __webpack_require__(24);
+	    __webpack_require__(26);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19026,6 +19026,8 @@
 
 	            }
 	        });
+	        var grayscale = __webpack_require__(28);
+	        Kings.game.renderer.addEffect(grayscale);
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
 	            console.log(Kings.AssetBundles[0]);
@@ -19042,7 +19044,7 @@
 	            var road = new Kings.Road({
 	                texture: Kings.AssetBundles[0].content.road,
 	                position: { x: 0, y: -2, z: 0},
-	                sectionSize: 6,
+	                sectionSize: 12,
 	                numberOfSections: 10,
 	                update: function() {
 	                    road.locatePlayer(Kings.game.player.position);
@@ -25718,8 +25720,8 @@
 
 	    Kings.Shader = function(parameters) {
 	        this.gl = parameters.gl;
-	        var vertexShaderSource = document.getElementById(parameters.vertexShaderSource).text;
-	        var fragmentShaderSource = document.getElementById(parameters.fragmentShaderSource).text;
+	        var vertexShaderSource = parameters.vertexShaderSource;
+	        var fragmentShaderSource = parameters.fragmentShaderSource;
 
 	        this.vertexShader = this.createShader(this.gl.VERTEX_SHADER, vertexShaderSource);
 	        this.fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, fragmentShaderSource);
@@ -25798,12 +25800,23 @@
 	    __webpack_require__(14);
 	    __webpack_require__(15);
 	    __webpack_require__(16);
+	    __webpack_require__(17);
 
 	    Kings.Graphics = function(parameters) {
+	        var self = this;
 	        window.gl = parameters.canvas.getContext("webgl");
 	        if (!gl) {
 	            alert('No se puede incializar');
 	        }
+	        Kings.height = parameters.canvas.height;
+	        Kings.width = parameters.canvas.width;
+	        console.log(Kings.height);
+
+	        this.renderer = new Kings.Renderer({
+	            draw: function() {
+	                self.draw();
+	            }
+	        });
 
 	        this.camera = parameters.camera || new Kings.Camera();
 	        this.gameUpdate = function() { parameters.update() };
@@ -25832,14 +25845,14 @@
 
 	        Kings.colorShader = new Kings.Shader({
 	            gl: gl,
-	            vertexShaderSource: '2d-vertex-shader',
-	            fragmentShaderSource: '2d-fragment-shader'
+	            vertexShaderSource: document.getElementById('2d-vertex-shader').text,
+	            fragmentShaderSource: document.getElementById('2d-fragment-shader').text
 	        });
 
 	        Kings.textureShader = new Kings.Shader({
 	            gl: gl,
-	            vertexShaderSource: '2d-vertex-shader-texture',
-	            fragmentShaderSource: '2d-fragment-shader-texture'
+	            vertexShaderSource: document.getElementById('2d-vertex-shader-texture').text,
+	            fragmentShaderSource: document.getElementById('2d-fragment-shader-texture').text
 	        });
 
 	        this.elements = [];
@@ -25863,9 +25876,13 @@
 
 	        draw: function() {
 	            this.resizeView();
-	            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+	            //gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 	            gl.clearColor(0, 0, 0, 1);
 	            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	            gl.viewport(0,0,1343,672);
+	            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+	            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
 
 	            for (var i = 0; i < this.elements.length; i++) {
 	                //if (Kings.Gameobject != null) {
@@ -25895,7 +25912,8 @@
 	            var self = this;
 	            requestAnimFrame(function() { self.tick() });
 	            this.animate();
-	            this.draw();
+	            //this.draw();
+	            this.renderer.render();
 	        },
 
 	        resizeView: function() {
@@ -26226,10 +26244,10 @@
 	            this.planeVertexPositionBuffer = gl.createBuffer();
 	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
 	            var vertices = [
-	                this.position.x - this.width, this.position.y - this.height, this.position.z,
-	                this.position.x + this.width, this.position.y - this.height, this.position.z,
-	                this.position.x - this.width, this.position.y + this.height, this.position.z,
-	                this.position.x + this.width, this.position.y + this.height, this.position.z,
+	                this.position.x - (this.width / 2), this.position.y - (this.height / 2), this.position.z,
+	                this.position.x + (this.width / 2), this.position.y - (this.height / 2), this.position.z,
+	                this.position.x - (this.width / 2), this.position.y + (this.height / 2), this.position.z,
+	                this.position.x + (this.width / 2), this.position.y + (this.height / 2), this.position.z,
 	            ];
 	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 	            this.planeVertexPositionBuffer.itemSize = 3;
@@ -26899,6 +26917,175 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
+	    Kings.Renderer = function(parameters) {
+	        this.effects = [];
+	        this.texture = [null, null];
+	        this.frameBuffer = [null, null];
+	        this.renderBuffer = [null, null];
+	        this.currentBuffer = 0;
+	        this.addEffect(new Kings.Shader({
+	            gl: gl,
+	            vertexShaderSource: [
+	                'attribute vec3 aVertexPosition;',
+	                'attribute vec2 aTextureCoord;',
+	                'uniform mat4 uMVMatrix;',
+	                'uniform mat4 uPMatrix;',
+	                'varying vec2 vTextureCoord;',
+	                'void main(void) {',
+	                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	                   'vTextureCoord = aTextureCoord;',
+	                '}'
+	            ].join("\n"),
+	            fragmentShaderSource: [
+	                'precision mediump float;',
+	                'varying vec2 vTextureCoord;',
+	                'uniform sampler2D uSampler;',
+	                'void main(void) {',
+	                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
+	                '}'
+	            ].join("\n")
+	        }));
+	        this.draw = parameters.draw;
+	        this.width = gl.canvas.width;
+	        this.height = gl.canvas.height;
+	        this.initBuffers(0);
+	        this.initBuffers(1);
+	        this.initScreenBuffers();
+	    };
+
+	    Kings.Renderer.prototype = {
+	        constructor: Kings.Renderer,
+
+	        initScreenBuffers: function() {
+	            this.planeTextureCoordBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	            var textureCoords = [
+	                0.0, 0.0,
+	                1.0, 0.0,
+	                0.0, 1.0,
+	                1.0, 1.0
+	            ];
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	            this.planeTextureCoordBuffer.itemSize = 2;
+	            this.planeTextureCoordBuffer.numItems = 4;
+
+	            this.planeVertexPositionBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            var vertices = [
+	                0 - (this.width / 2), 0 - (this.height / 2), 0,
+	                0 + (this.width / 2), 0 - (this.height / 2), 0,
+	                0 - (this.width / 2), 0 + (this.height / 2), 0,
+	                0 + (this.width / 2), 0 + (this.height / 2), 0
+	            ];
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	            this.planeVertexPositionBuffer.itemSize = 3;
+	            this.planeVertexPositionBuffer.numItems = 4;
+	        },
+
+	        initBuffers: function(i) {
+	            this.frameBuffer[i] = gl.createFramebuffer();
+	            gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[i]);
+
+	            this.frameBuffer[i].width = 1343;
+	            this.frameBuffer[i].height = 672;
+
+	            this.texture[i] = gl.createTexture();
+	            gl.bindTexture(gl.TEXTURE_2D, this.texture[i]);
+	            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.frameBuffer[i].width, this.frameBuffer[i].height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+	            this.renderBuffer[i] = gl.createRenderbuffer();
+	            gl.bindRenderbuffer(gl.RENDERBUFFER, this.renderBuffer[i]);
+	            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.frameBuffer[i].width, this.frameBuffer[i].height);
+
+	            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture[i], 0);
+	            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.renderBuffer[i]);
+
+	            gl.bindTexture(gl.TEXTURE_2D, null);
+	            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+	            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	        },
+
+	        swapBuffers: function() {
+	            this.currentBuffer = this.currentBuffer == 0 ? 1 : 0;
+	            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	        },
+
+	        drawScreen: function(i) {
+	            this.vertexPositionAttribute = this.effects[i].getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.textureCoordAttribute = this.effects[i].getAttributeLocation('aTextureCoord');
+	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+
+	            gl.clearColor(0, 0, 0, 1);
+	            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 200.0);
+
+	            Kings.GL.lookAt(
+	                glMatrix.vec3.fromValues(0,0,0),
+	                glMatrix.vec3.fromValues(0,0,-100),
+	                glMatrix.vec3.fromValues(0, 1, 0)
+	            );
+
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate({ x: 0, y: 0, z: -130 });
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            gl.useProgram(this.effects[i].getProgram());
+	            gl.activeTexture(gl.TEXTURE0);
+	            var tindex = (this.currentBuffer == 0 ? 1 : 0);
+	            gl.bindTexture(gl.TEXTURE_2D, this.texture[tindex]);
+	            gl.uniform1i(this.effects[i].getProgram().samplerUniform, 0);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	            gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            Kings.GL.setMatrixUniforms(this.effects[i]);
+	            gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.planeVertexPositionBuffer.numItems);
+
+	            Kings.GL.mvPopMatrix();
+	        },
+
+	        render: function() {
+	            gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+	            this.draw();
+	            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	            this.swapBuffers();
+
+	            for (var i = 0; i < this.effects.length; i++) {
+	                if (i < this.effects.length - 1) {
+	                    gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+	                }
+	                this.drawScreen(i);
+	                this.swapBuffers();
+	            }
+	        },
+
+	        addEffect: function(shader) {
+	            this.effects.push(shader);
+	            return this.effects.length - 1;
+	        },
+
+	        removeEffect: function(index) {
+	            this.effects.splice(index, 1);
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
 	    Kings.Player = function(parameters) {
 	        var self = this;
 	        Kings.GameObject.call(this, parameters);
@@ -26992,11 +27179,9 @@
 	            }
 	        }
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.SPACE)) {
-	            if (Kings.keyboard.getLastKeyPressed() == Kings.keyboard.keys.SPACE) {
-	                if (!this.jumping && this.onFloor) {
-	                    this.jumping = true;
-	                    this.onFloor = false;
-	                }
+	            if (!this.jumping && this.onFloor) {
+	                this.jumping = true;
+	                this.onFloor = false;
 	            }
 	        }
 
@@ -27016,7 +27201,7 @@
 	        }
 
 	        if(!backflip) {
-	            if (this.rotation.x < 0) {
+	            if (this.rotation.x < -4) {
 	                this.rotation.x += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 20, 1, 2);
 	            }
 	        }
@@ -27124,14 +27309,14 @@
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(19);
 	    __webpack_require__(20);
+	    __webpack_require__(21);
 
 	    Kings.LoadManager = {
 	        loadBundle: function(name, callback) {
@@ -27267,14 +27452,14 @@
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(20);
 	    __webpack_require__(21);
+	    __webpack_require__(22);
 	    __webpack_require__(10);
 
 	    Kings.ObjLoader = {
@@ -27504,7 +27689,7 @@
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27634,7 +27819,7 @@
 
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27653,7 +27838,7 @@
 
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27735,13 +27920,13 @@
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(24);
+	    __webpack_require__(25);
 
 	    Kings.Road = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
@@ -27754,14 +27939,14 @@
 	            if(i>1) {
 	                this.sections.push(new Kings.RoadSection({
 	                    id: i,
-	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
 	                    sectionSize: this.sectionSize,
 	                    texture: this.texture
 	                }));
 	            } else {
 	                this.sections.push(new Kings.RoadSection({
 	                    id: i,
-	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize * 2) },
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
 	                    sectionSize: this.sectionSize,
 	                    texture: this.texture
 	                }));
@@ -27800,7 +27985,7 @@
 	        if(this.playerIndexLocation > 1) {
 	            this.sections.push(new Kings.RoadSection({
 	                id: this.sections[this.numberOfSections - 1].id + 1,
-	                position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize * 2) },
+	                position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize) },
 	                sectionSize: this.sectionSize,
 	                texture: this.texture
 	            }));
@@ -27851,7 +28036,7 @@
 
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27877,14 +28062,14 @@
 
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
 	    __webpack_require__(10);
-	    __webpack_require__(26);
+	    __webpack_require__(27);
 	    __webpack_require__(16);
 	    __webpack_require__(13);
 
@@ -28017,7 +28202,7 @@
 
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28084,6 +28269,42 @@
 	            return (1 + n)/2;
 	        }
 	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 28 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var grayscale = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision mediump float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'float average = (textureColor.r + textureColor.g + textureColor.b) / 3.0;',
+	                'gl_FragColor = vec4(average, average, average, textureColor.a);',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return grayscale;
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 

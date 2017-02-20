@@ -3,8 +3,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     Kings.Shader = function(parameters) {
         this.gl = parameters.gl;
-        var vertexShaderSource = document.getElementById(parameters.vertexShaderSource).text;
-        var fragmentShaderSource = document.getElementById(parameters.fragmentShaderSource).text;
+        var vertexShaderSource = parameters.vertexShaderSource;
+        var fragmentShaderSource = parameters.fragmentShaderSource;
 
         this.vertexShader = this.createShader(this.gl.VERTEX_SHADER, vertexShaderSource);
         this.fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, fragmentShaderSource);

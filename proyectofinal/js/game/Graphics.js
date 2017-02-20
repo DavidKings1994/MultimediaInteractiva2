@@ -9,12 +9,23 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     require('./GameObjects/Gameobject.js');
     require('./GameObjects/Camera.js');
     require('./Processing/Utils.js');
+    require('./Processing/Postprocessing/Renderer.js');
 
     Kings.Graphics = function(parameters) {
+        var self = this;
         window.gl = parameters.canvas.getContext("webgl");
         if (!gl) {
             alert('No se puede incializar');
         }
+        Kings.height = parameters.canvas.height;
+        Kings.width = parameters.canvas.width;
+        console.log(Kings.height);
+
+        this.renderer = new Kings.Renderer({
+            draw: function() {
+                self.draw();
+            }
+        });
 
         this.camera = parameters.camera || new Kings.Camera();
         this.gameUpdate = function() { parameters.update() };
@@ -43,14 +54,14 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         Kings.colorShader = new Kings.Shader({
             gl: gl,
-            vertexShaderSource: '2d-vertex-shader',
-            fragmentShaderSource: '2d-fragment-shader'
+            vertexShaderSource: document.getElementById('2d-vertex-shader').text,
+            fragmentShaderSource: document.getElementById('2d-fragment-shader').text
         });
 
         Kings.textureShader = new Kings.Shader({
             gl: gl,
-            vertexShaderSource: '2d-vertex-shader-texture',
-            fragmentShaderSource: '2d-fragment-shader-texture'
+            vertexShaderSource: document.getElementById('2d-vertex-shader-texture').text,
+            fragmentShaderSource: document.getElementById('2d-fragment-shader-texture').text
         });
 
         this.elements = [];
@@ -74,9 +85,13 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         draw: function() {
             this.resizeView();
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            //gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.viewport(0,0,1343,672);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
 
             for (var i = 0; i < this.elements.length; i++) {
                 //if (Kings.Gameobject != null) {
@@ -106,7 +121,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             var self = this;
             requestAnimFrame(function() { self.tick() });
             this.animate();
-            this.draw();
+            //this.draw();
+            this.renderer.render();
         },
 
         resizeView: function() {
