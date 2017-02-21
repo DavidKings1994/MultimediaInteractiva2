@@ -42,6 +42,8 @@
         });
         var grayscale = require('./Processing/Postprocessing/Shaders/Grayscale.js');
         Kings.game.renderer.addEffect(grayscale);
+        var blur = require('./Processing/Postprocessing/Shaders/SpeedBlur.js');
+        Kings.game.renderer.addEffect(blur);
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
             console.log(Kings.AssetBundles[0]);
