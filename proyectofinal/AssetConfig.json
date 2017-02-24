@@ -15,7 +15,8 @@
                 "models/Harley-Davidson/HarleyDavidson1.obj",
                 "models/barriere/barriere.obj",
                 "models/oildrum/oildrum.obj",
-                "models/cone/cone.obj"
+                "models/cone/cone.obj",
+                "models/Gas/Gas.obj"
             ]
         },
         {

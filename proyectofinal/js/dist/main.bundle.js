@@ -19014,22 +19014,31 @@
 	    __webpack_require__(23);
 	    __webpack_require__(24);
 	    __webpack_require__(26);
+	    __webpack_require__(28);
+	    __webpack_require__(27);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
+	        Kings.keyboard = new Kings.Keyboard();
 	        Kings.game = new Kings.Graphics({
 	            canvas: $(self)[0],
 	            camera: new Kings.Camera({
 	                position: { x: 0, y: 0, z: 0 },
 	            }),
 	            update: function() {
-
+	                if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
+	                    for (var i = 0; i < Kings.game.elements.length; i++) {
+	                        if(Kings.game.elements[i].canReset !== null) {
+	                            Kings.game.elements[i].restart();
+	                        }
+	                    }
+	                }
 	            }
 	        });
-	        var grayscale = __webpack_require__(28);
-	        Kings.game.renderer.addEffect(grayscale);
-	        var blur = __webpack_require__(29);
-	        Kings.game.renderer.addEffect(blur);
+	        Kings.game.shaders = {
+	            grayscale: __webpack_require__(30),
+	            blur: __webpack_require__(31)
+	        };
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
 	            console.log(Kings.AssetBundles[0]);
@@ -19060,13 +19069,14 @@
 	                    road.terrainRight.position.z = Kings.game.player.position.z + 35;
 	                    road.terrainLeft.position.z = Kings.game.player.position.z + 35;
 	                }
-	            })
+	            });
+	            road.canReset = true;
 	            Kings.game.addElement(road);
 
-	            // var barrier = new Kings.GameObject({
+	            // var barrier = new Kings.Gasoline({
 	            //     position: { x: 0, y: -2, z: 0 },
 	            //     rotation: { x: 0, y: 0, z: 0 },
-	            //     shape: Kings.AssetBundles[0].content.oildrum
+	            //     shape: Kings.AssetBundles[0].content.Gas
 	            // });
 	            // barrier.addUpdateFunction(function() {
 	            //     barrier.position.z = Kings.game.player.position.z + 5;
@@ -19092,8 +19102,6 @@
 	            //     barrier3.position.z = Kings.game.player.position.z + 5;
 	            // });
 	            // Kings.game.addElement(barrier3);
-
-	            Kings.keyboard = new Kings.Keyboard();
 	        });
 	    };
 	}));
@@ -27091,7 +27099,13 @@
 	    Kings.Player = function(parameters) {
 	        var self = this;
 	        Kings.GameObject.call(this, parameters);
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 1, y: 2, z: 3 }
+	        });
 	        this.live = true;
+	        this.fuel = 100;
 	        this.motorSound = parameters.motorSound;
 	        this.motorAccelSound = parameters.motorAccelSound;
 	        this.velocity = (parameters.velocity + 0) || 0;
@@ -27138,53 +27152,61 @@
 	    Kings.Player.prototype.update = function() {
 	        Kings.GameObject.prototype.update.call(this);
 	        this.shape.update();
-	        if (this.live) {
-	            this.position.z += this.velocity;
-	        }
 	        this.camera.position.z = this.position.z - 5;
+	        //this.fuel -= 0.5;
+	        if (this.fuel <= 0) {
+	            this.live = false;
+	        }
+
 	        var moving = false;
 	        var backflip = false;
+	        if (this.live) {
+	            this.position.z += this.velocity;
+	            if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+	                if (!Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+	                    if (this.blurId == null) {
+	                        this.blurId = Kings.game.renderer.addEffect(Kings.game.shaders.blur);
+	                    }
+	                    this.speedUp();
+	                }
+	            }
+	            if (Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+	                if (!Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+	                    this.slowDown();
+	                    backflip = true;
+	                    if (this.rotation.x > -45) {
+	                        this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 1, 2);
+	                    }
+	                }
+	            }
+	            var direction = Kings.keyboard.firstKeyPressed(Kings.keyboard.keys.A, Kings.keyboard.keys.D);
+	            if (direction != null) {
+	                if (direction == Kings.keyboard.keys.A) {
+	                    moving = true;
+	                    if (this.rotation.z > -20) {
+	                        this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
+	                    }
+	                    this.moveA();
+	                } else if (direction == Kings.keyboard.keys.D) {
+	                    moving = true;
+	                    if (this.rotation.z < 20) {
+	                        this.rotation.z += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
+	                    }
+	                    this.moveD();
+	                }
+	            }
+	            if (Kings.keyboard.isDown(Kings.keyboard.keys.SPACE)) {
+	                if (!this.jumping && this.onFloor) {
+	                    this.jumping = true;
+	                    this.onFloor = false;
+	                }
+	            }
+	        }
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
 	            this.restart();
 	        }
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.E)) {
 	            this.explode();
-	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-	            if (!Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
-	                this.speedUp();
-	            }
-	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
-	            if (!Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-	                this.slowDown();
-	                backflip = true;
-	                if (this.rotation.x > -45) {
-	                    this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 1, 2);
-	                }
-	            }
-	        }
-	        var direction = Kings.keyboard.firstKeyPressed(Kings.keyboard.keys.A, Kings.keyboard.keys.D);
-	        if (direction != null) {
-	            if (direction == Kings.keyboard.keys.A) {
-	                moving = true;
-	                if (this.rotation.z > -20) {
-	                    this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
-	                }
-	                this.moveA();
-	            } else if (direction == Kings.keyboard.keys.D) {
-	                moving = true;
-	                if (this.rotation.z < 20) {
-	                    this.rotation.z += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
-	                }
-	                this.moveD();
-	            }
-	        }
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.SPACE)) {
-	            if (!this.jumping && this.onFloor) {
-	                this.jumping = true;
-	                this.onFloor = false;
-	            }
 	        }
 
 	        if (this.live) {
@@ -27222,6 +27244,10 @@
 	        if (!Kings.keyboard.isDown(Kings.keyboard.keys.S) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
 	            if (this.velocity > this.baseVelocity) {
 	                this.velocity -= 0.05;
+	                if (this.blurId != null) {
+	                    Kings.game.renderer.removeEffect(this.blurId);
+	                    this.blurId = null;
+	                }
 	            } else if (this.velocity < this.baseVelocity) {
 	                this.velocity += 0.05;
 	            }
@@ -27249,15 +27275,6 @@
 	                            self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
 	                        }
 	                    }
-	                    // else {
-	                    //     self.directions[0].y -= Math.abs(self.position.y) * 0.05;
-	                    //     for (var i = 0; i < self.shape.groups.length; i++) {
-	                    //         self.shape.groups[i].position.x += self.directions[i].x;
-	                    //         self.shape.groups[i].position.y += self.directions[i].y;
-	                    //         self.shape.groups[i].position.z += self.directions[i].z;
-	                    //         self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
-	                    //     }
-	                    // }
 	                });
 	            }());
 	            this.live = false;
@@ -27984,6 +28001,7 @@
 	        this.gameUpdate();
 	        this.terrainRight.update();
 	        this.terrainLeft.update();
+	        this.sections[this.playerIndexLocation].active = true;
 	        if(this.playerIndexLocation > 1) {
 	            this.sections.push(new Kings.RoadSection({
 	                id: this.sections[this.numberOfSections - 1].id + 1,
@@ -27991,7 +28009,6 @@
 	                sectionSize: this.sectionSize,
 	                texture: this.texture
 	            }));
-	            this.sections[0].destroy();
 	            this.sections.splice(0,1);
 	        }
 	        for (var i = 0; i < this.sections.length; i++) {
@@ -28010,14 +28027,8 @@
 	    Kings.Road.prototype.locatePlayer = function(v) {
 	        for (var i = 0; i < this.sections.length; i++) {
 	            if(
-	                // (
-	                //     v.x > (this.sections[i].position.x - this.sectionSize) &&
-	                //     v.x < (this.sections[i].position.x + this.sectionSize)
-	                // ) &&
-	                (
-	                    v.z > (this.sections[i].position.z - this.sectionSize) &&
-	                    v.z < (this.sections[i].position.z + this.sectionSize)
-	                )
+	                v.z > (this.sections[i].position.z - this.sectionSize) &&
+	                v.z < (this.sections[i].position.z + this.sectionSize)
 	            ) {
 	                this.playerIndexLocation = i;
 	            }
@@ -28031,8 +28042,25 @@
 	        return false;
 	    },
 
-	    Kings.Road.prototype.CreateSection = function() {
-
+	    Kings.Road.prototype.restart = function() {
+	        this.sections = [];
+	        for (var i = 0; i < this.numberOfSections; i++) {
+	            if(i>1) {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                }));
+	            } else {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                }));
+	            }
+	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
@@ -28046,6 +28074,7 @@
 
 	    Kings.RoadSection = function(parameters) {
 	        this.id = parameters.id;
+	        this.active = false;
 	        parameters.rotation = { x: 90, y: 0, z: 0};
 	        parameters.shape = new Kings.Plane({
 	            height: parameters.sectionSize,
@@ -28053,12 +28082,45 @@
 	            texture: parameters.texture
 	        });
 	        Kings.GameObject.call(this, parameters);
+	        this.objects = [];
+	        this.gas = new Kings.Gasoline({
+	            position: { x: this.position.x, y: this.position.y, z: this.position.z }
+	        });
 	    };
 
 	    Kings.RoadSection.prototype = Object.create(Kings.GameObject.prototype);
 
-	    Kings.RoadSection.prototype.destroy = function() {
+	    Kings.RoadSection.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	        if (this.gas != null) {
+	            this.gas.position.z = this.position.z;
+	            this.gas.update();
+	            if (this.active) {
+	                // var col = this.gas.body.checkCollisionWithLine({
+	                //     start: {
+	                //         x: Kings.game.player.position.x,
+	                //         y: Kings.game.player.position.y,
+	                //         z: Kings.game.player.position.z
+	                //     },
+	                //     end: {
+	                //         x: Kings.game.player.position.x,
+	                //         y: Kings.game.player.position.y + 1,
+	                //         z: Kings.game.player.position.z
+	                //     }
+	                // }, 10);
+	                var col = this.gas.body.checkCollisionWithBody(Kings.game.player.body);
+	                if (col) {
+	                    this.gas = null;
+	                }
+	            }
+	        }
+	    };
 
+	    Kings.RoadSection.prototype.draw = function() {
+	        Kings.GameObject.prototype.draw.call(this);
+	        if (this.gas != null) {
+	            this.gas.draw();
+	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
@@ -28070,8 +28132,107 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
+	    Kings.Gasoline = function(parameters) {
+	        parameters.shape = Kings.AssetBundles[0].content.Gas
+	        Kings.GameObject.call(this, parameters);
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 0.5, y: 0.7, z: 0.5 }
+	        });
+	        this.hovering = true;
+	        this.content = 10;
+	    };
+
+	    Kings.Gasoline.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Gasoline.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	        this.rotation.y += 0.5;
+	        if (this.hovering) {
+	            if (this.position.y < -1.4) {
+	                this.position.y += 0.01;
+	            } else {
+	                this.hovering = false;
+	            }
+	        } else {
+	            if (this.position.y > -1.8) {
+	                this.position.y -= 0.01;
+	            } else {
+	                this.hovering = true;
+	            }
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.RigidBody = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0};
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0};
+	        this.size = parameters.size || { x: 0, y: 0, z: 0};
+	    };
+
+	    Kings.RigidBody.prototype = {
+	        constructor: Kings.RigidBody,
+
+	        checkCollisionWithBody: function(body) {
+	            if (
+	                this.position.z - (this.size.z / 2) <= body.position.z + (body.size.z / 2) &&
+	                this.position.z + (this.size.z / 2) >= body.position.z - (body.size.z / 2)
+	            ) {
+	                if (
+	                    this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
+	                    this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
+	                ) {
+	                    if (
+	                        this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&
+	                        this.position.y + (this.size.y / 2) >= body.position.y - (body.size.y / 2)
+	                    ) {
+	                        return true;
+	                    }
+	                }
+	            }
+	            return false;
+	        },
+
+	        checkCollisionWithLine: function(line, segments) {
+	            var m = line.end.y - line.start.y / line.end.x - line.start.x;
+	            var b = line.end.y - (m * line.end.x);
+	            var lenght = line.end.y - line.start.y;
+	            var step = lenght / segments;
+	            for (var i = 0; i < lenght; i+=step) {
+	                if (line.start.z > this.position.z - (this.size.z / 2) && line.start.z < this.position.z + (this.size.z / 2)) {
+	                    var x = (i == 0 && b == 0) ? 0 : (line.start.y + i - b) / m;
+	                    if (x > this.position.x - (this.size.x / 2) && x < this.position.x + (this.size.x / 2)) {
+	                        var y = i;
+	                        if (line.start.y + y >= this.position.y && line.start.y + y < this.position.y + this.size.y) {
+	                            return true;
+	                        }
+	                    }
+	                }
+	            }
+	            return false;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 28 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
 	    __webpack_require__(10);
-	    __webpack_require__(27);
+	    __webpack_require__(29);
 	    __webpack_require__(16);
 	    __webpack_require__(13);
 
@@ -28204,7 +28365,7 @@
 
 
 /***/ },
-/* 27 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28275,7 +28436,7 @@
 
 
 /***/ },
-/* 28 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28311,7 +28472,7 @@
 
 
 /***/ },
-/* 29 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {

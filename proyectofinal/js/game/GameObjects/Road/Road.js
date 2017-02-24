@@ -57,6 +57,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.gameUpdate();
         this.terrainRight.update();
         this.terrainLeft.update();
+        this.sections[this.playerIndexLocation].active = true;
         if(this.playerIndexLocation > 1) {
             this.sections.push(new Kings.RoadSection({
                 id: this.sections[this.numberOfSections - 1].id + 1,
@@ -64,7 +65,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 sectionSize: this.sectionSize,
                 texture: this.texture
             }));
-            this.sections[0].destroy();
             this.sections.splice(0,1);
         }
         for (var i = 0; i < this.sections.length; i++) {
@@ -83,14 +83,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Road.prototype.locatePlayer = function(v) {
         for (var i = 0; i < this.sections.length; i++) {
             if(
-                // (
-                //     v.x > (this.sections[i].position.x - this.sectionSize) &&
-                //     v.x < (this.sections[i].position.x + this.sectionSize)
-                // ) &&
-                (
-                    v.z > (this.sections[i].position.z - this.sectionSize) &&
-                    v.z < (this.sections[i].position.z + this.sectionSize)
-                )
+                v.z > (this.sections[i].position.z - this.sectionSize) &&
+                v.z < (this.sections[i].position.z + this.sectionSize)
             ) {
                 this.playerIndexLocation = i;
             }
@@ -104,7 +98,24 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         return false;
     },
 
-    Kings.Road.prototype.CreateSection = function() {
-
+    Kings.Road.prototype.restart = function() {
+        this.sections = [];
+        for (var i = 0; i < this.numberOfSections; i++) {
+            if(i>1) {
+                this.sections.push(new Kings.RoadSection({
+                    id: i,
+                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
+                    sectionSize: this.sectionSize,
+                    texture: this.texture
+                }));
+            } else {
+                this.sections.push(new Kings.RoadSection({
+                    id: i,
+                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
+                    sectionSize: this.sectionSize,
+                    texture: this.texture
+                }));
+            }
+        }
     };
 });

@@ -4,7 +4,13 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Player = function(parameters) {
         var self = this;
         Kings.GameObject.call(this, parameters);
+        this.body = new Kings.RigidBody({
+            position: this.position,
+            rotation: this.rotation,
+            size: { x: 1, y: 2, z: 3 }
+        });
         this.live = true;
+        this.fuel = 100;
         this.motorSound = parameters.motorSound;
         this.motorAccelSound = parameters.motorAccelSound;
         this.velocity = (parameters.velocity + 0) || 0;
@@ -51,53 +57,61 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Player.prototype.update = function() {
         Kings.GameObject.prototype.update.call(this);
         this.shape.update();
-        if (this.live) {
-            this.position.z += this.velocity;
-        }
         this.camera.position.z = this.position.z - 5;
+        //this.fuel -= 0.5;
+        if (this.fuel <= 0) {
+            this.live = false;
+        }
+
         var moving = false;
         var backflip = false;
+        if (this.live) {
+            this.position.z += this.velocity;
+            if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+                if (!Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+                    if (this.blurId == null) {
+                        this.blurId = Kings.game.renderer.addEffect(Kings.game.shaders.blur);
+                    }
+                    this.speedUp();
+                }
+            }
+            if (Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+                if (!Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+                    this.slowDown();
+                    backflip = true;
+                    if (this.rotation.x > -45) {
+                        this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 1, 2);
+                    }
+                }
+            }
+            var direction = Kings.keyboard.firstKeyPressed(Kings.keyboard.keys.A, Kings.keyboard.keys.D);
+            if (direction != null) {
+                if (direction == Kings.keyboard.keys.A) {
+                    moving = true;
+                    if (this.rotation.z > -20) {
+                        this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
+                    }
+                    this.moveA();
+                } else if (direction == Kings.keyboard.keys.D) {
+                    moving = true;
+                    if (this.rotation.z < 20) {
+                        this.rotation.z += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
+                    }
+                    this.moveD();
+                }
+            }
+            if (Kings.keyboard.isDown(Kings.keyboard.keys.SPACE)) {
+                if (!this.jumping && this.onFloor) {
+                    this.jumping = true;
+                    this.onFloor = false;
+                }
+            }
+        }
         if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
             this.restart();
         }
         if (Kings.keyboard.isDown(Kings.keyboard.keys.E)) {
             this.explode();
-        }
-        if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-            if (!Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
-                this.speedUp();
-            }
-        }
-        if (Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
-            if (!Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-                this.slowDown();
-                backflip = true;
-                if (this.rotation.x > -45) {
-                    this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 1, 2);
-                }
-            }
-        }
-        var direction = Kings.keyboard.firstKeyPressed(Kings.keyboard.keys.A, Kings.keyboard.keys.D);
-        if (direction != null) {
-            if (direction == Kings.keyboard.keys.A) {
-                moving = true;
-                if (this.rotation.z > -20) {
-                    this.rotation.z -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
-                }
-                this.moveA();
-            } else if (direction == Kings.keyboard.keys.D) {
-                moving = true;
-                if (this.rotation.z < 20) {
-                    this.rotation.z += this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.z), 0, 20, 1, 2);
-                }
-                this.moveD();
-            }
-        }
-        if (Kings.keyboard.isDown(Kings.keyboard.keys.SPACE)) {
-            if (!this.jumping && this.onFloor) {
-                this.jumping = true;
-                this.onFloor = false;
-            }
         }
 
         if (this.live) {
@@ -135,6 +149,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         if (!Kings.keyboard.isDown(Kings.keyboard.keys.S) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
             if (this.velocity > this.baseVelocity) {
                 this.velocity -= 0.05;
+                if (this.blurId != null) {
+                    Kings.game.renderer.removeEffect(this.blurId);
+                    this.blurId = null;
+                }
             } else if (this.velocity < this.baseVelocity) {
                 this.velocity += 0.05;
             }
@@ -162,15 +180,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                             self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
                         }
                     }
-                    // else {
-                    //     self.directions[0].y -= Math.abs(self.position.y) * 0.05;
-                    //     for (var i = 0; i < self.shape.groups.length; i++) {
-                    //         self.shape.groups[i].position.x += self.directions[i].x;
-                    //         self.shape.groups[i].position.y += self.directions[i].y;
-                    //         self.shape.groups[i].position.z += self.directions[i].z;
-                    //         self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
-                    //     }
-                    // }
                 });
             }());
             this.live = false;

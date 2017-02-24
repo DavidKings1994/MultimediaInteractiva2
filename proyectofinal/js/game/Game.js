@@ -27,23 +27,32 @@
     require('./Utils/LoadManager.js');
     require('./Utils/Keyboard.js');
     require('./GameObjects/Road/Road.js');
+    require('./GameObjects/Items/Gasoline.js');
     require('./Geometry/Terrain.js');
+    require('./Physics/RigidBody.js');
 
     $.fn.initGame = function( parameters ) {
         var self = this;
+        Kings.keyboard = new Kings.Keyboard();
         Kings.game = new Kings.Graphics({
             canvas: $(self)[0],
             camera: new Kings.Camera({
                 position: { x: 0, y: 0, z: 0 },
             }),
             update: function() {
-
+                if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
+                    for (var i = 0; i < Kings.game.elements.length; i++) {
+                        if(Kings.game.elements[i].canReset !== null) {
+                            Kings.game.elements[i].restart();
+                        }
+                    }
+                }
             }
         });
-        var grayscale = require('./Processing/Postprocessing/Shaders/Grayscale.js');
-        Kings.game.renderer.addEffect(grayscale);
-        var blur = require('./Processing/Postprocessing/Shaders/SpeedBlur.js');
-        Kings.game.renderer.addEffect(blur);
+        Kings.game.shaders = {
+            grayscale: require('./Processing/Postprocessing/Shaders/Grayscale.js'),
+            blur: require('./Processing/Postprocessing/Shaders/SpeedBlur.js')
+        };
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
             console.log(Kings.AssetBundles[0]);
@@ -74,13 +83,14 @@
                     road.terrainRight.position.z = Kings.game.player.position.z + 35;
                     road.terrainLeft.position.z = Kings.game.player.position.z + 35;
                 }
-            })
+            });
+            road.canReset = true;
             Kings.game.addElement(road);
 
-            // var barrier = new Kings.GameObject({
+            // var barrier = new Kings.Gasoline({
             //     position: { x: 0, y: -2, z: 0 },
             //     rotation: { x: 0, y: 0, z: 0 },
-            //     shape: Kings.AssetBundles[0].content.oildrum
+            //     shape: Kings.AssetBundles[0].content.Gas
             // });
             // barrier.addUpdateFunction(function() {
             //     barrier.position.z = Kings.game.player.position.z + 5;
@@ -106,8 +116,6 @@
             //     barrier3.position.z = Kings.game.player.position.z + 5;
             // });
             // Kings.game.addElement(barrier3);
-
-            Kings.keyboard = new Kings.Keyboard();
         });
     };
 }));
