@@ -2,70 +2,19 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
     Kings.Renderer = function(parameters) {
-        this.effects = [];
+        this.layers = [];
         this.texture = [null, null];
         this.frameBuffer = [null, null];
         this.renderBuffer = [null, null];
         this.currentBuffer = 0;
-        this.addEffect(new Kings.Shader({
-            gl: gl,
-            vertexShaderSource: [
-                'attribute vec3 aVertexPosition;',
-                'attribute vec2 aTextureCoord;',
-                'uniform mat4 uMVMatrix;',
-                'uniform mat4 uPMatrix;',
-                'varying vec2 vTextureCoord;',
-                'void main(void) {',
-                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-                   'vTextureCoord = aTextureCoord;',
-                '}'
-            ].join("\n"),
-            fragmentShaderSource: [
-                'precision mediump float;',
-                'varying vec2 vTextureCoord;',
-                'uniform sampler2D uSampler;',
-                'void main(void) {',
-                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
-                '}'
-            ].join("\n")
-        }));
-        this.draw = parameters.draw;
         this.width = gl.canvas.width;
         this.height = gl.canvas.height;
         this.initBuffers(0);
         this.initBuffers(1);
-        this.initScreenBuffers();
     };
 
     Kings.Renderer.prototype = {
         constructor: Kings.Renderer,
-
-        initScreenBuffers: function() {
-            this.planeTextureCoordBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
-            var textureCoords = [
-                0.0, 0.0,
-                1.0, 0.0,
-                0.0, 1.0,
-                1.0, 1.0
-            ];
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-            this.planeTextureCoordBuffer.itemSize = 2;
-            this.planeTextureCoordBuffer.numItems = 4;
-
-            this.planeVertexPositionBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
-            var vertices = [
-                0 - (this.width / 2), 0 - (this.height / 2), 0,
-                0 + (this.width / 2), 0 - (this.height / 2), 0,
-                0 - (this.width / 2), 0 + (this.height / 2), 0,
-                0 + (this.width / 2), 0 + (this.height / 2), 0
-            ];
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-            this.planeVertexPositionBuffer.itemSize = 3;
-            this.planeVertexPositionBuffer.numItems = 4;
-        },
 
         initBuffers: function(i) {
             this.frameBuffer[i] = gl.createFramebuffer();
@@ -99,65 +48,37 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         },
 
-        drawScreen: function(i) {
-            this.vertexPositionAttribute = this.effects[i].getAttributeLocation('aVertexPosition');
-            gl.enableVertexAttribArray(this.vertexPositionAttribute);
-            this.textureCoordAttribute = this.effects[i].getAttributeLocation('aTextureCoord');
-            gl.enableVertexAttribArray(this.textureCoordAttribute);
-
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 200.0);
-
-            Kings.GL.lookAt(
-                glMatrix.vec3.fromValues(0,0,0),
-                glMatrix.vec3.fromValues(0,0,-100),
-                glMatrix.vec3.fromValues(0, 1, 0)
-            );
-
-            Kings.GL.mvPushMatrix();
-            Kings.GL.mvTranslate({ x: 0, y: 0, z: -130 });
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
-            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-            gl.useProgram(this.effects[i].getProgram());
-            gl.activeTexture(gl.TEXTURE0);
-            var tindex = (this.currentBuffer == 0 ? 1 : 0);
-            gl.bindTexture(gl.TEXTURE_2D, this.texture[tindex]);
-            gl.uniform1i(this.effects[i].getProgram().samplerUniform, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
-            gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-            Kings.GL.setMatrixUniforms(this.effects[i]);
-            gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.planeVertexPositionBuffer.numItems);
-
-            Kings.GL.mvPopMatrix();
-        },
-
         render: function() {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
-            this.draw();
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            this.swapBuffers();
-
-            for (var i = 0; i < this.effects.length; i++) {
-                if (i < this.effects.length - 1) {
-                    gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+            var ready = false;
+            for (var i = 0; i < this.layers.length; i++) {
+                if (i != 0) {
+                    this.swapBuffers();
                 }
-                this.drawScreen(i);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+                this.layers[i].draw();
                 this.swapBuffers();
+                for (var j = 0; j < this.layers[i].effects.length; j++) {
+                    if (i < this.layers.length - 1) {
+                        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+                    } else if (j < this.layers[i].effects.length - 1) {
+                        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+                    } else {
+                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                    }
+                    var tindex = (this.currentBuffer == 0 ? 1 : 0);
+                    this.layers[i].drawScreen(j, this.texture[tindex]);
+                    this.swapBuffers();
+                }
             }
         },
 
-        addEffect: function(shader) {
-            this.effects.push(shader);
-            return this.effects.length - 1;
+        addLayer: function(layer) {
+            this.layers.push(layer);
+            return this.layers.length - 1;
         },
 
-        removeEffect: function(index) {
-            this.effects.splice(index, 1);
+        removeLayer: function(index) {
+            this.layers.splice(index, 1);
         }
     };
 });

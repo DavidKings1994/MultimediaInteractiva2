@@ -30,6 +30,8 @@
     require('./GameObjects/Items/Gasoline.js');
     require('./Geometry/Terrain.js');
     require('./Physics/RigidBody.js');
+    require('./HUI/HUI.js');
+    require('./HUI/FuelMeter.js');
 
     $.fn.initGame = function( parameters ) {
         var self = this;
@@ -42,7 +44,7 @@
             update: function() {
                 if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
                     for (var i = 0; i < Kings.game.elements.length; i++) {
-                        if(Kings.game.elements[i].canReset !== null) {
+                        if(Kings.game.elements[i].canReset != null) {
                             Kings.game.elements[i].restart();
                         }
                     }
@@ -53,6 +55,25 @@
             grayscale: require('./Processing/Postprocessing/Shaders/Grayscale.js'),
             blur: require('./Processing/Postprocessing/Shaders/SpeedBlur.js')
         };
+        Kings.game.light = {
+            ambiental: [1.0, 1.0, 1.0],
+            directional: {
+                direction: [0.0, -1.0, -1.0],
+                color: [1.0, 1.0, 1.0]
+            }
+        };
+
+        Kings.game.hui = new Kings.HUI();
+        Kings.game.HUILayer = new Kings.Layer({
+            name: 'HUI',
+            draw: function() {
+                Kings.game.hui.update();
+                Kings.game.hui.draw();
+            }
+        });
+        Kings.game.renderer.addLayer(Kings.game.HUILayer);
+        Kings.game.mainLayer.addEffect(Kings.game.shaders.grayscale);
+
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
             console.log(Kings.AssetBundles[0]);
@@ -64,7 +85,12 @@
                 motorAccelSound: Kings.AssetBundles[0].content.motorAccel,
                 camera: Kings.game.camera
             });
+            Kings.game.player.canReset = true;
             Kings.game.addElement(Kings.game.player);
+
+            var fuelMeter = new Kings.FuelMeter({
+                position: { x: 10, y: -6, z: 0 }
+            });
 
             var road = new Kings.Road({
                 texture: Kings.AssetBundles[0].content.road,
@@ -82,20 +108,15 @@
                     }
                     road.terrainRight.position.z = Kings.game.player.position.z + 35;
                     road.terrainLeft.position.z = Kings.game.player.position.z + 35;
+                    fuelMeter.setLevel(Kings.game.player.fuel);
                 }
             });
             road.canReset = true;
             Kings.game.addElement(road);
 
-            // var barrier = new Kings.Gasoline({
-            //     position: { x: 0, y: -2, z: 0 },
-            //     rotation: { x: 0, y: 0, z: 0 },
-            //     shape: Kings.AssetBundles[0].content.Gas
-            // });
-            // barrier.addUpdateFunction(function() {
-            //     barrier.position.z = Kings.game.player.position.z + 5;
-            // });
-            // Kings.game.addElement(barrier);
+            Kings.game.hui.addElement(fuelMeter);
+
+            //Kings.game.addElement(Kings.game.hui);
             //
             // var barrier2 = new Kings.GameObject({
             //     position: { x: 3, y: -2, z: 0 },

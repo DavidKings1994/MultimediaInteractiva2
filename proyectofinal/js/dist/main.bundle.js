@@ -19014,8 +19014,10 @@
 	    __webpack_require__(23);
 	    __webpack_require__(24);
 	    __webpack_require__(26);
-	    __webpack_require__(28);
 	    __webpack_require__(27);
+	    __webpack_require__(29);
+	    __webpack_require__(33);
+	    __webpack_require__(32);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19028,7 +19030,7 @@
 	            update: function() {
 	                if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
 	                    for (var i = 0; i < Kings.game.elements.length; i++) {
-	                        if(Kings.game.elements[i].canReset !== null) {
+	                        if(Kings.game.elements[i].canReset != null) {
 	                            Kings.game.elements[i].restart();
 	                        }
 	                    }
@@ -19039,6 +19041,25 @@
 	            grayscale: __webpack_require__(30),
 	            blur: __webpack_require__(31)
 	        };
+	        Kings.game.light = {
+	            ambiental: [1.0, 1.0, 1.0],
+	            directional: {
+	                direction: [0.0, -1.0, -1.0],
+	                color: [1.0, 1.0, 1.0]
+	            }
+	        };
+
+	        Kings.game.hui = new Kings.HUI();
+	        Kings.game.HUILayer = new Kings.Layer({
+	            name: 'HUI',
+	            draw: function() {
+	                Kings.game.hui.update();
+	                Kings.game.hui.draw();
+	            }
+	        });
+	        Kings.game.renderer.addLayer(Kings.game.HUILayer);
+	        Kings.game.mainLayer.addEffect(Kings.game.shaders.grayscale);
+
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
 	            console.log(Kings.AssetBundles[0]);
@@ -19050,7 +19071,12 @@
 	                motorAccelSound: Kings.AssetBundles[0].content.motorAccel,
 	                camera: Kings.game.camera
 	            });
+	            Kings.game.player.canReset = true;
 	            Kings.game.addElement(Kings.game.player);
+
+	            var fuelMeter = new Kings.FuelMeter({
+	                position: { x: 10, y: -6, z: 0 }
+	            });
 
 	            var road = new Kings.Road({
 	                texture: Kings.AssetBundles[0].content.road,
@@ -19068,20 +19094,15 @@
 	                    }
 	                    road.terrainRight.position.z = Kings.game.player.position.z + 35;
 	                    road.terrainLeft.position.z = Kings.game.player.position.z + 35;
+	                    fuelMeter.setLevel(Kings.game.player.fuel);
 	                }
 	            });
 	            road.canReset = true;
 	            Kings.game.addElement(road);
 
-	            // var barrier = new Kings.Gasoline({
-	            //     position: { x: 0, y: -2, z: 0 },
-	            //     rotation: { x: 0, y: 0, z: 0 },
-	            //     shape: Kings.AssetBundles[0].content.Gas
-	            // });
-	            // barrier.addUpdateFunction(function() {
-	            //     barrier.position.z = Kings.game.player.position.z + 5;
-	            // });
-	            // Kings.game.addElement(barrier);
+	            Kings.game.hui.addElement(fuelMeter);
+
+	            //Kings.game.addElement(Kings.game.hui);
 	            //
 	            // var barrier2 = new Kings.GameObject({
 	            //     position: { x: 3, y: -2, z: 0 },
@@ -25811,6 +25832,7 @@
 	    __webpack_require__(15);
 	    __webpack_require__(16);
 	    __webpack_require__(17);
+	    __webpack_require__(34);
 
 	    Kings.Graphics = function(parameters) {
 	        var self = this;
@@ -25820,13 +25842,15 @@
 	        }
 	        Kings.height = parameters.canvas.height;
 	        Kings.width = parameters.canvas.width;
-	        console.log(Kings.height);
 
-	        this.renderer = new Kings.Renderer({
+	        this.mainLayer = new Kings.Layer({
+	            name: 'main',
 	            draw: function() {
 	                self.draw();
 	            }
 	        });
+	        this.renderer = new Kings.Renderer();
+	        this.renderer.addLayer(this.mainLayer);
 
 	        this.camera = parameters.camera || new Kings.Camera();
 	        this.gameUpdate = function() { parameters.update() };
@@ -25922,7 +25946,6 @@
 	            var self = this;
 	            requestAnimFrame(function() { self.tick() });
 	            this.animate();
-	            //this.draw();
 	            this.renderer.render();
 	        },
 
@@ -26117,12 +26140,19 @@
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
+	                    Kings.game.light.ambiental[0],
+	                    Kings.game.light.ambiental[1],
+	                    Kings.game.light.ambiental[2]
+	                );
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
 	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
+	                    Kings.game.light.directional.color[0],
+	                    Kings.game.light.directional.color[1],
+	                    Kings.game.light.directional.color[2]
+	                );
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.triangleTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -26299,12 +26329,19 @@
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
+	                    Kings.game.light.ambiental[0],
+	                    Kings.game.light.ambiental[1],
+	                    Kings.game.light.ambiental[2]
+	                );
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
 	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
+	                    Kings.game.light.directional.color[0],
+	                    Kings.game.light.directional.color[1],
+	                    Kings.game.light.directional.color[2]
+	                );
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -26547,12 +26584,19 @@
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
+	                    Kings.game.light.ambiental[0],
+	                    Kings.game.light.ambiental[1],
+	                    Kings.game.light.ambiental[2]
+	                );
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
 	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
+	                    Kings.game.light.directional.color[0],
+	                    Kings.game.light.directional.color[1],
+	                    Kings.game.light.directional.color[2]
+	                );
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -26774,12 +26818,19 @@
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
+	                    Kings.game.light.ambiental[0],
+	                    Kings.game.light.ambiental[1],
+	                    Kings.game.light.ambiental[2]
+	                );
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
 	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
+	                    Kings.game.light.directional.color[0],
+	                    Kings.game.light.directional.color[1],
+	                    Kings.game.light.directional.color[2]
+	                );
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.gridTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -26928,70 +26979,19 @@
 	    var Kings = window.Kings || {};
 
 	    Kings.Renderer = function(parameters) {
-	        this.effects = [];
+	        this.layers = [];
 	        this.texture = [null, null];
 	        this.frameBuffer = [null, null];
 	        this.renderBuffer = [null, null];
 	        this.currentBuffer = 0;
-	        this.addEffect(new Kings.Shader({
-	            gl: gl,
-	            vertexShaderSource: [
-	                'attribute vec3 aVertexPosition;',
-	                'attribute vec2 aTextureCoord;',
-	                'uniform mat4 uMVMatrix;',
-	                'uniform mat4 uPMatrix;',
-	                'varying vec2 vTextureCoord;',
-	                'void main(void) {',
-	                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	                   'vTextureCoord = aTextureCoord;',
-	                '}'
-	            ].join("\n"),
-	            fragmentShaderSource: [
-	                'precision mediump float;',
-	                'varying vec2 vTextureCoord;',
-	                'uniform sampler2D uSampler;',
-	                'void main(void) {',
-	                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
-	                '}'
-	            ].join("\n")
-	        }));
-	        this.draw = parameters.draw;
 	        this.width = gl.canvas.width;
 	        this.height = gl.canvas.height;
 	        this.initBuffers(0);
 	        this.initBuffers(1);
-	        this.initScreenBuffers();
 	    };
 
 	    Kings.Renderer.prototype = {
 	        constructor: Kings.Renderer,
-
-	        initScreenBuffers: function() {
-	            this.planeTextureCoordBuffer = gl.createBuffer();
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
-	            var textureCoords = [
-	                0.0, 0.0,
-	                1.0, 0.0,
-	                0.0, 1.0,
-	                1.0, 1.0
-	            ];
-	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-	            this.planeTextureCoordBuffer.itemSize = 2;
-	            this.planeTextureCoordBuffer.numItems = 4;
-
-	            this.planeVertexPositionBuffer = gl.createBuffer();
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
-	            var vertices = [
-	                0 - (this.width / 2), 0 - (this.height / 2), 0,
-	                0 + (this.width / 2), 0 - (this.height / 2), 0,
-	                0 - (this.width / 2), 0 + (this.height / 2), 0,
-	                0 + (this.width / 2), 0 + (this.height / 2), 0
-	            ];
-	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-	            this.planeVertexPositionBuffer.itemSize = 3;
-	            this.planeVertexPositionBuffer.numItems = 4;
-	        },
 
 	        initBuffers: function(i) {
 	            this.frameBuffer[i] = gl.createFramebuffer();
@@ -27025,65 +27025,37 @@
 	            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	        },
 
-	        drawScreen: function(i) {
-	            this.vertexPositionAttribute = this.effects[i].getAttributeLocation('aVertexPosition');
-	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
-	            this.textureCoordAttribute = this.effects[i].getAttributeLocation('aTextureCoord');
-	            gl.enableVertexAttribArray(this.textureCoordAttribute);
-
-	            gl.clearColor(0, 0, 0, 1);
-	            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 200.0);
-
-	            Kings.GL.lookAt(
-	                glMatrix.vec3.fromValues(0,0,0),
-	                glMatrix.vec3.fromValues(0,0,-100),
-	                glMatrix.vec3.fromValues(0, 1, 0)
-	            );
-
-	            Kings.GL.mvPushMatrix();
-	            Kings.GL.mvTranslate({ x: 0, y: 0, z: -130 });
-
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
-	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-	            gl.useProgram(this.effects[i].getProgram());
-	            gl.activeTexture(gl.TEXTURE0);
-	            var tindex = (this.currentBuffer == 0 ? 1 : 0);
-	            gl.bindTexture(gl.TEXTURE_2D, this.texture[tindex]);
-	            gl.uniform1i(this.effects[i].getProgram().samplerUniform, 0);
-
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
-	            gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-	            Kings.GL.setMatrixUniforms(this.effects[i]);
-	            gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.planeVertexPositionBuffer.numItems);
-
-	            Kings.GL.mvPopMatrix();
-	        },
-
 	        render: function() {
-	            gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
-	            this.draw();
-	            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-	            this.swapBuffers();
-
-	            for (var i = 0; i < this.effects.length; i++) {
-	                if (i < this.effects.length - 1) {
-	                    gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+	            var ready = false;
+	            for (var i = 0; i < this.layers.length; i++) {
+	                if (i != 0) {
+	                    this.swapBuffers();
 	                }
-	                this.drawScreen(i);
+	                gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+	                this.layers[i].draw();
 	                this.swapBuffers();
+	                for (var j = 0; j < this.layers[i].effects.length; j++) {
+	                    if (i < this.layers.length - 1) {
+	                        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+	                    } else if (j < this.layers[i].effects.length - 1) {
+	                        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[this.currentBuffer]);
+	                    } else {
+	                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	                    }
+	                    var tindex = (this.currentBuffer == 0 ? 1 : 0);
+	                    this.layers[i].drawScreen(j, this.texture[tindex]);
+	                    this.swapBuffers();
+	                }
 	            }
 	        },
 
-	        addEffect: function(shader) {
-	            this.effects.push(shader);
-	            return this.effects.length - 1;
+	        addLayer: function(layer) {
+	            this.layers.push(layer);
+	            return this.layers.length - 1;
 	        },
 
-	        removeEffect: function(index) {
-	            this.effects.splice(index, 1);
+	        removeLayer: function(index) {
+	            this.layers.splice(index, 1);
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -27104,6 +27076,8 @@
 	            rotation: this.rotation,
 	            size: { x: 1, y: 2, z: 3 }
 	        });
+	        this.cameraMode = '3rdPerson';
+	        this.buttonPressed = false;
 	        this.live = true;
 	        this.fuel = 100;
 	        this.motorSound = parameters.motorSound;
@@ -27123,7 +27097,9 @@
 	                    var index = (i + 0);
 	                    self.shape.groups[i].offset = { x: 0, y: 0.6363, z: 0.0171 };
 	                    self.addUpdateFunction(function(){
-	                        self.shape.groups[index].rotation.x += 25 * self.velocity;
+	                        if (self.live) {
+	                            self.shape.groups[index].rotation.x += 25 * self.velocity;
+	                        }
 	                    });
 	                }());
 	            }
@@ -27132,7 +27108,9 @@
 	                    var index = (i + 0);
 	                    self.shape.groups[i].offset = { x: 0, y: 0.64168, z: 3.23467 };
 	                    self.addUpdateFunction(function(){
-	                        self.shape.groups[index].rotation.x += 25 * self.velocity;
+	                        if (self.live) {
+	                            self.shape.groups[index].rotation.x += 25 * self.velocity;
+	                        }
 	                    });
 	                }());
 	            }
@@ -27152,20 +27130,52 @@
 	    Kings.Player.prototype.update = function() {
 	        Kings.GameObject.prototype.update.call(this);
 	        this.shape.update();
-	        this.camera.position.z = this.position.z - 5;
-	        //this.fuel -= 0.5;
+	        switch (this.cameraMode) {
+	            case '1stPerson': {
+	                this.camera.position.x = this.position.x;
+	                this.camera.position.y = this.position.y + 2.5 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
+	                this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
+
+	                // var x = (2.5 * Math.sin(-this.rotation.z * (Math.PI / 180.0))) + this.position.x;
+	                // var y = (2.5 * Math.cos(-this.rotation.z * (Math.PI / 180.0))) + this.position.y;
+	                // this.camera.position.x = x;
+	                // this.camera.position.y = y + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
+	                // this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
+	                break;
+	            }
+	            case '3rdPerson': {
+	                this.camera.position.x = 0;
+	                this.camera.position.y = 0;
+	                this.camera.position.z = this.position.z - 5;
+	                break;
+	            }
+	        }
 	        if (this.fuel <= 0) {
 	            this.live = false;
+	            this.motorSound.pause();
 	        }
 
 	        var moving = false;
 	        var backflip = false;
 	        if (this.live) {
+	            this.fuel -= 0.05;
 	            this.position.z += this.velocity;
+	            if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
+	                if (!this.buttonPressed) {
+	                    if (this.cameraMode == '1stPerson') {
+	                        this.cameraMode = '3rdPerson';
+	                    } else {
+	                        this.cameraMode = '1stPerson';
+	                    }
+	                    this.buttonPressed = true;
+	                }
+	            } else {
+	                this.buttonPressed = false;
+	            }
 	            if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
 	                if (!Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
 	                    if (this.blurId == null) {
-	                        this.blurId = Kings.game.renderer.addEffect(Kings.game.shaders.blur);
+	                        this.blurId = Kings.game.mainLayer.addEffect(Kings.game.shaders.blur);
 	                    }
 	                    this.speedUp();
 	                }
@@ -27245,7 +27255,7 @@
 	            if (this.velocity > this.baseVelocity) {
 	                this.velocity -= 0.05;
 	                if (this.blurId != null) {
-	                    Kings.game.renderer.removeEffect(this.blurId);
+	                    Kings.game.mainLayer.removeEffect(this.blurId);
 	                    this.blurId = null;
 	                }
 	            } else if (this.velocity < this.baseVelocity) {
@@ -27298,6 +27308,7 @@
 	                }
 	            }
 	            this.live = true;
+	            this.fuel = 100;
 	        }
 	    };
 
@@ -27322,6 +27333,13 @@
 	        this.motorAccelSound.play();
 	        if (this.velocity < 1.0) {
 	            this.velocity += 0.05;
+	        }
+	    };
+
+	    Kings.Player.prototype.fillTank = function(cant) {
+	        this.fuel += cant;
+	        if (this.fuel > 100) {
+	            this.fuel = 100;
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -27809,12 +27827,19 @@
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
+	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
+	                    Kings.game.light.ambiental[0],
+	                    Kings.game.light.ambiental[1],
+	                    Kings.game.light.ambiental[2]
+	                );
 	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
 	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
+	                    Kings.game.light.directional.color[0],
+	                    Kings.game.light.directional.color[1],
+	                    Kings.game.light.directional.color[2]
+	                );
 
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
@@ -27950,6 +27975,7 @@
 	    Kings.Road = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
 	        this.gameUpdate = function() { parameters.update() };
+	        this.difficulty = 0;
 	        this.playerIndexLocation = 0;
 	        this.sections = [];
 	        this.numberOfSections = parameters.numberOfSections || 4;
@@ -27998,6 +28024,12 @@
 	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
 
 	    Kings.Road.prototype.update = function(v) {
+	        if (Kings.keyboard.isDown(Kings.keyboard.keys.H)) {
+	            this.difficulty++;
+	            if (this.difficulty == 4) {
+	                this.difficulty = 0;
+	            }
+	        }
 	        this.gameUpdate();
 	        this.terrainRight.update();
 	        this.terrainLeft.update();
@@ -28110,6 +28142,7 @@
 	                // }, 10);
 	                var col = this.gas.body.checkCollisionWithBody(Kings.game.player.body);
 	                if (col) {
+	                    Kings.game.player.fillTank(this.gas.content);
 	                    this.gas = null;
 	                }
 	            }
@@ -28141,7 +28174,7 @@
 	            size: { x: 0.5, y: 0.7, z: 0.5 }
 	        });
 	        this.hovering = true;
-	        this.content = 10;
+	        this.content = 5;
 	    };
 
 	    Kings.Gasoline.prototype = Object.create(Kings.GameObject.prototype);
@@ -28173,66 +28206,8 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    Kings.RigidBody = function(parameters) {
-	        this.position = parameters.position || { x: 0, y: 0, z: 0};
-	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0};
-	        this.size = parameters.size || { x: 0, y: 0, z: 0};
-	    };
-
-	    Kings.RigidBody.prototype = {
-	        constructor: Kings.RigidBody,
-
-	        checkCollisionWithBody: function(body) {
-	            if (
-	                this.position.z - (this.size.z / 2) <= body.position.z + (body.size.z / 2) &&
-	                this.position.z + (this.size.z / 2) >= body.position.z - (body.size.z / 2)
-	            ) {
-	                if (
-	                    this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
-	                    this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
-	                ) {
-	                    if (
-	                        this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&
-	                        this.position.y + (this.size.y / 2) >= body.position.y - (body.size.y / 2)
-	                    ) {
-	                        return true;
-	                    }
-	                }
-	            }
-	            return false;
-	        },
-
-	        checkCollisionWithLine: function(line, segments) {
-	            var m = line.end.y - line.start.y / line.end.x - line.start.x;
-	            var b = line.end.y - (m * line.end.x);
-	            var lenght = line.end.y - line.start.y;
-	            var step = lenght / segments;
-	            for (var i = 0; i < lenght; i+=step) {
-	                if (line.start.z > this.position.z - (this.size.z / 2) && line.start.z < this.position.z + (this.size.z / 2)) {
-	                    var x = (i == 0 && b == 0) ? 0 : (line.start.y + i - b) / m;
-	                    if (x > this.position.x - (this.size.x / 2) && x < this.position.x + (this.size.x / 2)) {
-	                        var y = i;
-	                        if (line.start.y + y >= this.position.y && line.start.y + y < this.position.y + this.size.y) {
-	                            return true;
-	                        }
-	                    }
-	                }
-	            }
-	            return false;
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 28 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
 	    __webpack_require__(10);
-	    __webpack_require__(29);
+	    __webpack_require__(28);
 	    __webpack_require__(16);
 	    __webpack_require__(13);
 
@@ -28365,7 +28340,7 @@
 
 
 /***/ },
-/* 29 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28430,6 +28405,64 @@
 
 	        scale: function(n) {
 	            return (1 + n)/2;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.RigidBody = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0};
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0};
+	        this.size = parameters.size || { x: 0, y: 0, z: 0};
+	    };
+
+	    Kings.RigidBody.prototype = {
+	        constructor: Kings.RigidBody,
+
+	        checkCollisionWithBody: function(body) {
+	            if (
+	                this.position.z - (this.size.z / 2) <= body.position.z + (body.size.z / 2) &&
+	                this.position.z + (this.size.z / 2) >= body.position.z - (body.size.z / 2)
+	            ) {
+	                if (
+	                    this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
+	                    this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
+	                ) {
+	                    if (
+	                        this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&
+	                        this.position.y + (this.size.y / 2) >= body.position.y - (body.size.y / 2)
+	                    ) {
+	                        return true;
+	                    }
+	                }
+	            }
+	            return false;
+	        },
+
+	        checkCollisionWithLine: function(line, segments) {
+	            var m = line.end.y - line.start.y / line.end.x - line.start.x;
+	            var b = line.end.y - (m * line.end.x);
+	            var lenght = line.end.y - line.start.y;
+	            var step = lenght / segments;
+	            for (var i = 0; i < lenght; i+=step) {
+	                if (line.start.z > this.position.z - (this.size.z / 2) && line.start.z < this.position.z + (this.size.z / 2)) {
+	                    var x = (i == 0 && b == 0) ? 0 : (line.start.y + i - b) / m;
+	                    if (x > this.position.x - (this.size.x / 2) && x < this.position.x + (this.size.x / 2)) {
+	                        var y = i;
+	                        if (line.start.y + y >= this.position.y && line.start.y + y < this.position.y + this.size.y) {
+	                            return true;
+	                        }
+	                    }
+	                }
+	            }
+	            return false;
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -28513,6 +28546,237 @@
 	    });
 
 	    return speedBlur;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 32 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.FuelMeter = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.meter = new Kings.Plane({
+	            width: 3,
+	            height: 3,
+	            texture: Kings.AssetBundles[0].content.fuelMeter
+	        });
+	        this.neddle = new Kings.Plane({
+	            width: 3,
+	            height: 3,
+	            texture: Kings.AssetBundles[0].content.meterNeedle
+	        });
+	        this.level = 100;
+	    };
+
+	    Kings.FuelMeter.prototype = {
+	        constructor: Kings.FuelMeter,
+
+	        setLevel: function(l) {
+	            if (l >= 0 && l <= 100) {
+	                this.level = l;
+	            }
+	        },
+
+	        update: function() {
+	            this.neddle.rotation.z = -Kings.Processing.map(this.level, 0, 100, 0, 270);
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            this.meter.draw();
+	            this.neddle.draw();
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.HUI = function(parameters) {
+	        this.elements = [];
+	    };
+
+	    Kings.HUI.prototype = {
+	        constructor: Kings.HUI,
+
+	        addElement: function(element) {
+	            if (element != null) {
+	                this.elements.push(element);
+	            }
+	        },
+
+	        update: function() {
+	            for (var i = 0; i < this.elements.length; i++) {
+	                this.elements[i].update();
+	            }
+	        },
+
+	        draw: function() {
+	            Kings.game.light = {
+	                ambiental: [1.0, 1.0, 1.0],
+	                directional: {
+	                    direction: [0.0, 0.0, 1.0],
+	                    color: [1.0, 1.0, 1.0]
+	                }
+	            };
+	            var ratio = gl.canvas.width / gl.canvas.height;
+	            glMatrix.mat4.identity(Kings.pMatrix);
+	            glMatrix.mat4.ortho(Kings.pMatrix, -10.0 - ratio, 10.0 + ratio, -10.0 + ratio, 10.0  - ratio, 0.1, 100.0);
+	            
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.lookAt(
+	                glMatrix.vec3.fromValues(0,0,1),
+	                glMatrix.vec3.fromValues(0,0,0),
+	                glMatrix.vec3.fromValues(0, 1, 0)
+	            );
+
+	            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	            gl.enable(gl.BLEND);
+	            gl.disable(gl.DEPTH_TEST);
+	            for (var i = 0; i < this.elements.length; i++) {
+	                this.elements[i].draw();
+	            }
+	            gl.disable(gl.BLEND);
+	            gl.enable(gl.DEPTH_TEST);
+	            Kings.GL.mvPopMatrix();
+	            glMatrix.mat4.perspective(Kings.pMatrix, 45, ratio, 0.1, 200.0);
+	            Kings.game.light = {
+	                ambiental: [1.0, 1.0, 1.0],
+	                directional: {
+	                    direction: [0.0, -1.0, -1.0],
+	                    color: [1.0, 1.0, 1.0]
+	                }
+	            };
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 34 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Layer = function(parameters) {
+	        this.name = parameters.name;
+	        this.effects = [];
+	        this.addEffect(new Kings.Shader({
+	            gl: gl,
+	            vertexShaderSource: [
+	                'attribute vec3 aVertexPosition;',
+	                'attribute vec2 aTextureCoord;',
+	                'uniform mat4 uMVMatrix;',
+	                'uniform mat4 uPMatrix;',
+	                'varying vec2 vTextureCoord;',
+	                'void main(void) {',
+	                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	                   'vTextureCoord = aTextureCoord;',
+	                '}'
+	            ].join("\n"),
+	            fragmentShaderSource: [
+	                'precision mediump float;',
+	                'varying vec2 vTextureCoord;',
+	                'uniform sampler2D uSampler;',
+	                'void main(void) {',
+	                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
+	                '}'
+	            ].join("\n")
+	        }));
+	        this.draw = parameters.draw;
+	        this.width = Kings.width;
+	        this.height = Kings.height;
+	        this.initScreenBuffers();
+	    };
+
+	    Kings.Layer.prototype = {
+	        constructor: Kings.Layer,
+
+	        initScreenBuffers: function() {
+	            this.planeTextureCoordBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	            var textureCoords = [
+	                0.0, 0.0,
+	                1.0, 0.0,
+	                0.0, 1.0,
+	                1.0, 1.0
+	            ];
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	            this.planeTextureCoordBuffer.itemSize = 2;
+	            this.planeTextureCoordBuffer.numItems = 4;
+
+	            this.planeVertexPositionBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            var vertices = [
+	                0 - (this.width / 2), 0 - (this.height / 2), 0,
+	                0 + (this.width / 2), 0 - (this.height / 2), 0,
+	                0 - (this.width / 2), 0 + (this.height / 2), 0,
+	                0 + (this.width / 2), 0 + (this.height / 2), 0
+	            ];
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	            this.planeVertexPositionBuffer.itemSize = 3;
+	            this.planeVertexPositionBuffer.numItems = 4;
+	        },
+
+	        drawScreen: function(i, texture) {
+	            this.vertexPositionAttribute = this.effects[i].getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.textureCoordAttribute = this.effects[i].getAttributeLocation('aTextureCoord');
+	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+
+	            gl.clearColor(0, 0, 0, 1);
+	            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 200.0);
+
+	            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.lookAt(
+	                glMatrix.vec3.fromValues(0,0,0),
+	                glMatrix.vec3.fromValues(0,0,-100),
+	                glMatrix.vec3.fromValues(0, 1, 0)
+	            );
+
+	            Kings.GL.mvTranslate({ x: 0, y: 0, z: -130 });
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            gl.useProgram(this.effects[i].getProgram());
+	            gl.activeTexture(gl.TEXTURE0);
+	            gl.bindTexture(gl.TEXTURE_2D, texture);
+	            gl.uniform1i(this.effects[i].getProgram().samplerUniform, 0);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	            gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            Kings.GL.setMatrixUniforms(this.effects[i]);
+	            gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.planeVertexPositionBuffer.numItems);
+
+	            Kings.GL.mvPopMatrix();
+	        },
+
+	        addEffect: function(shader) {
+	            this.effects.push(shader);
+	            return this.effects.length - 1;
+	        },
+
+	        removeEffect: function(index) {
+	            this.effects.splice(index, 1);
+	        },
+	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 

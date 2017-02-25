@@ -10,6 +10,8 @@
                 "textures/ground1.jpg",
                 "textures/ground2.jpg",
                 "textures/lava.jpg",
+                "textures/fuelMeter.png",
+                "textures/meterNeedle.png",
                 "sounds/motorIddle.mp3",
                 "sounds/motorAccel.mp3",
                 "models/Harley-Davidson/HarleyDavidson1.obj",

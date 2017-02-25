@@ -10,7 +10,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             size: { x: 0.5, y: 0.7, z: 0.5 }
         });
         this.hovering = true;
-        this.content = 10;
+        this.content = 5;
     };
 
     Kings.Gasoline.prototype = Object.create(Kings.GameObject.prototype);

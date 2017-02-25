@@ -39,6 +39,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 // }, 10);
                 var col = this.gas.body.checkCollisionWithBody(Kings.game.player.body);
                 if (col) {
+                    Kings.game.player.fillTank(this.gas.content);
                     this.gas = null;
                 }
             }

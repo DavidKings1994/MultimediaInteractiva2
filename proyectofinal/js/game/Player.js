@@ -9,6 +9,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             rotation: this.rotation,
             size: { x: 1, y: 2, z: 3 }
         });
+        this.cameraMode = '3rdPerson';
+        this.buttonPressed = false;
         this.live = true;
         this.fuel = 100;
         this.motorSound = parameters.motorSound;
@@ -28,7 +30,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     var index = (i + 0);
                     self.shape.groups[i].offset = { x: 0, y: 0.6363, z: 0.0171 };
                     self.addUpdateFunction(function(){
-                        self.shape.groups[index].rotation.x += 25 * self.velocity;
+                        if (self.live) {
+                            self.shape.groups[index].rotation.x += 25 * self.velocity;
+                        }
                     });
                 }());
             }
@@ -37,7 +41,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     var index = (i + 0);
                     self.shape.groups[i].offset = { x: 0, y: 0.64168, z: 3.23467 };
                     self.addUpdateFunction(function(){
-                        self.shape.groups[index].rotation.x += 25 * self.velocity;
+                        if (self.live) {
+                            self.shape.groups[index].rotation.x += 25 * self.velocity;
+                        }
                     });
                 }());
             }
@@ -57,20 +63,52 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Player.prototype.update = function() {
         Kings.GameObject.prototype.update.call(this);
         this.shape.update();
-        this.camera.position.z = this.position.z - 5;
-        //this.fuel -= 0.5;
+        switch (this.cameraMode) {
+            case '1stPerson': {
+                this.camera.position.x = this.position.x;
+                this.camera.position.y = this.position.y + 2.5 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
+                this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
+
+                // var x = (2.5 * Math.sin(-this.rotation.z * (Math.PI / 180.0))) + this.position.x;
+                // var y = (2.5 * Math.cos(-this.rotation.z * (Math.PI / 180.0))) + this.position.y;
+                // this.camera.position.x = x;
+                // this.camera.position.y = y + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
+                // this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
+                break;
+            }
+            case '3rdPerson': {
+                this.camera.position.x = 0;
+                this.camera.position.y = 0;
+                this.camera.position.z = this.position.z - 5;
+                break;
+            }
+        }
         if (this.fuel <= 0) {
             this.live = false;
+            this.motorSound.pause();
         }
 
         var moving = false;
         var backflip = false;
         if (this.live) {
+            this.fuel -= 0.05;
             this.position.z += this.velocity;
+            if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
+                if (!this.buttonPressed) {
+                    if (this.cameraMode == '1stPerson') {
+                        this.cameraMode = '3rdPerson';
+                    } else {
+                        this.cameraMode = '1stPerson';
+                    }
+                    this.buttonPressed = true;
+                }
+            } else {
+                this.buttonPressed = false;
+            }
             if (Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
                 if (!Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
                     if (this.blurId == null) {
-                        this.blurId = Kings.game.renderer.addEffect(Kings.game.shaders.blur);
+                        this.blurId = Kings.game.mainLayer.addEffect(Kings.game.shaders.blur);
                     }
                     this.speedUp();
                 }
@@ -150,7 +188,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             if (this.velocity > this.baseVelocity) {
                 this.velocity -= 0.05;
                 if (this.blurId != null) {
-                    Kings.game.renderer.removeEffect(this.blurId);
+                    Kings.game.mainLayer.removeEffect(this.blurId);
                     this.blurId = null;
                 }
             } else if (this.velocity < this.baseVelocity) {
@@ -203,6 +241,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 }
             }
             this.live = true;
+            this.fuel = 100;
         }
     };
 
@@ -227,6 +266,13 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.motorAccelSound.play();
         if (this.velocity < 1.0) {
             this.velocity += 0.05;
+        }
+    };
+
+    Kings.Player.prototype.fillTank = function(cant) {
+        this.fuel += cant;
+        if (this.fuel > 100) {
+            this.fuel = 100;
         }
     };
 });

@@ -6,6 +6,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Road = function(parameters) {
         Kings.GameObject.call(this, parameters);
         this.gameUpdate = function() { parameters.update() };
+        this.difficulty = 0;
         this.playerIndexLocation = 0;
         this.sections = [];
         this.numberOfSections = parameters.numberOfSections || 4;
@@ -54,6 +55,12 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
 
     Kings.Road.prototype.update = function(v) {
+        if (Kings.keyboard.isDown(Kings.keyboard.keys.H)) {
+            this.difficulty++;
+            if (this.difficulty == 4) {
+                this.difficulty = 0;
+            }
+        }
         this.gameUpdate();
         this.terrainRight.update();
         this.terrainLeft.update();

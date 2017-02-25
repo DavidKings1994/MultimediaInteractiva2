@@ -96,12 +96,19 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
                 gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-                var lightingDirection = [0.0, -1.0, -1.0];
+                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
+                    Kings.game.light.ambiental[0],
+                    Kings.game.light.ambiental[1],
+                    Kings.game.light.ambiental[2]
+                );
                 var adjustedLD = glMatrix.vec3.create();
-                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
+                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
                 gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
+                    Kings.game.light.directional.color[0],
+                    Kings.game.light.directional.color[1],
+                    Kings.game.light.directional.color[2]
+                );
 
                 Kings.GL.setMatrixUniforms(Kings.colorShader);
             }

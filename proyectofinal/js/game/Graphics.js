@@ -10,6 +10,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     require('./GameObjects/Camera.js');
     require('./Processing/Utils.js');
     require('./Processing/Postprocessing/Renderer.js');
+    require('./Processing/Postprocessing/Layer.js');
 
     Kings.Graphics = function(parameters) {
         var self = this;
@@ -19,13 +20,15 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
         Kings.height = parameters.canvas.height;
         Kings.width = parameters.canvas.width;
-        console.log(Kings.height);
 
-        this.renderer = new Kings.Renderer({
+        this.mainLayer = new Kings.Layer({
+            name: 'main',
             draw: function() {
                 self.draw();
             }
         });
+        this.renderer = new Kings.Renderer();
+        this.renderer.addLayer(this.mainLayer);
 
         this.camera = parameters.camera || new Kings.Camera();
         this.gameUpdate = function() { parameters.update() };
@@ -121,7 +124,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             var self = this;
             requestAnimFrame(function() { self.tick() });
             this.animate();
-            //this.draw();
             this.renderer.render();
         },
 
