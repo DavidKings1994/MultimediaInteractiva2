@@ -12,6 +12,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.cameraMode = '3rdPerson';
         this.buttonPressed = false;
         this.live = true;
+        this.deathAngle = 0;
         this.fuel = 100;
         this.motorSound = parameters.motorSound;
         this.motorAccelSound = parameters.motorAccelSound;
@@ -78,8 +79,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             }
             case '3rdPerson': {
                 this.camera.position.x = 0;
-                this.camera.position.y = 0;
-                this.camera.position.z = this.position.z - 5;
+                this.camera.position.y = 2;
+                this.camera.position.z = this.position.z - 7;
                 break;
             }
         }
@@ -144,7 +145,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     this.onFloor = false;
                 }
             }
+        } else {
+            var x = (5 * Math.sin(this.deathAngle * (Math.PI / 180.0))) + this.position.x;
+            var z = (5 * Math.cos(this.deathAngle * (Math.PI / 180.0))) + this.position.z;
+            this.camera.position.x = x;
+            this.camera.position.y = 2;
+            this.camera.position.z = z;
+            this.camera.aim = { x: this.position.x - x, y: -2, z: this.position.z - z };
+            this.deathAngle += 2;
         }
+
         if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
             this.restart();
         }
@@ -152,19 +162,17 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.explode();
         }
 
-        if (this.live) {
-            if (this.jumping) {
-                if (this.position.y < -0.5) {
-                    this.position.y += Math.abs(this.position.y) * 0.1;
-                } else {
-                    this.jumping = false;
-                }
-            } else if (this.position.y > -2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2) && !this.jumping && !this.onFloor) {
-                this.position.y -= Math.abs(this.position.y) * 0.1;
+        if (this.jumping) {
+            if (this.position.y < -0.1) {
+                this.position.y += Math.abs(this.position.y) * 0.15;
             } else {
-                this.position.y = (-2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2));
-                this.onFloor = true;
+                this.jumping = false;
             }
+        } else if (this.position.y > -2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2) && !this.jumping && !this.onFloor) {
+            this.position.y -= Math.abs(this.position.y) * 0.15;
+        } else {
+            this.position.y = (-2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2));
+            this.onFloor = true;
         }
 
         if(!backflip) {
@@ -205,17 +213,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             for (var i = 0; i <= this.shape.groups.length; i++) {
                 var dx = Math.random() < 0.5 ? 1 : -1;
                 var dz = Math.random() < 0.5 ? 1 : -1;
-                this.directions.push({ x: Math.random() * dx, y: 0.5, z: Math.random() * dz });
+                this.directions.push({ x: Math.random() * dx, y: 1.0, z: Math.random() * dz });
             }
+            this.jumping = true;
+            this.onFloor = false;
             (function() {
                 self.trashFunction = self.addUpdateFunction(function(){
                     if (self.position.y >= -2) {
-                        self.position.y += self.directions[self.directions.length - 1].y - 0.05;
-                        self.directions[self.directions.length - 1].y -= Math.abs(self.position.y) * 0.05;
                         for (var i = 0; i < self.shape.groups.length; i++) {
                             self.shape.groups[i].position.x += self.directions[i].x;
                             self.shape.groups[i].position.z += self.directions[i].z;
-                            self.directions[i].y -= Math.abs(self.shape.groups[i].position.y) * 0.05;
                         }
                     }
                 });
@@ -225,32 +232,38 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.restart = function() {
+        this.deathAngle = 0;
+        this.camera.aim = { x: 0, y: 0, z: 10 };
         this.motorSound.currentTime = 0;
         this.motorSound.play();
-        if (!this.live) {
-            if (this.trashFunction != -1) {
-                this.removeUpdateFunction(this.trashFunction);
-                this.position.x = 0;
-                this.position.y = -2;
-                this.position.z = 0;
-                for (var i = 0; i < this.shape.groups.length; i++) {
-                    this.directions = [];
-                    this.shape.groups[i].position.x = 0;
-                    this.shape.groups[i].position.y = 0;
-                    this.shape.groups[i].position.z = 0;
-                }
+        if (this.trashFunction != -1) {
+            this.removeUpdateFunction(this.trashFunction);
+            this.position.x = 0;
+            this.position.y = -2;
+            this.position.z = 0;
+            for (var i = 0; i < this.shape.groups.length; i++) {
+                this.directions = [];
+                this.shape.groups[i].position.x = 0;
+                this.shape.groups[i].position.y = 0;
+                this.shape.groups[i].position.z = 0;
             }
-            this.live = true;
-            this.fuel = 100;
         }
+        this.live = true;
+        this.fuel = 100;
     };
 
     Kings.Player.prototype.moveA = function() {
         this.position.x += 0.15;
+        if (this.position.x > 5) {
+            this.position.x = 5;
+        }
     };
 
     Kings.Player.prototype.moveD = function() {
         this.position.x -= 0.15;
+        if (this.position.x < -5) {
+            this.position.x = -5;
+        }
     };
 
     Kings.Player.prototype.slowDown = function() {
@@ -273,6 +286,13 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.fuel += cant;
         if (this.fuel > 100) {
             this.fuel = 100;
+        }
+    };
+
+    Kings.Player.prototype.drainTank = function(cant) {
+        this.fuel -= cant;
+        if (this.fuel < 0) {
+            this.explode();
         }
     };
 });

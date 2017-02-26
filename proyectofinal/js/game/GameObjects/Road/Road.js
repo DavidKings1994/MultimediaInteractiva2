@@ -2,6 +2,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
     require('./RoadSection.js');
+    require('./../Obstacles/Barrier.js');
+    require('./../Obstacles/Cone.js');
+    require('./../Obstacles/OilDrum.js');
 
     Kings.Road = function(parameters) {
         Kings.GameObject.call(this, parameters);
@@ -66,12 +69,45 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.terrainLeft.update();
         this.sections[this.playerIndexLocation].active = true;
         if(this.playerIndexLocation > 1) {
-            this.sections.push(new Kings.RoadSection({
+            var section = new Kings.RoadSection({
                 id: this.sections[this.numberOfSections - 1].id + 1,
                 position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize) },
                 sectionSize: this.sectionSize,
-                texture: this.texture
-            }));
+                texture: this.texture,
+            });
+            var elements = [];
+            if (this.sections[this.numberOfSections - 1].id > 15 && this.sections[this.numberOfSections - 1].id % 2 == 0) {
+                var elementType = Math.floor(Math.random() * 3);
+                switch (elementType) {
+                    case 0: {
+                        var x = (Math.random() - 0.5) * this.sectionSize;
+                        elements.push(new Kings.Barrier({
+                            position: { x: x, y: -2, z: section.position.z },
+                        }));
+                        elements.push(new Kings.Gasoline({
+                            position: { x: x, y: 1, z: section.position.z },
+                        }));
+                        break;
+                    }
+                    case 1: {
+                        elements.push(new Kings.Cone({
+                            position: { x: (Math.random() - 0.5) * this.sectionSize, y: -2, z: section.position.z }
+                        }));
+                        break;
+                    }
+                    case 2: {
+                        elements.push(new Kings.OilDrum({
+                            position: { x: (Math.random() - 0.5) * this.sectionSize, y: -2, z: section.position.z }
+                        }));
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+            }
+            section.objects = elements;
+            this.sections.push(section);
             this.sections.splice(0,1);
         }
         for (var i = 0; i < this.sections.length; i++) {

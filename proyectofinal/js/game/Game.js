@@ -72,7 +72,6 @@
             }
         });
         Kings.game.renderer.addLayer(Kings.game.HUILayer);
-        Kings.game.mainLayer.addEffect(Kings.game.shaders.grayscale);
 
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
@@ -91,6 +90,7 @@
             var fuelMeter = new Kings.FuelMeter({
                 position: { x: 10, y: -6, z: 0 }
             });
+            Kings.game.hui.addElement(fuelMeter);
 
             var road = new Kings.Road({
                 texture: Kings.AssetBundles[0].content.road,
@@ -114,29 +114,7 @@
             road.canReset = true;
             Kings.game.addElement(road);
 
-            Kings.game.hui.addElement(fuelMeter);
-
-            //Kings.game.addElement(Kings.game.hui);
-            //
-            // var barrier2 = new Kings.GameObject({
-            //     position: { x: 3, y: -2, z: 0 },
-            //     rotation: { x: 0, y: -180, z: 0 },
-            //     shape: Kings.AssetBundles[0].content.barriere
-            // });
-            // barrier2.addUpdateFunction(function() {
-            //     barrier2.position.z = Kings.game.player.position.z + 5;
-            // });
-            // Kings.game.addElement(barrier2);
-            //
-            // var barrier3 = new Kings.GameObject({
-            //     position: { x: -3, y: -2, z: 0 },
-            //     rotation: { x: 0, y: -180, z: 0 },
-            //     shape: Kings.AssetBundles[0].content.cone
-            // });
-            // barrier3.addUpdateFunction(function() {
-            //     barrier3.position.z = Kings.game.player.position.z + 5;
-            // });
-            // Kings.game.addElement(barrier3);
+            Kings.game.ready = true;
         });
     };
 }));

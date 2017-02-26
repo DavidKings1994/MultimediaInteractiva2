@@ -20,6 +20,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
         Kings.height = parameters.canvas.height;
         Kings.width = parameters.canvas.width;
+        this.ready = false;
 
         this.mainLayer = new Kings.Layer({
             name: 'main',
@@ -40,7 +41,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             window.oRequestAnimationFrame ||
             window.msRequestAnimationFrame ||
             function(callback, element) {
-                window.setTimeout(callback, 1000/60);
+                window.setTimeout(callback, 1000/30);
             };
         })();
 
@@ -87,21 +88,22 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         },
 
         draw: function() {
-            this.resizeView();
-            //gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.viewport(0,0,1343,672);
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            if (this.ready) {
+                this.resizeView();
+                gl.clearColor(0, 0, 0, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                gl.viewport(0,0,1343,672);
+                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
+                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
 
-            for (var i = 0; i < this.elements.length; i++) {
-                //if (Kings.Gameobject != null) {
-                    //if(this.elements[i] instanceof Kings.Gameobject) {
-                        this.elements[i].draw();
+                for (var i = 0; i < this.elements.length; i++) {
+                    //if (Kings.Gameobject != null) {
+                        //if(this.elements[i] instanceof Kings.Gameobject) {
+                            this.elements[i].draw();
+                        //}
                     //}
-                //}
+                }
             }
         },
 

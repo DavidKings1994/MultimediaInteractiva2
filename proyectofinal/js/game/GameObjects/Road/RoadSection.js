@@ -11,45 +11,25 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             texture: parameters.texture
         });
         Kings.GameObject.call(this, parameters);
-        this.objects = [];
-        this.gas = new Kings.Gasoline({
-            position: { x: this.position.x, y: this.position.y, z: this.position.z }
-        });
+        this.objects = parameters.element || [];
     };
 
     Kings.RoadSection.prototype = Object.create(Kings.GameObject.prototype);
 
     Kings.RoadSection.prototype.update = function() {
         Kings.GameObject.prototype.update.call(this);
-        if (this.gas != null) {
-            this.gas.position.z = this.position.z;
-            this.gas.update();
+        for (var i = 0; i < this.objects.length; i++) {
+            this.objects[i].update();
             if (this.active) {
-                // var col = this.gas.body.checkCollisionWithLine({
-                //     start: {
-                //         x: Kings.game.player.position.x,
-                //         y: Kings.game.player.position.y,
-                //         z: Kings.game.player.position.z
-                //     },
-                //     end: {
-                //         x: Kings.game.player.position.x,
-                //         y: Kings.game.player.position.y + 1,
-                //         z: Kings.game.player.position.z
-                //     }
-                // }, 10);
-                var col = this.gas.body.checkCollisionWithBody(Kings.game.player.body);
-                if (col) {
-                    Kings.game.player.fillTank(this.gas.content);
-                    this.gas = null;
-                }
+                this.objects[i].body.checkCollisionWithBody(Kings.game.player.body);
             }
         }
     };
 
     Kings.RoadSection.prototype.draw = function() {
         Kings.GameObject.prototype.draw.call(this);
-        if (this.gas != null) {
-            this.gas.draw();
+        for (var i = 0; i < this.objects.length; i++) {
+            this.objects[i].draw();
         }
     };
 });

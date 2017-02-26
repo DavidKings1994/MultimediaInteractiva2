@@ -5,6 +5,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.position = parameters.position || { x: 0, y: 0, z: 0};
         this.rotation = parameters.rotation || { x: 0, y: 0, z: 0};
         this.size = parameters.size || { x: 0, y: 0, z: 0};
+        this.callback = parameters.onCollision;
     };
 
     Kings.RigidBody.prototype = {
@@ -23,6 +24,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                         this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&
                         this.position.y + (this.size.y / 2) >= body.position.y - (body.size.y / 2)
                     ) {
+                        if (this.callback !== undefined) {
+                            this.callback();
+                        }
                         return true;
                     }
                 }
