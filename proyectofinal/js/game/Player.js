@@ -9,7 +9,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             rotation: this.rotation,
             size: { x: 1, y: 2, z: 3 }
         });
-        this.cameraMode = '3rdPerson';
+        this.cameraMode = 1;
         this.buttonPressed = false;
         this.live = true;
         this.deathAngle = 0;
@@ -17,7 +17,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.motorSound = parameters.motorSound;
         this.motorAccelSound = parameters.motorAccelSound;
         this.velocity = (parameters.velocity + 0) || 0;
-        this.baseVelocity = (parameters.velocity + 0) || 0;
+        this.aceleration = 0;
         this.camera = parameters.camera;
         this.turningSpeed = 5;
         this.jumping = false;
@@ -65,11 +65,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         Kings.GameObject.prototype.update.call(this);
         this.shape.update();
         switch (this.cameraMode) {
-            case '1stPerson': {
+            case 0: {
                 this.camera.position.x = this.position.x;
                 this.camera.position.y = this.position.y + 2.5 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
                 this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
-
+                this.camera.aim = { x: 0, y: 0, z: 10 };
                 // var x = (2.5 * Math.sin(-this.rotation.z * (Math.PI / 180.0))) + this.position.x;
                 // var y = (2.5 * Math.cos(-this.rotation.z * (Math.PI / 180.0))) + this.position.y;
                 // this.camera.position.x = x;
@@ -77,10 +77,18 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 // this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
                 break;
             }
-            case '3rdPerson': {
+            case 1: {
                 this.camera.position.x = 0;
                 this.camera.position.y = 2;
                 this.camera.position.z = this.position.z - 7;
+                this.camera.aim = { x: 0, y: 0, z: 10 };
+                break;
+            }
+            case 2: {
+                this.camera.position.x = 0;
+                this.camera.position.y = 15;
+                this.camera.position.z = this.position.z + 7;
+                this.camera.aim = { x: 0, y: -2, z: 0.1};
                 break;
             }
         }
@@ -96,10 +104,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.position.z += this.velocity;
             if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
                 if (!this.buttonPressed) {
-                    if (this.cameraMode == '1stPerson') {
-                        this.cameraMode = '3rdPerson';
-                    } else {
-                        this.cameraMode = '1stPerson';
+                    this.cameraMode++;
+                    if (this.cameraMode > 2) {
+                        this.cameraMode = 0;
                     }
                     this.buttonPressed = true;
                 }
@@ -152,7 +159,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.camera.position.y = 2;
             this.camera.position.z = z;
             this.camera.aim = { x: this.position.x - x, y: -2, z: this.position.z - z };
-            this.deathAngle += 2;
+            this.deathAngle += 0.7;
+            if (this.blurId != null) {
+                Kings.game.mainLayer.removeEffect(this.blurId);
+                this.blurId = null;
+            }
         }
 
         if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
@@ -162,14 +173,15 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.explode();
         }
 
+        var newy = Math.abs(this.position.y) * 0.2;
         if (this.jumping) {
             if (this.position.y < -0.1) {
-                this.position.y += Math.abs(this.position.y) * 0.15;
+                this.position.y += Math.abs(this.position.y) * 0.2;
             } else {
                 this.jumping = false;
             }
-        } else if (this.position.y > -2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2) && !this.jumping && !this.onFloor) {
-            this.position.y -= Math.abs(this.position.y) * 0.15;
+        } else if (this.position.y - newy > -2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2) && !this.jumping && !this.onFloor) {
+            this.position.y -= newy;
         } else {
             this.position.y = (-2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2));
             this.onFloor = true;
@@ -193,19 +205,22 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
 
         if (!Kings.keyboard.isDown(Kings.keyboard.keys.S) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-            if (this.velocity > this.baseVelocity) {
-                this.velocity -= 0.05;
+            if (this.aceleration > 0) {
+                this.aceleration -= 0.05;
                 if (this.blurId != null) {
                     Kings.game.mainLayer.removeEffect(this.blurId);
                     this.blurId = null;
                 }
-            } else if (this.velocity < this.baseVelocity) {
-                this.velocity += 0.05;
+            } else if (this.aceleration < 0) {
+                this.aceleration += 0.05;
             }
         }
     };
 
     Kings.Player.prototype.explode = function() {
+        if (this.deathCam == null) {
+            this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
+        }
         this.motorSound.pause();
         var self = this;
         if (this.live) {
@@ -232,6 +247,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.restart = function() {
+        if (this.deathCam != null) {
+            Kings.game.mainLayer.removeEffect(this.deathCam);
+            this.deathCam = null;
+        }
         this.deathAngle = 0;
         this.camera.aim = { x: 0, y: 0, z: 10 };
         this.motorSound.currentTime = 0;
@@ -253,32 +272,32 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.moveA = function() {
-        this.position.x += 0.15;
+        this.position.x += 0.3;
         if (this.position.x > 5) {
             this.position.x = 5;
         }
     };
 
     Kings.Player.prototype.moveD = function() {
-        this.position.x -= 0.15;
+        this.position.x -= 0.3;
         if (this.position.x < -5) {
             this.position.x = -5;
         }
     };
 
     Kings.Player.prototype.slowDown = function() {
-        if (this.velocity > 0.3) {
-            this.velocity -= 0.05;
+        if (this.aceleration > -0.3) {
+            this.aceleration -= 0.05;
         }
     };
 
     Kings.Player.prototype.speedUp = function() {
-        if (this.motorAccelSound.currentTime > 0.25) {
-            this.motorAccelSound.currentTime = 0.15;
+        if (this.motorAccelSound.currentTime > 0.26) {
+            this.motorAccelSound.currentTime = 0.19;
         }
         this.motorAccelSound.play();
-        if (this.velocity < 1.0) {
-            this.velocity += 0.05;
+        if (this.aceleration < 0.3) {
+            this.aceleration += 0.05;
         }
     };
 

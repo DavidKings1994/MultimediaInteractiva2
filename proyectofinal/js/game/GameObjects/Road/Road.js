@@ -53,6 +53,20 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             maxHeight: 10,
             staticEdge: 'top'
         });
+        this.combinations = [ //0 = nada, 1 = barreera/gasolina, 2 = barril, 3 = gasolina
+            [0,0,0,0,0],
+            [2,2,0,0,0],
+            [0,0,0,2,2],
+            [2,2,2,0,0],
+            [0,0,2,2,2],
+            [2,2,1,2,2],
+            [2,2,2,2,1],
+            [1,2,2,2,2],
+            [0,0,1,2,2],
+            [2,2,1,0,0],
+            [0,0,3,0,0],
+        ];
+        this.pastCombination = 0;
     };
 
     Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
@@ -76,33 +90,46 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 texture: this.texture,
             });
             var elements = [];
-            if (this.sections[this.numberOfSections - 1].id > 15 && this.sections[this.numberOfSections - 1].id % 2 == 0) {
-                var elementType = Math.floor(Math.random() * 3);
-                switch (elementType) {
-                    case 0: {
-                        var x = (Math.random() - 0.5) * this.sectionSize;
-                        elements.push(new Kings.Barrier({
-                            position: { x: x, y: -2, z: section.position.z },
-                        }));
-                        elements.push(new Kings.Gasoline({
-                            position: { x: x, y: 1, z: section.position.z },
-                        }));
-                        break;
-                    }
-                    case 1: {
-                        elements.push(new Kings.Cone({
-                            position: { x: (Math.random() - 0.5) * this.sectionSize, y: -2, z: section.position.z }
-                        }));
-                        break;
-                    }
-                    case 2: {
-                        elements.push(new Kings.OilDrum({
-                            position: { x: (Math.random() - 0.5) * this.sectionSize, y: -2, z: section.position.z }
-                        }));
-                        break;
-                    }
-                    default: {
-                        break;
+            if (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % 4 == 0) {
+                var elementType = Math.floor(Math.random() * this.combinations.length);
+                while (elementType == this.pastCombination) {
+                    elementType = Math.floor(Math.random() * this.combinations.length);
+                }
+                this.pastCombination = elementType;
+                for (var i = 0; i < this.combinations[elementType].length; i++) {
+                    var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
+                    switch (this.combinations[elementType][i]) {
+                        case 0: {
+                            //nada
+                            break;
+                        }
+                        case 1: {
+                            elements.push(new Kings.Barrier({
+                                position: { x: x, y: -2, z: section.position.z },
+                            }));
+                            elements.push(new Kings.Gasoline({
+                                position: { x: x, y: 0, z: section.position.z },
+                            }));
+                            // elements.push(new Kings.Cone({
+                            //     position: { x: x, y: -2, z: section.position.z }
+                            // }));
+                            break;
+                        }
+                        case 2: {
+                            elements.push(new Kings.OilDrum({
+                                position: { x: x, y: -2, z: section.position.z }
+                            }));
+                            break;
+                        }
+                        case 3: {
+                            elements.push(new Kings.Gasoline({
+                                position: { x: x, y: -1.7, z: section.position.z }
+                            }));
+                            break;
+                        }
+                        default: {
+                            break;
+                        }
                     }
                 }
             }

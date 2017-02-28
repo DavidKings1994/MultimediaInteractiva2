@@ -19013,11 +19013,11 @@
 	    __webpack_require__(20);
 	    __webpack_require__(24);
 	    __webpack_require__(25);
-	    __webpack_require__(27);
-	    __webpack_require__(28);
 	    __webpack_require__(30);
 	    __webpack_require__(31);
-	    __webpack_require__(32);
+	    __webpack_require__(33);
+	    __webpack_require__(34);
+	    __webpack_require__(35);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19038,8 +19038,10 @@
 	            }
 	        });
 	        Kings.game.shaders = {
-	            grayscale: __webpack_require__(33),
-	            blur: __webpack_require__(34)
+	            grayscale: __webpack_require__(36),
+	            blur: __webpack_require__(37),
+	            hdr: __webpack_require__(38),
+	            crt: __webpack_require__(39)
 	        };
 	        Kings.game.light = {
 	            ambiental: [1.0, 1.0, 1.0],
@@ -19058,12 +19060,13 @@
 	            }
 	        });
 	        Kings.game.renderer.addLayer(Kings.game.HUILayer);
+	        Kings.game.mainLayer.addEffect(Kings.game.shaders.hdr);
 
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
 	            console.log(Kings.AssetBundles[0]);
 	            Kings.game.player = new Kings.Player({
-	                velocity: 0.7,
+	                velocity: 1,
 	                position: { x: 0, y: -2, z: 0 },
 	                shape: Kings.AssetBundles[0].content.HarleyDavidson1,
 	                motorSound: Kings.AssetBundles[0].content.motorIddle,
@@ -27174,7 +27177,7 @@
 	            rotation: this.rotation,
 	            size: { x: 1, y: 2, z: 3 }
 	        });
-	        this.cameraMode = '3rdPerson';
+	        this.cameraMode = 1;
 	        this.buttonPressed = false;
 	        this.live = true;
 	        this.deathAngle = 0;
@@ -27182,7 +27185,7 @@
 	        this.motorSound = parameters.motorSound;
 	        this.motorAccelSound = parameters.motorAccelSound;
 	        this.velocity = (parameters.velocity + 0) || 0;
-	        this.baseVelocity = (parameters.velocity + 0) || 0;
+	        this.aceleration = 0;
 	        this.camera = parameters.camera;
 	        this.turningSpeed = 5;
 	        this.jumping = false;
@@ -27230,11 +27233,11 @@
 	        Kings.GameObject.prototype.update.call(this);
 	        this.shape.update();
 	        switch (this.cameraMode) {
-	            case '1stPerson': {
+	            case 0: {
 	                this.camera.position.x = this.position.x;
 	                this.camera.position.y = this.position.y + 2.5 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
 	                this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
-
+	                this.camera.aim = { x: 0, y: 0, z: 10 };
 	                // var x = (2.5 * Math.sin(-this.rotation.z * (Math.PI / 180.0))) + this.position.x;
 	                // var y = (2.5 * Math.cos(-this.rotation.z * (Math.PI / 180.0))) + this.position.y;
 	                // this.camera.position.x = x;
@@ -27242,10 +27245,18 @@
 	                // this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
 	                break;
 	            }
-	            case '3rdPerson': {
+	            case 1: {
 	                this.camera.position.x = 0;
 	                this.camera.position.y = 2;
 	                this.camera.position.z = this.position.z - 7;
+	                this.camera.aim = { x: 0, y: 0, z: 10 };
+	                break;
+	            }
+	            case 2: {
+	                this.camera.position.x = 0;
+	                this.camera.position.y = 15;
+	                this.camera.position.z = this.position.z + 7;
+	                this.camera.aim = { x: 0, y: -2, z: 0.1};
 	                break;
 	            }
 	        }
@@ -27261,10 +27272,9 @@
 	            this.position.z += this.velocity;
 	            if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
 	                if (!this.buttonPressed) {
-	                    if (this.cameraMode == '1stPerson') {
-	                        this.cameraMode = '3rdPerson';
-	                    } else {
-	                        this.cameraMode = '1stPerson';
+	                    this.cameraMode++;
+	                    if (this.cameraMode > 2) {
+	                        this.cameraMode = 0;
 	                    }
 	                    this.buttonPressed = true;
 	                }
@@ -27317,7 +27327,11 @@
 	            this.camera.position.y = 2;
 	            this.camera.position.z = z;
 	            this.camera.aim = { x: this.position.x - x, y: -2, z: this.position.z - z };
-	            this.deathAngle += 2;
+	            this.deathAngle += 0.7;
+	            if (this.blurId != null) {
+	                Kings.game.mainLayer.removeEffect(this.blurId);
+	                this.blurId = null;
+	            }
 	        }
 
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
@@ -27327,14 +27341,15 @@
 	            this.explode();
 	        }
 
+	        var newy = Math.abs(this.position.y) * 0.2;
 	        if (this.jumping) {
 	            if (this.position.y < -0.1) {
-	                this.position.y += Math.abs(this.position.y) * 0.15;
+	                this.position.y += Math.abs(this.position.y) * 0.2;
 	            } else {
 	                this.jumping = false;
 	            }
-	        } else if (this.position.y > -2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2) && !this.jumping && !this.onFloor) {
-	            this.position.y -= Math.abs(this.position.y) * 0.15;
+	        } else if (this.position.y - newy > -2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2) && !this.jumping && !this.onFloor) {
+	            this.position.y -= newy;
 	        } else {
 	            this.position.y = (-2 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 0.2));
 	            this.onFloor = true;
@@ -27358,19 +27373,22 @@
 	        }
 
 	        if (!Kings.keyboard.isDown(Kings.keyboard.keys.S) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-	            if (this.velocity > this.baseVelocity) {
-	                this.velocity -= 0.05;
+	            if (this.aceleration > 0) {
+	                this.aceleration -= 0.05;
 	                if (this.blurId != null) {
 	                    Kings.game.mainLayer.removeEffect(this.blurId);
 	                    this.blurId = null;
 	                }
-	            } else if (this.velocity < this.baseVelocity) {
-	                this.velocity += 0.05;
+	            } else if (this.aceleration < 0) {
+	                this.aceleration += 0.05;
 	            }
 	        }
 	    };
 
 	    Kings.Player.prototype.explode = function() {
+	        if (this.deathCam == null) {
+	            this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
+	        }
 	        this.motorSound.pause();
 	        var self = this;
 	        if (this.live) {
@@ -27397,6 +27415,10 @@
 	    };
 
 	    Kings.Player.prototype.restart = function() {
+	        if (this.deathCam != null) {
+	            Kings.game.mainLayer.removeEffect(this.deathCam);
+	            this.deathCam = null;
+	        }
 	        this.deathAngle = 0;
 	        this.camera.aim = { x: 0, y: 0, z: 10 };
 	        this.motorSound.currentTime = 0;
@@ -27418,32 +27440,32 @@
 	    };
 
 	    Kings.Player.prototype.moveA = function() {
-	        this.position.x += 0.15;
+	        this.position.x += 0.3;
 	        if (this.position.x > 5) {
 	            this.position.x = 5;
 	        }
 	    };
 
 	    Kings.Player.prototype.moveD = function() {
-	        this.position.x -= 0.15;
+	        this.position.x -= 0.3;
 	        if (this.position.x < -5) {
 	            this.position.x = -5;
 	        }
 	    };
 
 	    Kings.Player.prototype.slowDown = function() {
-	        if (this.velocity > 0.3) {
-	            this.velocity -= 0.05;
+	        if (this.aceleration > -0.3) {
+	            this.aceleration -= 0.05;
 	        }
 	    };
 
 	    Kings.Player.prototype.speedUp = function() {
-	        if (this.motorAccelSound.currentTime > 0.25) {
-	            this.motorAccelSound.currentTime = 0.15;
+	        if (this.motorAccelSound.currentTime > 0.26) {
+	            this.motorAccelSound.currentTime = 0.19;
 	        }
 	        this.motorAccelSound.play();
-	        if (this.velocity < 1.0) {
-	            this.velocity += 0.05;
+	        if (this.aceleration < 0.3) {
+	            this.aceleration += 0.05;
 	        }
 	    };
 
@@ -28089,9 +28111,9 @@
 	    var Kings = window.Kings || {};
 
 	    __webpack_require__(26);
-	    __webpack_require__(35);
-	    __webpack_require__(36);
-	    __webpack_require__(37);
+	    __webpack_require__(27);
+	    __webpack_require__(28);
+	    __webpack_require__(29);
 
 	    Kings.Road = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
@@ -28140,6 +28162,20 @@
 	            maxHeight: 10,
 	            staticEdge: 'top'
 	        });
+	        this.combinations = [ //0 = nada, 1 = barreera/gasolina, 2 = barril, 3 = gasolina
+	            [0,0,0,0,0],
+	            [2,2,0,0,0],
+	            [0,0,0,2,2],
+	            [2,2,2,0,0],
+	            [0,0,2,2,2],
+	            [2,2,1,2,2],
+	            [2,2,2,2,1],
+	            [1,2,2,2,2],
+	            [0,0,1,2,2],
+	            [2,2,1,0,0],
+	            [0,0,3,0,0],
+	        ];
+	        this.pastCombination = 0;
 	    };
 
 	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
@@ -28163,33 +28199,46 @@
 	                texture: this.texture,
 	            });
 	            var elements = [];
-	            if (this.sections[this.numberOfSections - 1].id > 15 && this.sections[this.numberOfSections - 1].id % 2 == 0) {
-	                var elementType = Math.floor(Math.random() * 3);
-	                switch (elementType) {
-	                    case 0: {
-	                        var x = (Math.random() - 0.5) * this.sectionSize;
-	                        elements.push(new Kings.Barrier({
-	                            position: { x: x, y: -2, z: section.position.z },
-	                        }));
-	                        elements.push(new Kings.Gasoline({
-	                            position: { x: x, y: 1, z: section.position.z },
-	                        }));
-	                        break;
-	                    }
-	                    case 1: {
-	                        elements.push(new Kings.Cone({
-	                            position: { x: (Math.random() - 0.5) * this.sectionSize, y: -2, z: section.position.z }
-	                        }));
-	                        break;
-	                    }
-	                    case 2: {
-	                        elements.push(new Kings.OilDrum({
-	                            position: { x: (Math.random() - 0.5) * this.sectionSize, y: -2, z: section.position.z }
-	                        }));
-	                        break;
-	                    }
-	                    default: {
-	                        break;
+	            if (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % 4 == 0) {
+	                var elementType = Math.floor(Math.random() * this.combinations.length);
+	                while (elementType == this.pastCombination) {
+	                    elementType = Math.floor(Math.random() * this.combinations.length);
+	                }
+	                this.pastCombination = elementType;
+	                for (var i = 0; i < this.combinations[elementType].length; i++) {
+	                    var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
+	                    switch (this.combinations[elementType][i]) {
+	                        case 0: {
+	                            //nada
+	                            break;
+	                        }
+	                        case 1: {
+	                            elements.push(new Kings.Barrier({
+	                                position: { x: x, y: -2, z: section.position.z },
+	                            }));
+	                            elements.push(new Kings.Gasoline({
+	                                position: { x: x, y: 0, z: section.position.z },
+	                            }));
+	                            // elements.push(new Kings.Cone({
+	                            //     position: { x: x, y: -2, z: section.position.z }
+	                            // }));
+	                            break;
+	                        }
+	                        case 2: {
+	                            elements.push(new Kings.OilDrum({
+	                                position: { x: x, y: -2, z: section.position.z }
+	                            }));
+	                            break;
+	                        }
+	                        case 3: {
+	                            elements.push(new Kings.Gasoline({
+	                                position: { x: x, y: -1.7, z: section.position.z }
+	                            }));
+	                            break;
+	                        }
+	                        default: {
+	                            break;
+	                        }
 	                    }
 	                }
 	            }
@@ -28299,11 +28348,118 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
+	    Kings.Barrier = function(parameters) {
+	        parameters.shape = Kings.AssetBundles[0].content.barriere
+	        parameters.rotation = { x: 0, y: -180, z: 0 };
+	        Kings.GameObject.call(this, parameters);
+	        var self = this;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 2, y: 1, z: 0.5 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    Kings.game.player.drainTank(30);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	        this.hovering = true;
+	        this.content = 5;
+	    };
+
+	    Kings.Barrier.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Barrier.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 28 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Cone = function(parameters) {
+	        parameters.shape = Kings.AssetBundles[0].content.cone
+	        Kings.GameObject.call(this, parameters);
+	        var self = this;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 0.5, y: 0.7, z: 0.5 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    Kings.game.player.drainTank(30);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	        this.hovering = true;
+	        this.content = 5;
+	    };
+
+	    Kings.Cone.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Cone.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.OilDrum = function(parameters) {
+	        parameters.shape = Kings.AssetBundles[0].content.oildrum
+	        Kings.GameObject.call(this, parameters);
+	        var self = this;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 1, y: 2, z: 1 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    Kings.game.player.drainTank(30);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	        this.hovering = true;
+	        this.content = 5;
+	    };
+
+	    Kings.OilDrum.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.OilDrum.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
 	    Kings.Gasoline = function(parameters) {
 	        var self = this;
 	        parameters.shape = Kings.AssetBundles[0].content.Gas
 	        Kings.GameObject.call(this, parameters);
 	        this.hovering = true;
+	        this.hoverAltitude = 0;
 	        this.content = 5;
 	        this.active = true;
 	        this.body = new Kings.RigidBody({
@@ -28327,13 +28483,15 @@
 	        Kings.GameObject.prototype.update.call(this);
 	        this.rotation.y += 0.5;
 	        if (this.hovering) {
-	            if (this.position.y < -1.4) {
+	            if (this.hoverAltitude < 0.2) {
+	                this.hoverAltitude += 0.01;
 	                this.position.y += 0.01;
 	            } else {
 	                this.hovering = false;
 	            }
 	        } else {
-	            if (this.position.y > -1.8) {
+	            if (this.hoverAltitude > -0.2) {
+	                this.hoverAltitude -= 0.01;
 	                this.position.y -= 0.01;
 	            } else {
 	                this.hovering = true;
@@ -28350,14 +28508,14 @@
 
 
 /***/ },
-/* 28 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
 	    __webpack_require__(10);
-	    __webpack_require__(29);
+	    __webpack_require__(32);
 	    __webpack_require__(16);
 	    __webpack_require__(13);
 
@@ -28490,7 +28648,7 @@
 
 
 /***/ },
-/* 29 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28561,7 +28719,7 @@
 
 
 /***/ },
-/* 30 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28623,7 +28781,7 @@
 
 
 /***/ },
-/* 31 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28690,7 +28848,7 @@
 
 
 /***/ },
-/* 32 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28736,7 +28894,7 @@
 
 
 /***/ },
-/* 33 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28772,7 +28930,7 @@
 
 
 /***/ },
-/* 34 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28817,108 +28975,101 @@
 
 
 /***/ },
-/* 35 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    Kings.Barrier = function(parameters) {
-	        parameters.shape = Kings.AssetBundles[0].content.barriere
-	        parameters.rotation = { x: 0, y: -180, z: 0 };
-	        Kings.GameObject.call(this, parameters);
-	        var self = this;
-	        this.active = true;
-	        this.body = new Kings.RigidBody({
-	            position: this.position,
-	            rotation: this.rotation,
-	            size: { x: 2, y: 1, z: 0.5 },
-	            onCollision: function() {
-	                if (self.active) {
-	                    Kings.game.player.drainTank(30);
-	                    self.active = false;
-	                }
-	            }
-	        });
-	        this.hovering = true;
-	        this.content = 5;
-	    };
+	    var hdr = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision mediump float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'float exposure = 0.5;',
+	                'const float gamma = 2.2;',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'vec3 hdrColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)).rgb;',
+	                'vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);',
+	                'vec3 correction = pow(mapped, vec3(1.0 / gamma));',
+	                'gl_FragColor = vec4(correction, textureColor.a);',
+	            '}'
+	        ].join("\n")
+	    });
 
-	    Kings.Barrier.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.Barrier.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	    };
+	    return hdr;
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
-/* 36 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    Kings.Cone = function(parameters) {
-	        parameters.shape = Kings.AssetBundles[0].content.cone
-	        Kings.GameObject.call(this, parameters);
-	        var self = this;
-	        this.active = true;
-	        this.body = new Kings.RigidBody({
-	            position: this.position,
-	            rotation: this.rotation,
-	            size: { x: 0.5, y: 0.7, z: 0.5 },
-	            onCollision: function() {
-	                if (self.active) {
-	                    Kings.game.player.drainTank(30);
-	                    self.active = false;
-	                }
-	            }
-	        });
-	        this.hovering = true;
-	        this.content = 5;
-	    };
+	    var crt = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            '#ifdef GL_ES',
+	            '#define LOWP lowp',
+	                'precision mediump float;',
+	            '#else',
+	                '#define LOWP',
+	            '#endif',
+	            '#define CRT_CASE_BORDR 0.0125',
+	            '#define SCAN_LINE_MULT 1250.0',
+	            'float CRT_CURVE_AMNTx = 0.7; // curve amount on x',
+	            'float CRT_CURVE_AMNTy = 1.0; // curve amount on y',
+	            'varying LOWP vec4 v_color;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main() {',
+	            	'vec2 tc = vec2(vTextureCoord.x, vTextureCoord.y);',
+	            	'float dx = abs(0.5-tc.x);',
+	            	'float dy = abs(0.5-tc.y);',
+	            	'dx *= dx;',
+	            	'dy *= dy;',
+	            	'tc.x -= 0.5;',
+	            	'tc.x *= 1.0 + (dy * CRT_CURVE_AMNTx);',
+	            	'tc.x += 0.5;',
+	            	'tc.y -= 0.5;',
+	            	'tc.y *= 1.0 + (dx * CRT_CURVE_AMNTy);',
+	            	'tc.y += 0.5;',
+	            	'vec4 cta = texture2D(uSampler, vec2(tc.x, tc.y));',
+	            	'cta.rgb += sin(tc.y * SCAN_LINE_MULT) * 0.02;',
+	            	'if(tc.y > 1.0 || tc.x < 0.0 || tc.x > 1.0 || tc.y < 0.0)',
+	            		'cta = vec4(0.0);',
+	            	'gl_FragColor = cta;',
+	            '}'
+	        ].join("\n")
+	    });
 
-	    Kings.Cone.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.Cone.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 37 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.OilDrum = function(parameters) {
-	        parameters.shape = Kings.AssetBundles[0].content.oildrum
-	        Kings.GameObject.call(this, parameters);
-	        var self = this;
-	        this.active = true;
-	        this.body = new Kings.RigidBody({
-	            position: this.position,
-	            rotation: this.rotation,
-	            size: { x: 1, y: 2, z: 1 },
-	            onCollision: function() {
-	                if (self.active) {
-	                    Kings.game.player.drainTank(30);
-	                    self.active = false;
-	                }
-	            }
-	        });
-	        this.hovering = true;
-	        this.content = 5;
-	    };
-
-	    Kings.OilDrum.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.OilDrum.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	    };
+	    return crt;
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 

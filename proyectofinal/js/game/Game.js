@@ -53,7 +53,9 @@
         });
         Kings.game.shaders = {
             grayscale: require('./Processing/Postprocessing/Shaders/Grayscale.js'),
-            blur: require('./Processing/Postprocessing/Shaders/SpeedBlur.js')
+            blur: require('./Processing/Postprocessing/Shaders/SpeedBlur.js'),
+            hdr: require('./Processing/Postprocessing/Shaders/HDR.js'),
+            crt: require('./Processing/Postprocessing/Shaders/CRT.js')
         };
         Kings.game.light = {
             ambiental: [1.0, 1.0, 1.0],
@@ -72,12 +74,13 @@
             }
         });
         Kings.game.renderer.addLayer(Kings.game.HUILayer);
+        Kings.game.mainLayer.addEffect(Kings.game.shaders.hdr);
 
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
             console.log(Kings.AssetBundles[0]);
             Kings.game.player = new Kings.Player({
-                velocity: 0.7,
+                velocity: 1,
                 position: { x: 0, y: -2, z: 0 },
                 shape: Kings.AssetBundles[0].content.HarleyDavidson1,
                 motorSound: Kings.AssetBundles[0].content.motorIddle,
