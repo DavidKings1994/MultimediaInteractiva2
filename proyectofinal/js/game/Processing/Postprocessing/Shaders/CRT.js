@@ -23,8 +23,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             '#endif',
             '#define CRT_CASE_BORDR 0.0125',
             '#define SCAN_LINE_MULT 1250.0',
-            'float CRT_CURVE_AMNTx = 0.7; // curve amount on x',
-            'float CRT_CURVE_AMNTy = 1.0; // curve amount on y',
+            'float CRT_CURVE_AMNTx = 0.0; // curve amount on x',
+            'float CRT_CURVE_AMNTy = 0.0; // curve amount on y',
             'varying LOWP vec4 v_color;',
             'varying vec2 vTextureCoord;',
             'uniform sampler2D uSampler;',
@@ -43,7 +43,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             	'vec4 cta = texture2D(uSampler, vec2(tc.x, tc.y));',
             	'cta.rgb += sin(tc.y * SCAN_LINE_MULT) * 0.02;',
             	'if(tc.y > 1.0 || tc.x < 0.0 || tc.x > 1.0 || tc.y < 0.0)',
-            		'cta = vec4(0.0);',
+            		'cta = vec4(1.0);',
             	'gl_FragColor = cta;',
             '}'
         ].join("\n")

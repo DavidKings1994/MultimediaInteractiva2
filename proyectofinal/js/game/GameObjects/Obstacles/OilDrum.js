@@ -9,7 +9,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.body = new Kings.RigidBody({
             position: this.position,
             rotation: this.rotation,
-            size: { x: 1, y: 2, z: 1 },
+            size: { x: 1.3, y: 2, z: 1.3 },
             onCollision: function() {
                 if (self.active) {
                     Kings.game.player.drainTank(30);

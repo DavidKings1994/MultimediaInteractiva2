@@ -57,6 +57,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             }
         });
         this.motorSound.play();
+        Kings.AssetBundles[0].content.ThroughTheFireandFlames.volume = 0.7;
+        Kings.AssetBundles[0].content.ThroughTheFireandFlames.loop = true;
+        Kings.AssetBundles[0].content.ThroughTheFireandFlames.play();
+
     };
 
     Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
@@ -70,11 +74,12 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 this.camera.position.y = this.position.y + 2.5 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
                 this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
                 this.camera.aim = { x: 0, y: 0, z: 10 };
-                // var x = (2.5 * Math.sin(-this.rotation.z * (Math.PI / 180.0))) + this.position.x;
-                // var y = (2.5 * Math.cos(-this.rotation.z * (Math.PI / 180.0))) + this.position.y;
-                // this.camera.position.x = x;
-                // this.camera.position.y = y + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
-                // this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
+
+                Kings.game.light.spot.position = [
+                    this.camera.position.x - this.position.x,
+                    this.camera.position.y - this.position.y,
+                    this.camera.position.z - this.position.z - 1
+                ];
                 break;
             }
             case 1: {
@@ -82,6 +87,12 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 this.camera.position.y = 2;
                 this.camera.position.z = this.position.z - 7;
                 this.camera.aim = { x: 0, y: 0, z: 10 };
+
+                Kings.game.light.spot.position = [
+                    this.camera.position.x + this.position.x,
+                    this.camera.position.y + this.position.y,
+                    this.camera.position.z - this.position.z + 14
+                ];
                 break;
             }
             case 2: {
@@ -89,9 +100,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 this.camera.position.y = 15;
                 this.camera.position.z = this.position.z + 7;
                 this.camera.aim = { x: 0, y: -2, z: 0.1};
+
+                Kings.game.light.spot.position = [
+                    this.camera.position.x - this.position.x,
+                    this.camera.position.y - this.position.y,
+                    this.camera.position.z - this.position.z
+                ];
                 break;
             }
         }
+
         if (this.fuel <= 0) {
             this.live = false;
             this.motorSound.pause();
@@ -164,6 +182,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 Kings.game.mainLayer.removeEffect(this.blurId);
                 this.blurId = null;
             }
+            if (this.deathCam == null) {
+                this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
+            }
+            Kings.AssetBundles[0].content.ThroughTheFireandFlames.pause();
         }
 
         if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
@@ -218,9 +240,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.explode = function() {
-        if (this.deathCam == null) {
-            this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
-        }
         this.motorSound.pause();
         var self = this;
         if (this.live) {
@@ -247,6 +266,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.restart = function() {
+        Kings.AssetBundles[0].content.ThroughTheFireandFlames.currentTime = 0;
+        Kings.AssetBundles[0].content.ThroughTheFireandFlames.play();
+        this.velocity = 1;
         if (this.deathCam != null) {
             Kings.game.mainLayer.removeEffect(this.deathCam);
             this.deathCam = null;

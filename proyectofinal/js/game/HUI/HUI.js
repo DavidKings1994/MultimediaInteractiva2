@@ -21,17 +21,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         },
 
         draw: function() {
-            Kings.game.light = {
-                ambiental: [1.0, 1.0, 1.0],
-                directional: {
-                    direction: [0.0, 0.0, 1.0],
-                    color: [1.0, 1.0, 1.0]
-                }
-            };
             var ratio = gl.canvas.width / gl.canvas.height;
             glMatrix.mat4.identity(Kings.pMatrix);
             glMatrix.mat4.ortho(Kings.pMatrix, -10.0 - ratio, 10.0 + ratio, -10.0 + ratio, 10.0  - ratio, 0.1, 100.0);
-            
+
             Kings.GL.mvPushMatrix();
             Kings.GL.lookAt(
                 glMatrix.vec3.fromValues(0,0,1),
@@ -49,13 +42,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             gl.enable(gl.DEPTH_TEST);
             Kings.GL.mvPopMatrix();
             glMatrix.mat4.perspective(Kings.pMatrix, 45, ratio, 0.1, 200.0);
-            Kings.game.light = {
-                ambiental: [1.0, 1.0, 1.0],
-                directional: {
-                    direction: [0.0, -1.0, -1.0],
-                    color: [1.0, 1.0, 1.0]
-                }
-            };
         }
     };
 });

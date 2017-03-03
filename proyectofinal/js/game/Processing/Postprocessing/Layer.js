@@ -28,8 +28,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             ].join("\n")
         }));
         this.draw = parameters.draw;
-        this.width = Kings.width;
-        this.height = Kings.height;
+        this.width = gl.canvas.width;
+        this.height = gl.canvas.height;
         this.initScreenBuffers();
     };
 
@@ -62,7 +62,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.planeVertexPositionBuffer.numItems = 4;
         },
 
-        drawScreen: function(i, texture) {
+        drawScreen: function(i, texture) {            
             this.vertexPositionAttribute = this.effects[i].getAttributeLocation('aVertexPosition');
             gl.enableVertexAttribArray(this.vertexPositionAttribute);
             this.textureCoordAttribute = this.effects[i].getAttributeLocation('aTextureCoord');

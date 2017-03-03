@@ -24,6 +24,33 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 glMatrix.vec3.fromValues(this.position.x + this.aim.x, this.position.y + this.aim.y, this.position.z + this.aim.z),
                 glMatrix.vec3.fromValues(0, 1, 0)
             );
+
+            glMatrix.mat4.lookAt(
+                Kings.vMatrix,
+                glMatrix.vec3.fromValues(this.position.x, this.position.y, this.position.z),
+                glMatrix.vec3.fromValues(this.position.x + this.aim.x, this.position.y + this.aim.y, this.position.z + this.aim.z),
+                glMatrix.vec3.fromValues(0, 1, 0)
+            );
+
+            glMatrix.mat4.translate(Kings.wMatrix, Kings.wMatrix, glMatrix.vec3.fromValues(
+                this.position.x,
+                this.position.y,
+                this.position.z
+            ));
+            var inRadians = glMatrix.vec3.angle(
+                glMatrix.vec3.fromValues(
+                    this.position.x + this.aim.x,
+                    this.position.y + this.aim.y,
+                    this.position.z + this.aim.z
+                ),
+                glMatrix.vec3.fromValues(
+                    this.position.x,
+                    this.position.y,
+                    this.position.z + 10
+                )
+            );
+            glMatrix.mat4.rotate(Kings.wMatrix, Kings.wMatrix, inRadians, glMatrix.vec3.fromValues(0, 1, 0));
+            glMatrix.mat4.invert(Kings.wMatrix, Kings.wMatrix);
         }
     };
 });

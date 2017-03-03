@@ -7,8 +7,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.frameBuffer = [null, null];
         this.renderBuffer = [null, null];
         this.currentBuffer = 0;
-        this.width = gl.canvas.width;
-        this.height = gl.canvas.height;
         this.initBuffers(0);
         this.initBuffers(1);
     };
@@ -20,8 +18,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.frameBuffer[i] = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[i]);
 
-            this.frameBuffer[i].width = 1343;
-            this.frameBuffer[i].height = 672;
+            this.frameBuffer[i].width = Kings.width;
+            this.frameBuffer[i].height = Kings.height;
 
             this.texture[i] = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, this.texture[i]);
@@ -49,7 +47,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         },
 
         render: function() {
-            var ready = false;
             for (var i = 0; i < this.layers.length; i++) {
                 if (i != 0) {
                     this.swapBuffers();
@@ -79,6 +76,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         removeLayer: function(index) {
             this.layers.splice(index, 1);
+        },
+
+        resize: function() {
+            this.initBuffers(0);
+            this.initBuffers(1);
         }
     };
 });

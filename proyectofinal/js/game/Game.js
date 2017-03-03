@@ -49,6 +49,18 @@
                         }
                     }
                 }
+            },
+            light: {
+                ambiental: [1.0, 1.0, 1.0],
+                directional: {
+                    direction: [0.0, -0.3, -0.3],
+                    color: [0.3, 0.3, 0.3]
+                },
+                spot: {
+                    position: [0.0, 0.0, 0.0],
+                    color: [1.0, 1.0, 1.0],
+                    direction: [0.0, 0.0, -1.0]
+                }
             }
         });
         Kings.game.shaders = {
@@ -56,13 +68,6 @@
             blur: require('./Processing/Postprocessing/Shaders/SpeedBlur.js'),
             hdr: require('./Processing/Postprocessing/Shaders/HDR.js'),
             crt: require('./Processing/Postprocessing/Shaders/CRT.js')
-        };
-        Kings.game.light = {
-            ambiental: [1.0, 1.0, 1.0],
-            directional: {
-                direction: [0.0, -1.0, -1.0],
-                color: [1.0, 1.0, 1.0]
-            }
         };
 
         Kings.game.hui = new Kings.HUI();
@@ -74,7 +79,7 @@
             }
         });
         Kings.game.renderer.addLayer(Kings.game.HUILayer);
-        Kings.game.mainLayer.addEffect(Kings.game.shaders.hdr);
+        Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
 
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
@@ -112,6 +117,13 @@
                     road.terrainRight.position.z = Kings.game.player.position.z + 35;
                     road.terrainLeft.position.z = Kings.game.player.position.z + 35;
                     fuelMeter.setLevel(Kings.game.player.fuel);
+                    if (road.sections[road.sections.length - 1].id % 50 == 0) {
+                        Kings.game.player.velocity += 0.02;
+                        if (Kings.game.player.velocity > 2) {
+                            Kings.game.player.velocity = 2;
+                        }
+                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 2, 4, 7));
+                    }
                 }
             });
             road.canReset = true;

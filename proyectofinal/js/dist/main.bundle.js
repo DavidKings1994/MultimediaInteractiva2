@@ -19035,6 +19035,18 @@
 	                        }
 	                    }
 	                }
+	            },
+	            light: {
+	                ambiental: [1.0, 1.0, 1.0],
+	                directional: {
+	                    direction: [0.0, -0.3, -0.3],
+	                    color: [0.3, 0.3, 0.3]
+	                },
+	                spot: {
+	                    position: [0.0, 0.0, 0.0],
+	                    color: [1.0, 1.0, 1.0],
+	                    direction: [0.0, 0.0, -1.0]
+	                }
 	            }
 	        });
 	        Kings.game.shaders = {
@@ -19042,13 +19054,6 @@
 	            blur: __webpack_require__(37),
 	            hdr: __webpack_require__(38),
 	            crt: __webpack_require__(39)
-	        };
-	        Kings.game.light = {
-	            ambiental: [1.0, 1.0, 1.0],
-	            directional: {
-	                direction: [0.0, -1.0, -1.0],
-	                color: [1.0, 1.0, 1.0]
-	            }
 	        };
 
 	        Kings.game.hui = new Kings.HUI();
@@ -19060,7 +19065,7 @@
 	            }
 	        });
 	        Kings.game.renderer.addLayer(Kings.game.HUILayer);
-	        Kings.game.mainLayer.addEffect(Kings.game.shaders.hdr);
+	        Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
 
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
@@ -19098,6 +19103,13 @@
 	                    road.terrainRight.position.z = Kings.game.player.position.z + 35;
 	                    road.terrainLeft.position.z = Kings.game.player.position.z + 35;
 	                    fuelMeter.setLevel(Kings.game.player.fuel);
+	                    if (road.sections[road.sections.length - 1].id % 50 == 0) {
+	                        Kings.game.player.velocity += 0.02;
+	                        if (Kings.game.player.velocity > 2) {
+	                            Kings.game.player.velocity = 2;
+	                        }
+	                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 2, 4, 7));
+	                    }
 	                }
 	            });
 	            road.canReset = true;
@@ -25821,8 +25833,9 @@
 	        if (!gl) {
 	            alert('No se puede incializar');
 	        }
-	        Kings.height = parameters.canvas.height;
-	        Kings.width = parameters.canvas.width;
+
+	        Kings.height = parameters.canvas.clientHeight;
+	        Kings.width = parameters.canvas.clientWidth;
 	        this.ready = false;
 
 	        this.mainLayer = new Kings.Layer({
@@ -25834,6 +25847,7 @@
 	        this.renderer = new Kings.Renderer();
 	        this.renderer.addLayer(this.mainLayer);
 
+	        this.light = parameters.light;
 	        this.camera = parameters.camera || new Kings.Camera();
 	        this.gameUpdate = function() { parameters.update() };
 
@@ -25854,6 +25868,8 @@
 
 	        Kings.mvMatrix = glMatrix.mat4.create();
 	        Kings.pMatrix = glMatrix.mat4.create();
+	        Kings.wMatrix = glMatrix.mat4.create();
+	        Kings.vMatrix = glMatrix.mat4.create();
 	        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
 	        Kings.mvMatrixStack = [];
 
@@ -25895,7 +25911,6 @@
 	                this.resizeView();
 	                gl.clearColor(0, 0, 0, 1);
 	                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	                gl.viewport(0,0,1343,672);
 	                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 	                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
@@ -25938,6 +25953,9 @@
 	            if (gl.canvas.width  != displayWidth || gl.canvas.height != displayHeight) {
 	                gl.canvas.width  = displayWidth;
 	                gl.canvas.height = displayHeight;
+	                Kings.width = displayWidth;
+	                Kings.height = displayHeight;
+	                this.renderer.resize();
 	            }
 	        }
 	    };
@@ -25962,13 +25980,45 @@
 
 	        setMatrixUniforms: function(shader) {
 	            gl.uniformMatrix4fv(shader.getUniform('uPMatrix'), false, Kings.pMatrix);
+	            gl.uniformMatrix4fv(shader.getUniform('uVMatrix'), false, Kings.mvMatrix);
 	            gl.uniformMatrix4fv(shader.getUniform('uMVMatrix'), false, Kings.mvMatrix);
+	            gl.uniformMatrix4fv(shader.getUniform('uWVMatrix'), false, Kings.wMatrix);
 
 	            var normalMatrix = glMatrix.mat3.create();
 	            glMatrix.mat3.normalFromMat4(normalMatrix, Kings.mvMatrix);
-	            // glMatrix.mat3.invert(normalMatrix, normalMatrix);
-	            // glMatrix.mat3.transpose(normalMatrix, normalMatrix);
 	            gl.uniformMatrix3fv(shader.getUniform('uNMatrix'), false, normalMatrix);
+	        },
+
+	        setLightUniforms: function(shader) {
+	            gl.uniform3f(shader.getUniform('uAmbientColor'),
+	                Kings.game.light.ambiental[0],
+	                Kings.game.light.ambiental[1],
+	                Kings.game.light.ambiental[2]
+	            );
+	            var adjustedLD = glMatrix.vec3.create();
+	            glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
+	            gl.uniform3fv(shader.getUniform('uLightingDirection'), adjustedLD);
+	            gl.uniform3f(shader.getUniform('uDirectionalColor'),
+	                Kings.game.light.directional.color[0],
+	                Kings.game.light.directional.color[1],
+	                Kings.game.light.directional.color[2]
+	            );
+
+	            gl.uniform3f(shader.getUniform('uPointLightingLocation'),
+	                Kings.game.light.spot.position[0],
+	                Kings.game.light.spot.position[1],
+	                Kings.game.light.spot.position[2]
+	            );
+	            gl.uniform3f(shader.getUniform('uPointLightingColor'),
+	                Kings.game.light.spot.color[0],
+	                Kings.game.light.spot.color[1],
+	                Kings.game.light.spot.color[2]
+	            );
+	            gl.uniform3f(shader.getUniform('uPointLightingDirection'),
+	                Kings.game.light.spot.direction[0],
+	                Kings.game.light.spot.direction[1],
+	                Kings.game.light.spot.direction[2]
+	            );
 	        },
 
 	        mvPushMatrix: function(m) {
@@ -26123,19 +26173,7 @@
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
-	                    Kings.game.light.ambiental[0],
-	                    Kings.game.light.ambiental[1],
-	                    Kings.game.light.ambiental[2]
-	                );
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
-	                    Kings.game.light.directional.color[0],
-	                    Kings.game.light.directional.color[1],
-	                    Kings.game.light.directional.color[2]
-	                );
+	                Kings.GL.setLightUniforms(Kings.textureShader);
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.triangleTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -26146,13 +26184,7 @@
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
-
+	                Kings.GL.setLightUniforms(Kings.colorShader);
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
 
@@ -26293,7 +26325,7 @@
 
 	        },
 
-	        draw: function() {
+	        draw: function(shader) {
 	            Kings.GL.mvPushMatrix();
 	            Kings.GL.mvTranslate(this.position);
 	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
@@ -26306,43 +26338,37 @@
 	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
 	            gl.vertexAttribPointer(this.vertexNormalAttribute, this.planeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	            if (this.texture != null) {
-	                gl.useProgram(Kings.textureShader.getProgram());
+	            if (shader != undefined) {
+	                gl.useProgram(shader.getProgram());
 	                gl.activeTexture(gl.TEXTURE0);
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
-	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
-
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
-	                    Kings.game.light.ambiental[0],
-	                    Kings.game.light.ambiental[1],
-	                    Kings.game.light.ambiental[2]
-	                );
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
-	                    Kings.game.light.directional.color[0],
-	                    Kings.game.light.directional.color[1],
-	                    Kings.game.light.directional.color[2]
-	                );
+	                gl.uniform1i(shader.getProgram().samplerUniform, 0);
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                Kings.GL.setMatrixUniforms(Kings.textureShader);
+	                Kings.GL.setMatrixUniforms(shader);
 	            } else {
-	                gl.useProgram(Kings.colorShader.getProgram());
-	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
-	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+	                if (this.texture != null) {
+	                    gl.useProgram(Kings.textureShader.getProgram());
+	                    gl.activeTexture(gl.TEXTURE0);
+	                    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	                    gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                    Kings.GL.setLightUniforms(Kings.textureShader);
 
-	                Kings.GL.setMatrixUniforms(Kings.colorShader);
+	                    gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	                    gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                    Kings.GL.setMatrixUniforms(Kings.textureShader);
+	                } else {
+	                    gl.useProgram(Kings.colorShader.getProgram());
+	                    gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+	                    gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                    Kings.GL.setLightUniforms(Kings.colorShader);
+	                    Kings.GL.setMatrixUniforms(Kings.colorShader);
+	                }
 	            }
 
 	            gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.planeVertexPositionBuffer.numItems);
@@ -26567,19 +26593,7 @@
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
-	                    Kings.game.light.ambiental[0],
-	                    Kings.game.light.ambiental[1],
-	                    Kings.game.light.ambiental[2]
-	                );
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
-	                    Kings.game.light.directional.color[0],
-	                    Kings.game.light.directional.color[1],
-	                    Kings.game.light.directional.color[2]
-	                );
+	                Kings.GL.setLightUniforms(Kings.textureShader);
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -26590,13 +26604,7 @@
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
-
+	                Kings.GL.setLightUniforms(Kings.colorShader);
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
 
@@ -26801,19 +26809,7 @@
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
-	                    Kings.game.light.ambiental[0],
-	                    Kings.game.light.ambiental[1],
-	                    Kings.game.light.ambiental[2]
-	                );
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
-	                    Kings.game.light.directional.color[0],
-	                    Kings.game.light.directional.color[1],
-	                    Kings.game.light.directional.color[2]
-	                );
+	                Kings.GL.setLightUniforms(Kings.textureShader);
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.gridTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -26824,13 +26820,7 @@
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.gridVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
-
+	                Kings.GL.setLightUniforms(Kings.colorShader);
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
 	            gl.drawArrays(gl.TRIANGLES, 0, this.gridVertexPositionBuffer.numItems);
@@ -26925,6 +26915,33 @@
 	                glMatrix.vec3.fromValues(this.position.x + this.aim.x, this.position.y + this.aim.y, this.position.z + this.aim.z),
 	                glMatrix.vec3.fromValues(0, 1, 0)
 	            );
+
+	            glMatrix.mat4.lookAt(
+	                Kings.vMatrix,
+	                glMatrix.vec3.fromValues(this.position.x, this.position.y, this.position.z),
+	                glMatrix.vec3.fromValues(this.position.x + this.aim.x, this.position.y + this.aim.y, this.position.z + this.aim.z),
+	                glMatrix.vec3.fromValues(0, 1, 0)
+	            );
+
+	            glMatrix.mat4.translate(Kings.wMatrix, Kings.wMatrix, glMatrix.vec3.fromValues(
+	                this.position.x,
+	                this.position.y,
+	                this.position.z
+	            ));
+	            var inRadians = glMatrix.vec3.angle(
+	                glMatrix.vec3.fromValues(
+	                    this.position.x + this.aim.x,
+	                    this.position.y + this.aim.y,
+	                    this.position.z + this.aim.z
+	                ),
+	                glMatrix.vec3.fromValues(
+	                    this.position.x,
+	                    this.position.y,
+	                    this.position.z + 10
+	                )
+	            );
+	            glMatrix.mat4.rotate(Kings.wMatrix, Kings.wMatrix, inRadians, glMatrix.vec3.fromValues(0, 1, 0));
+	            glMatrix.mat4.invert(Kings.wMatrix, Kings.wMatrix);
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -26967,8 +26984,6 @@
 	        this.frameBuffer = [null, null];
 	        this.renderBuffer = [null, null];
 	        this.currentBuffer = 0;
-	        this.width = gl.canvas.width;
-	        this.height = gl.canvas.height;
 	        this.initBuffers(0);
 	        this.initBuffers(1);
 	    };
@@ -26980,8 +26995,8 @@
 	            this.frameBuffer[i] = gl.createFramebuffer();
 	            gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer[i]);
 
-	            this.frameBuffer[i].width = 1343;
-	            this.frameBuffer[i].height = 672;
+	            this.frameBuffer[i].width = Kings.width;
+	            this.frameBuffer[i].height = Kings.height;
 
 	            this.texture[i] = gl.createTexture();
 	            gl.bindTexture(gl.TEXTURE_2D, this.texture[i]);
@@ -27009,7 +27024,6 @@
 	        },
 
 	        render: function() {
-	            var ready = false;
 	            for (var i = 0; i < this.layers.length; i++) {
 	                if (i != 0) {
 	                    this.swapBuffers();
@@ -27039,6 +27053,11 @@
 
 	        removeLayer: function(index) {
 	            this.layers.splice(index, 1);
+	        },
+
+	        resize: function() {
+	            this.initBuffers(0);
+	            this.initBuffers(1);
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -27078,8 +27097,8 @@
 	            ].join("\n")
 	        }));
 	        this.draw = parameters.draw;
-	        this.width = Kings.width;
-	        this.height = Kings.height;
+	        this.width = gl.canvas.width;
+	        this.height = gl.canvas.height;
 	        this.initScreenBuffers();
 	    };
 
@@ -27112,7 +27131,7 @@
 	            this.planeVertexPositionBuffer.numItems = 4;
 	        },
 
-	        drawScreen: function(i, texture) {
+	        drawScreen: function(i, texture) {            
 	            this.vertexPositionAttribute = this.effects[i].getAttributeLocation('aVertexPosition');
 	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
 	            this.textureCoordAttribute = this.effects[i].getAttributeLocation('aTextureCoord');
@@ -27225,6 +27244,10 @@
 	            }
 	        });
 	        this.motorSound.play();
+	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.volume = 0.7;
+	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.loop = true;
+	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.play();
+
 	    };
 
 	    Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
@@ -27238,11 +27261,12 @@
 	                this.camera.position.y = this.position.y + 2.5 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
 	                this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
 	                this.camera.aim = { x: 0, y: 0, z: 10 };
-	                // var x = (2.5 * Math.sin(-this.rotation.z * (Math.PI / 180.0))) + this.position.x;
-	                // var y = (2.5 * Math.cos(-this.rotation.z * (Math.PI / 180.0))) + this.position.y;
-	                // this.camera.position.x = x;
-	                // this.camera.position.y = y + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
-	                // this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
+
+	                Kings.game.light.spot.position = [
+	                    this.camera.position.x - this.position.x,
+	                    this.camera.position.y - this.position.y,
+	                    this.camera.position.z - this.position.z - 1
+	                ];
 	                break;
 	            }
 	            case 1: {
@@ -27250,6 +27274,12 @@
 	                this.camera.position.y = 2;
 	                this.camera.position.z = this.position.z - 7;
 	                this.camera.aim = { x: 0, y: 0, z: 10 };
+
+	                Kings.game.light.spot.position = [
+	                    this.camera.position.x + this.position.x,
+	                    this.camera.position.y + this.position.y,
+	                    this.camera.position.z - this.position.z + 14
+	                ];
 	                break;
 	            }
 	            case 2: {
@@ -27257,9 +27287,16 @@
 	                this.camera.position.y = 15;
 	                this.camera.position.z = this.position.z + 7;
 	                this.camera.aim = { x: 0, y: -2, z: 0.1};
+
+	                Kings.game.light.spot.position = [
+	                    this.camera.position.x - this.position.x,
+	                    this.camera.position.y - this.position.y,
+	                    this.camera.position.z - this.position.z
+	                ];
 	                break;
 	            }
 	        }
+
 	        if (this.fuel <= 0) {
 	            this.live = false;
 	            this.motorSound.pause();
@@ -27332,6 +27369,10 @@
 	                Kings.game.mainLayer.removeEffect(this.blurId);
 	                this.blurId = null;
 	            }
+	            if (this.deathCam == null) {
+	                this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
+	            }
+	            Kings.AssetBundles[0].content.ThroughTheFireandFlames.pause();
 	        }
 
 	        if (Kings.keyboard.isDown(Kings.keyboard.keys.R)) {
@@ -27386,9 +27427,6 @@
 	    };
 
 	    Kings.Player.prototype.explode = function() {
-	        if (this.deathCam == null) {
-	            this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
-	        }
 	        this.motorSound.pause();
 	        var self = this;
 	        if (this.live) {
@@ -27415,6 +27453,9 @@
 	    };
 
 	    Kings.Player.prototype.restart = function() {
+	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.currentTime = 0;
+	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.play();
+	        this.velocity = 1;
 	        if (this.deathCam != null) {
 	            Kings.game.mainLayer.removeEffect(this.deathCam);
 	            this.deathCam = null;
@@ -27951,12 +27992,7 @@
 	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
 	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-	                var lightingDirection = [0.0, -1.0, -1.0];
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
+	                Kings.GL.setLightUniforms(Kings.textureShader);
 
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
 	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -27967,20 +28003,7 @@
 	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
 	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-	                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
-	                    Kings.game.light.ambiental[0],
-	                    Kings.game.light.ambiental[1],
-	                    Kings.game.light.ambiental[2]
-	                );
-	                var adjustedLD = glMatrix.vec3.create();
-	                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
-	                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-	                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
-	                    Kings.game.light.directional.color[0],
-	                    Kings.game.light.directional.color[1],
-	                    Kings.game.light.directional.color[2]
-	                );
-
+	                Kings.GL.setLightUniforms(Kings.colorShader);
 	                Kings.GL.setMatrixUniforms(Kings.colorShader);
 	            }
 
@@ -28118,7 +28141,7 @@
 	    Kings.Road = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
 	        this.gameUpdate = function() { parameters.update() };
-	        this.difficulty = 0;
+	        this.difficulty = 4;
 	        this.playerIndexLocation = 0;
 	        this.sections = [];
 	        this.numberOfSections = parameters.numberOfSections || 4;
@@ -28163,9 +28186,10 @@
 	            staticEdge: 'top'
 	        });
 	        this.combinations = [ //0 = nada, 1 = barreera/gasolina, 2 = barril, 3 = gasolina
-	            [0,0,0,0,0],
 	            [2,2,0,0,0],
 	            [0,0,0,2,2],
+	            [2,2,2,0,0],
+	            [0,0,2,2,2],
 	            [2,2,2,0,0],
 	            [0,0,2,2,2],
 	            [2,2,1,2,2],
@@ -28174,19 +28198,45 @@
 	            [0,0,1,2,2],
 	            [2,2,1,0,0],
 	            [0,0,3,0,0],
+	            [0,0,0,0,3],
+	            [3,0,0,0,0],
+	            [2,0,2,0,2],
 	        ];
+	        this.string = [
+	            [
+	                [2,0,2,0,2],
+	                [0,2,0,2,0],
+	                [2,0,2,0,2],
+	                [0,2,0,2,0],
+	                [2,0,2,0,2],
+	                [0,2,0,2,0],
+	            ],
+	            [
+	                [2,2,2,0,2],
+	                [0,0,2,2,2],
+	                [2,2,2,0,2],
+	                [0,0,2,2,2],
+	                [2,2,2,0,2],
+	                [0,0,2,2,2],
+	            ],
+	            [
+	                [3,0,0,0,0],
+	                [0,3,0,0,0],
+	                [0,0,3,0,0],
+	                [0,0,0,3,0],
+	                [0,0,0,0,3],
+	                [0,0,0,3,0],
+	                [0,0,3,0,0],
+	            ]
+	        ];
+	        this.currentString = -1;
+	        this.stringPosition = 0;
 	        this.pastCombination = 0;
 	    };
 
 	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
 
 	    Kings.Road.prototype.update = function(v) {
-	        if (Kings.keyboard.isDown(Kings.keyboard.keys.H)) {
-	            this.difficulty++;
-	            if (this.difficulty == 4) {
-	                this.difficulty = 0;
-	            }
-	        }
 	        this.gameUpdate();
 	        this.terrainRight.update();
 	        this.terrainLeft.update();
@@ -28199,45 +28249,98 @@
 	                texture: this.texture,
 	            });
 	            var elements = [];
-	            if (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % 4 == 0) {
-	                var elementType = Math.floor(Math.random() * this.combinations.length);
-	                while (elementType == this.pastCombination) {
+	            if (
+	                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0) ||
+	                (this.sections[this.numberOfSections - 1].id % 3 == 0 && this.currentString != -1)
+	            ) {
+	                var probability = Math.random();
+	                var elementType;
+	                if (probability > 0.9 && this.currentString == -1) {
+	                    this.currentString = Math.floor(Math.random() * this.string.length);
+	                    this.stringPosition = 0;
+	                } else {
 	                    elementType = Math.floor(Math.random() * this.combinations.length);
+	                    while (elementType == this.pastCombination) {
+	                        elementType = Math.floor(Math.random() * this.combinations.length);
+	                    }
+	                    this.pastCombination = elementType;
 	                }
-	                this.pastCombination = elementType;
-	                for (var i = 0; i < this.combinations[elementType].length; i++) {
-	                    var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
-	                    switch (this.combinations[elementType][i]) {
-	                        case 0: {
-	                            //nada
-	                            break;
+	                if (this.currentString != -1) {
+	                    for (var i = 0; i < this.string[this.currentString][this.stringPosition].length; i++) {
+	                        var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
+	                        switch (this.string[this.currentString][this.stringPosition][i]) {
+	                            case 0: {
+	                                //nada
+	                                break;
+	                            }
+	                            case 1: {
+	                                elements.push(new Kings.Barrier({
+	                                    position: { x: x, y: -2, z: section.position.z },
+	                                }));
+	                                elements.push(new Kings.Gasoline({
+	                                    position: { x: x, y: 0, z: section.position.z },
+	                                }));
+	                                // elements.push(new Kings.Cone({
+	                                //     position: { x: x, y: -2, z: section.position.z }
+	                                // }));
+	                                break;
+	                            }
+	                            case 2: {
+	                                elements.push(new Kings.OilDrum({
+	                                    position: { x: x, y: -2, z: section.position.z }
+	                                }));
+	                                break;
+	                            }
+	                            case 3: {
+	                                elements.push(new Kings.Gasoline({
+	                                    position: { x: x, y: -1.7, z: section.position.z }
+	                                }));
+	                                break;
+	                            }
+	                            default: {
+	                                break;
+	                            }
 	                        }
-	                        case 1: {
-	                            elements.push(new Kings.Barrier({
-	                                position: { x: x, y: -2, z: section.position.z },
-	                            }));
-	                            elements.push(new Kings.Gasoline({
-	                                position: { x: x, y: 0, z: section.position.z },
-	                            }));
-	                            // elements.push(new Kings.Cone({
-	                            //     position: { x: x, y: -2, z: section.position.z }
-	                            // }));
-	                            break;
-	                        }
-	                        case 2: {
-	                            elements.push(new Kings.OilDrum({
-	                                position: { x: x, y: -2, z: section.position.z }
-	                            }));
-	                            break;
-	                        }
-	                        case 3: {
-	                            elements.push(new Kings.Gasoline({
-	                                position: { x: x, y: -1.7, z: section.position.z }
-	                            }));
-	                            break;
-	                        }
-	                        default: {
-	                            break;
+	                    }
+	                    this.stringPosition++;
+	                    if (this.stringPosition == this.string[this.currentString][this.stringPosition].length) {
+	                        this.currentString = -1;
+	                    }
+	                } else {
+	                    for (var i = 0; i < this.combinations[elementType].length; i++) {
+	                        var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
+	                        switch (this.combinations[elementType][i]) {
+	                            case 0: {
+	                                //nada
+	                                break;
+	                            }
+	                            case 1: {
+	                                elements.push(new Kings.Barrier({
+	                                    position: { x: x, y: -2, z: section.position.z },
+	                                }));
+	                                elements.push(new Kings.Gasoline({
+	                                    position: { x: x, y: 0, z: section.position.z },
+	                                }));
+	                                // elements.push(new Kings.Cone({
+	                                //     position: { x: x, y: -2, z: section.position.z }
+	                                // }));
+	                                break;
+	                            }
+	                            case 2: {
+	                                elements.push(new Kings.OilDrum({
+	                                    position: { x: x, y: -2, z: section.position.z }
+	                                }));
+	                                break;
+	                            }
+	                            case 3: {
+	                                elements.push(new Kings.Gasoline({
+	                                    position: { x: x, y: -1.7, z: section.position.z }
+	                                }));
+	                                break;
+	                            }
+	                            default: {
+	                                break;
+	                            }
 	                        }
 	                    }
 	                }
@@ -28427,7 +28530,7 @@
 	        this.body = new Kings.RigidBody({
 	            position: this.position,
 	            rotation: this.rotation,
-	            size: { x: 1, y: 2, z: 1 },
+	            size: { x: 1.3, y: 2, z: 1.3 },
 	            onCollision: function() {
 	                if (self.active) {
 	                    Kings.game.player.drainTank(30);
@@ -28807,17 +28910,10 @@
 	        },
 
 	        draw: function() {
-	            Kings.game.light = {
-	                ambiental: [1.0, 1.0, 1.0],
-	                directional: {
-	                    direction: [0.0, 0.0, 1.0],
-	                    color: [1.0, 1.0, 1.0]
-	                }
-	            };
 	            var ratio = gl.canvas.width / gl.canvas.height;
 	            glMatrix.mat4.identity(Kings.pMatrix);
 	            glMatrix.mat4.ortho(Kings.pMatrix, -10.0 - ratio, 10.0 + ratio, -10.0 + ratio, 10.0  - ratio, 0.1, 100.0);
-	            
+
 	            Kings.GL.mvPushMatrix();
 	            Kings.GL.lookAt(
 	                glMatrix.vec3.fromValues(0,0,1),
@@ -28835,13 +28931,6 @@
 	            gl.enable(gl.DEPTH_TEST);
 	            Kings.GL.mvPopMatrix();
 	            glMatrix.mat4.perspective(Kings.pMatrix, 45, ratio, 0.1, 200.0);
-	            Kings.game.light = {
-	                ambiental: [1.0, 1.0, 1.0],
-	                directional: {
-	                    direction: [0.0, -1.0, -1.0],
-	                    color: [1.0, 1.0, 1.0]
-	                }
-	            };
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -28867,6 +28956,29 @@
 	            texture: Kings.AssetBundles[0].content.meterNeedle
 	        });
 	        this.level = 100;
+	        this.shader = new Kings.Shader({
+	            gl: gl,
+	            vertexShaderSource: [
+	                'attribute vec3 aVertexPosition;',
+	                'attribute vec2 aTextureCoord;',
+	                'uniform mat4 uMVMatrix;',
+	                'uniform mat4 uPMatrix;',
+	                'varying vec2 vTextureCoord;',
+	                'void main(void) {',
+	                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	                   'vTextureCoord = aTextureCoord;',
+	                '}'
+	            ].join("\n"),
+	            fragmentShaderSource: [
+	                'precision mediump float;',
+	                'varying vec2 vTextureCoord;',
+	                'uniform sampler2D uSampler;',
+	                'void main(void) {',
+	                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
+	                '}'
+	            ].join("\n")
+	        });
 	    };
 
 	    Kings.FuelMeter.prototype = {
@@ -28885,8 +28997,8 @@
 	        draw: function() {
 	            Kings.GL.mvPushMatrix();
 	            Kings.GL.mvTranslate(this.position);
-	            this.meter.draw();
-	            this.neddle.draw();
+	            this.meter.draw(this.shader);
+	            this.neddle.draw(this.shader);
 	            Kings.GL.mvPopMatrix();
 	        }
 	    };
@@ -28995,7 +29107,7 @@
 	            '}'
 	        ].join("\n"),
 	        fragmentShaderSource: [
-	            'precision mediump float;',
+	            'precision highp float;',
 	            'varying vec2 vTextureCoord;',
 	            'uniform sampler2D uSampler;',
 	            'void main(void) {',
@@ -29043,8 +29155,8 @@
 	            '#endif',
 	            '#define CRT_CASE_BORDR 0.0125',
 	            '#define SCAN_LINE_MULT 1250.0',
-	            'float CRT_CURVE_AMNTx = 0.7; // curve amount on x',
-	            'float CRT_CURVE_AMNTy = 1.0; // curve amount on y',
+	            'float CRT_CURVE_AMNTx = 0.0; // curve amount on x',
+	            'float CRT_CURVE_AMNTy = 0.0; // curve amount on y',
 	            'varying LOWP vec4 v_color;',
 	            'varying vec2 vTextureCoord;',
 	            'uniform sampler2D uSampler;',
@@ -29063,7 +29175,7 @@
 	            	'vec4 cta = texture2D(uSampler, vec2(tc.x, tc.y));',
 	            	'cta.rgb += sin(tc.y * SCAN_LINE_MULT) * 0.02;',
 	            	'if(tc.y > 1.0 || tc.x < 0.0 || tc.x > 1.0 || tc.y < 0.0)',
-	            		'cta = vec4(0.0);',
+	            		'cta = vec4(1.0);',
 	            	'gl_FragColor = cta;',
 	            '}'
 	        ].join("\n")

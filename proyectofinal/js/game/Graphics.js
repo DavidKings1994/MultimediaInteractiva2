@@ -18,8 +18,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         if (!gl) {
             alert('No se puede incializar');
         }
-        Kings.height = parameters.canvas.height;
-        Kings.width = parameters.canvas.width;
+
+        Kings.height = parameters.canvas.clientHeight;
+        Kings.width = parameters.canvas.clientWidth;
         this.ready = false;
 
         this.mainLayer = new Kings.Layer({
@@ -31,6 +32,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.renderer = new Kings.Renderer();
         this.renderer.addLayer(this.mainLayer);
 
+        this.light = parameters.light;
         this.camera = parameters.camera || new Kings.Camera();
         this.gameUpdate = function() { parameters.update() };
 
@@ -51,6 +53,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         Kings.mvMatrix = glMatrix.mat4.create();
         Kings.pMatrix = glMatrix.mat4.create();
+        Kings.wMatrix = glMatrix.mat4.create();
+        Kings.vMatrix = glMatrix.mat4.create();
         glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
         Kings.mvMatrixStack = [];
 
@@ -92,7 +96,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 this.resizeView();
                 gl.clearColor(0, 0, 0, 1);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                gl.viewport(0,0,1343,672);
                 gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
                 glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
@@ -135,6 +138,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             if (gl.canvas.width  != displayWidth || gl.canvas.height != displayHeight) {
                 gl.canvas.width  = displayWidth;
                 gl.canvas.height = displayHeight;
+                Kings.width = displayWidth;
+                Kings.height = displayHeight;
+                this.renderer.resize();
             }
         }
     };

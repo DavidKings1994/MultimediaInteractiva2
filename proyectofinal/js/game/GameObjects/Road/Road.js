@@ -9,7 +9,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Road = function(parameters) {
         Kings.GameObject.call(this, parameters);
         this.gameUpdate = function() { parameters.update() };
-        this.difficulty = 0;
+        this.difficulty = 4;
         this.playerIndexLocation = 0;
         this.sections = [];
         this.numberOfSections = parameters.numberOfSections || 4;
@@ -54,9 +54,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             staticEdge: 'top'
         });
         this.combinations = [ //0 = nada, 1 = barreera/gasolina, 2 = barril, 3 = gasolina
-            [0,0,0,0,0],
             [2,2,0,0,0],
             [0,0,0,2,2],
+            [2,2,2,0,0],
+            [0,0,2,2,2],
             [2,2,2,0,0],
             [0,0,2,2,2],
             [2,2,1,2,2],
@@ -65,19 +66,45 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             [0,0,1,2,2],
             [2,2,1,0,0],
             [0,0,3,0,0],
+            [0,0,0,0,3],
+            [3,0,0,0,0],
+            [2,0,2,0,2],
         ];
+        this.string = [
+            [
+                [2,0,2,0,2],
+                [0,2,0,2,0],
+                [2,0,2,0,2],
+                [0,2,0,2,0],
+                [2,0,2,0,2],
+                [0,2,0,2,0],
+            ],
+            [
+                [2,2,2,0,2],
+                [0,0,2,2,2],
+                [2,2,2,0,2],
+                [0,0,2,2,2],
+                [2,2,2,0,2],
+                [0,0,2,2,2],
+            ],
+            [
+                [3,0,0,0,0],
+                [0,3,0,0,0],
+                [0,0,3,0,0],
+                [0,0,0,3,0],
+                [0,0,0,0,3],
+                [0,0,0,3,0],
+                [0,0,3,0,0],
+            ]
+        ];
+        this.currentString = -1;
+        this.stringPosition = 0;
         this.pastCombination = 0;
     };
 
     Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
 
     Kings.Road.prototype.update = function(v) {
-        if (Kings.keyboard.isDown(Kings.keyboard.keys.H)) {
-            this.difficulty++;
-            if (this.difficulty == 4) {
-                this.difficulty = 0;
-            }
-        }
         this.gameUpdate();
         this.terrainRight.update();
         this.terrainLeft.update();
@@ -90,45 +117,98 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 texture: this.texture,
             });
             var elements = [];
-            if (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % 4 == 0) {
-                var elementType = Math.floor(Math.random() * this.combinations.length);
-                while (elementType == this.pastCombination) {
+            if (
+                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0) ||
+                (this.sections[this.numberOfSections - 1].id % 3 == 0 && this.currentString != -1)
+            ) {
+                var probability = Math.random();
+                var elementType;
+                if (probability > 0.9 && this.currentString == -1) {
+                    this.currentString = Math.floor(Math.random() * this.string.length);
+                    this.stringPosition = 0;
+                } else {
                     elementType = Math.floor(Math.random() * this.combinations.length);
+                    while (elementType == this.pastCombination) {
+                        elementType = Math.floor(Math.random() * this.combinations.length);
+                    }
+                    this.pastCombination = elementType;
                 }
-                this.pastCombination = elementType;
-                for (var i = 0; i < this.combinations[elementType].length; i++) {
-                    var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
-                    switch (this.combinations[elementType][i]) {
-                        case 0: {
-                            //nada
-                            break;
+                if (this.currentString != -1) {
+                    for (var i = 0; i < this.string[this.currentString][this.stringPosition].length; i++) {
+                        var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
+                        switch (this.string[this.currentString][this.stringPosition][i]) {
+                            case 0: {
+                                //nada
+                                break;
+                            }
+                            case 1: {
+                                elements.push(new Kings.Barrier({
+                                    position: { x: x, y: -2, z: section.position.z },
+                                }));
+                                elements.push(new Kings.Gasoline({
+                                    position: { x: x, y: 0, z: section.position.z },
+                                }));
+                                // elements.push(new Kings.Cone({
+                                //     position: { x: x, y: -2, z: section.position.z }
+                                // }));
+                                break;
+                            }
+                            case 2: {
+                                elements.push(new Kings.OilDrum({
+                                    position: { x: x, y: -2, z: section.position.z }
+                                }));
+                                break;
+                            }
+                            case 3: {
+                                elements.push(new Kings.Gasoline({
+                                    position: { x: x, y: -1.7, z: section.position.z }
+                                }));
+                                break;
+                            }
+                            default: {
+                                break;
+                            }
                         }
-                        case 1: {
-                            elements.push(new Kings.Barrier({
-                                position: { x: x, y: -2, z: section.position.z },
-                            }));
-                            elements.push(new Kings.Gasoline({
-                                position: { x: x, y: 0, z: section.position.z },
-                            }));
-                            // elements.push(new Kings.Cone({
-                            //     position: { x: x, y: -2, z: section.position.z }
-                            // }));
-                            break;
-                        }
-                        case 2: {
-                            elements.push(new Kings.OilDrum({
-                                position: { x: x, y: -2, z: section.position.z }
-                            }));
-                            break;
-                        }
-                        case 3: {
-                            elements.push(new Kings.Gasoline({
-                                position: { x: x, y: -1.7, z: section.position.z }
-                            }));
-                            break;
-                        }
-                        default: {
-                            break;
+                    }
+                    this.stringPosition++;
+                    if (this.stringPosition == this.string[this.currentString][this.stringPosition].length) {
+                        this.currentString = -1;
+                    }
+                } else {
+                    for (var i = 0; i < this.combinations[elementType].length; i++) {
+                        var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
+                        switch (this.combinations[elementType][i]) {
+                            case 0: {
+                                //nada
+                                break;
+                            }
+                            case 1: {
+                                elements.push(new Kings.Barrier({
+                                    position: { x: x, y: -2, z: section.position.z },
+                                }));
+                                elements.push(new Kings.Gasoline({
+                                    position: { x: x, y: 0, z: section.position.z },
+                                }));
+                                // elements.push(new Kings.Cone({
+                                //     position: { x: x, y: -2, z: section.position.z }
+                                // }));
+                                break;
+                            }
+                            case 2: {
+                                elements.push(new Kings.OilDrum({
+                                    position: { x: x, y: -2, z: section.position.z }
+                                }));
+                                break;
+                            }
+                            case 3: {
+                                elements.push(new Kings.Gasoline({
+                                    position: { x: x, y: -1.7, z: section.position.z }
+                                }));
+                                break;
+                            }
+                            default: {
+                                break;
+                            }
                         }
                     }
                 }

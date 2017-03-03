@@ -15,7 +15,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             '}'
         ].join("\n"),
         fragmentShaderSource: [
-            'precision mediump float;',
+            'precision highp float;',
             'varying vec2 vTextureCoord;',
             'uniform sampler2D uSampler;',
             'void main(void) {',

@@ -104,19 +104,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 gl.bindTexture(gl.TEXTURE_2D, this.texture);
                 gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
 
-                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'),
-                    Kings.game.light.ambiental[0],
-                    Kings.game.light.ambiental[1],
-                    Kings.game.light.ambiental[2]
-                );
-                var adjustedLD = glMatrix.vec3.create();
-                glMatrix.vec3.normalize(adjustedLD, Kings.game.light.directional.direction);
-                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'),
-                    Kings.game.light.directional.color[0],
-                    Kings.game.light.directional.color[1],
-                    Kings.game.light.directional.color[2]
-                );
+                Kings.GL.setLightUniforms(Kings.textureShader);
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleTextureCoordBuffer);
                 gl.vertexAttribPointer(this.textureCoordAttribute, this.triangleTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -127,13 +115,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.triangleVertexColorBuffer);
                 gl.vertexAttribPointer(this.vertexColorAttribute, this.triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-                gl.uniform3f(Kings.textureShader.getUniform('uAmbientColor'), 1.0, 1.0, 1.0);
-                var lightingDirection = [0.0, -1.0, -1.0];
-                var adjustedLD = glMatrix.vec3.create();
-                glMatrix.vec3.normalize(adjustedLD, lightingDirection);
-                gl.uniform3fv(Kings.textureShader.getUniform('uLightingDirection'), adjustedLD);
-                gl.uniform3f(Kings.textureShader.getUniform('uDirectionalColor'), 1.0, 1.0, 1.0);
-
+                Kings.GL.setLightUniforms(Kings.colorShader);
                 Kings.GL.setMatrixUniforms(Kings.colorShader);
             }
 
