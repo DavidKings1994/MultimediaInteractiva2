@@ -112,13 +112,23 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         if (this.fuel <= 0) {
             this.live = false;
             this.motorSound.pause();
+            Kings.AssetBundles[0].content.alert.pause();
+            Kings.AssetBundles[0].content.alert.currentTime = 0;
+        } else {
+            if (this.fuel < 30) {
+                Kings.AssetBundles[0].content.alert.loop = true;
+                Kings.AssetBundles[0].content.alert.play();
+            } else {
+                Kings.AssetBundles[0].content.alert.pause();
+                Kings.AssetBundles[0].content.alert.currentTime = 0;
+            }
         }
 
         var moving = false;
         var backflip = false;
         if (this.live) {
             this.fuel -= 0.035;
-            this.position.z += this.velocity;
+            this.position.z += this.velocity + (this.velocity * this.aceleration);
             if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
                 if (!this.buttonPressed) {
                     this.cameraMode++;
@@ -182,7 +192,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 this.blurId = null;
             }
             if (this.deathCam == null) {
-                this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
+                this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.grayscale);
             }
             Kings.AssetBundles[0].content.ThroughTheFireandFlames.pause();
         }
@@ -334,5 +344,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         if (this.fuel < 0) {
             this.explode();
         }
+    };
+
+    Kings.Player.prototype.getVelocity = function() {
+        return this.velocity + this.aceleration;
     };
 });

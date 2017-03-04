@@ -22,6 +22,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.objects[i].update();
             if (this.active) {
                 this.objects[i].body.checkCollisionWithBody(Kings.game.player.body);
+                this.orderDepth(Kings.game.camera);
             }
         }
     };
@@ -31,5 +32,19 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         for (var i = 0; i < this.objects.length; i++) {
             this.objects[i].draw();
         }
+    };
+
+    Kings.RoadSection.prototype.orderDepth = function(camera) {
+        for (var i = 0; i < this.objects.length; i++) {
+            var vec = new Kings.Vector({
+                x: camera.position.x - this.objects[i].position.x,
+                y: camera.position.y - this.objects[i].position.y,
+                z: camera.position.z - this.objects[i].position.z
+            });
+            this.objects[i].distance = vec.magnitude();
+        }
+        this.objects.sort(function(a,b) {
+            return (b.distance - a.distance);
+        });
     };
 });

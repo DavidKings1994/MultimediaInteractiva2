@@ -19095,8 +19095,8 @@
 	                update: function() {
 	                    road.locatePlayer(Kings.game.player.position);
 	                    if (Kings.game.player.live) {
-	                        road.terrainRight.pase = Kings.game.player.velocity * 0.2;
-	                        road.terrainLeft.pase = Kings.game.player.velocity * 0.2;
+	                        road.terrainRight.pase = Kings.game.player.getVelocity() * 0.2;
+	                        road.terrainLeft.pase = Kings.game.player.getVelocity() * 0.2;
 	                    } else {
 	                        road.terrainRight.pase = 0;
 	                        road.terrainLeft.pase = 0;
@@ -19109,7 +19109,7 @@
 	                        if (Kings.game.player.velocity > 3) {
 	                            Kings.game.player.velocity = 3;
 	                        }
-	                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 3, 4, 8));
+	                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 3, 4, 9));
 	                    }
 	                }
 	            });
@@ -26126,6 +26126,14 @@
 
 	        clone: function() {
 	            return new Kings.Vector({ x: this.x, y: this.y, z: this.z });
+	        },
+
+	        phi: function() {
+	            var angle = Math.atan2(this.x,this.y) * (180 / Math.PI);
+	            if (angle < 0) {
+	                angle += 360;
+	            }
+	            return angle;
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -27383,25 +27391,9 @@
 	        gl.enable(gl.BLEND);
 	        gl.disable(gl.DEPTH_TEST);
 
-	        var look = new Kings.Vector({
-	            x: camera.position.x - this.position.x,
-	            y: camera.position.y - this.position.y,
-	            z: camera.position.z - this.position.z
-	        });
+	        var cdir = new Kings.Vector({ x: camera.aim.x, y: camera.aim.y, z: camera.aim.z });
 
-	        var cup = new Kings.Vector({ x: camera.up.x, y: camera.up.y, z: camera.up.z});
-	        var right = cup.crossProduct(look);
-	        var up = look.crossProduct(right);
-
-	        this.rotation.x = right.angleBetweenVectors(
-	            new Kings.Vector({ x: 1, y: 0, z: 0})
-	        );
-	        this.rotation.z = up.angleBetweenVectors(
-	            new Kings.Vector({ x: 0, y: 1, z: 0})
-	        );
-	        this.rotation.y = look.angleBetweenVectors(
-	            new Kings.Vector({ x: 0, y: 0, z: 1})
-	        );
+	        this.rotation.y = -cdir.phi();
 
 	        Kings.GL.mvPushMatrix();
 	        Kings.GL.mvTranslate(this.position);
@@ -27597,13 +27589,23 @@
 	        if (this.fuel <= 0) {
 	            this.live = false;
 	            this.motorSound.pause();
+	            Kings.AssetBundles[0].content.alert.pause();
+	            Kings.AssetBundles[0].content.alert.currentTime = 0;
+	        } else {
+	            if (this.fuel < 30) {
+	                Kings.AssetBundles[0].content.alert.loop = true;
+	                Kings.AssetBundles[0].content.alert.play();
+	            } else {
+	                Kings.AssetBundles[0].content.alert.pause();
+	                Kings.AssetBundles[0].content.alert.currentTime = 0;
+	            }
 	        }
 
 	        var moving = false;
 	        var backflip = false;
 	        if (this.live) {
 	            this.fuel -= 0.035;
-	            this.position.z += this.velocity;
+	            this.position.z += this.velocity + (this.velocity * this.aceleration);
 	            if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
 	                if (!this.buttonPressed) {
 	                    this.cameraMode++;
@@ -27667,7 +27669,7 @@
 	                this.blurId = null;
 	            }
 	            if (this.deathCam == null) {
-	                this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.crt);
+	                this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.grayscale);
 	            }
 	            Kings.AssetBundles[0].content.ThroughTheFireandFlames.pause();
 	        }
@@ -27819,6 +27821,10 @@
 	        if (this.fuel < 0) {
 	            this.explode();
 	        }
+	    };
+
+	    Kings.Player.prototype.getVelocity = function() {
+	        return this.velocity + this.aceleration;
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
@@ -28575,8 +28581,12 @@
 	                    this.stringPosition = 0;
 	                } else {
 	                    elementType = Math.floor(Math.random() * this.combinations.length);
-	                    while (elementType == this.pastCombination) {
-	                        elementType = Math.floor(Math.random() * this.combinations.length);
+	                    if (elementType == this.pastCombination) {
+	                        if (elementType < this.combinations.length - 1) {
+	                            elementType++;
+	                        } else if(elementType > 0) {
+	                            elementType--;
+	                        }
 	                    }
 	                    this.pastCombination = elementType;
 	                }
@@ -28748,6 +28758,7 @@
 	            this.objects[i].update();
 	            if (this.active) {
 	                this.objects[i].body.checkCollisionWithBody(Kings.game.player.body);
+	                this.orderDepth(Kings.game.camera);
 	            }
 	        }
 	    };
@@ -28757,6 +28768,20 @@
 	        for (var i = 0; i < this.objects.length; i++) {
 	            this.objects[i].draw();
 	        }
+	    };
+
+	    Kings.RoadSection.prototype.orderDepth = function(camera) {
+	        for (var i = 0; i < this.objects.length; i++) {
+	            var vec = new Kings.Vector({
+	                x: camera.position.x - this.objects[i].position.x,
+	                y: camera.position.y - this.objects[i].position.y,
+	                z: camera.position.z - this.objects[i].position.z
+	            });
+	            this.objects[i].distance = vec.magnitude();
+	        }
+	        this.objects.sort(function(a,b) {
+	            return (b.distance - a.distance);
+	        });
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 

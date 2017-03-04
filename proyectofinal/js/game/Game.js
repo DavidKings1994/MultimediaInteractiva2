@@ -109,8 +109,8 @@
                 update: function() {
                     road.locatePlayer(Kings.game.player.position);
                     if (Kings.game.player.live) {
-                        road.terrainRight.pase = Kings.game.player.velocity * 0.2;
-                        road.terrainLeft.pase = Kings.game.player.velocity * 0.2;
+                        road.terrainRight.pase = Kings.game.player.getVelocity() * 0.2;
+                        road.terrainLeft.pase = Kings.game.player.getVelocity() * 0.2;
                     } else {
                         road.terrainRight.pase = 0;
                         road.terrainLeft.pase = 0;
@@ -123,7 +123,7 @@
                         if (Kings.game.player.velocity > 3) {
                             Kings.game.player.velocity = 3;
                         }
-                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 3, 4, 8));
+                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 3, 4, 9));
                     }
                 }
             });

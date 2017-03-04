@@ -53,6 +53,14 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         clone: function() {
             return new Kings.Vector({ x: this.x, y: this.y, z: this.z });
+        },
+
+        phi: function() {
+            var angle = Math.atan2(this.x,this.y) * (180 / Math.PI);
+            if (angle < 0) {
+                angle += 360;
+            }
+            return angle;
         }
     };
 });

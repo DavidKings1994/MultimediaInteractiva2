@@ -146,8 +146,12 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     this.stringPosition = 0;
                 } else {
                     elementType = Math.floor(Math.random() * this.combinations.length);
-                    while (elementType == this.pastCombination) {
-                        elementType = Math.floor(Math.random() * this.combinations.length);
+                    if (elementType == this.pastCombination) {
+                        if (elementType < this.combinations.length - 1) {
+                            elementType++;
+                        } else if(elementType > 0) {
+                            elementType--;
+                        }
                     }
                     this.pastCombination = elementType;
                 }
