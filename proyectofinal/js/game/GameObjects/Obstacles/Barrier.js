@@ -13,6 +13,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             size: { x: 2, y: 1, z: 0.5 },
             onCollision: function() {
                 if (self.active) {
+                    Kings.AssetBundles[0].content.crash.currentTime = 0;
+                    Kings.AssetBundles[0].content.crash.play();
                     Kings.game.player.drainTank(30);
                     self.active = false;
                 }

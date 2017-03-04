@@ -41,7 +41,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             gl.disable(gl.BLEND);
             gl.enable(gl.DEPTH_TEST);
             Kings.GL.mvPopMatrix();
-            glMatrix.mat4.perspective(Kings.pMatrix, 45, ratio, 0.1, 200.0);
+            glMatrix.mat4.perspective(Kings.pMatrix, 45, ratio, 0.01, 200.0);
         }
     };
 });

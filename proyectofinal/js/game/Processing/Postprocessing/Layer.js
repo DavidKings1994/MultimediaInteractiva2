@@ -62,7 +62,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.planeVertexPositionBuffer.numItems = 4;
         },
 
-        drawScreen: function(i, texture) {            
+        drawScreen: function(i, texture) {
             this.vertexPositionAttribute = this.effects[i].getAttributeLocation('aVertexPosition');
             gl.enableVertexAttribArray(this.vertexPositionAttribute);
             this.textureCoordAttribute = this.effects[i].getAttributeLocation('aTextureCoord');
@@ -70,7 +70,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 200.0);
+            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 200.0);
 
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 

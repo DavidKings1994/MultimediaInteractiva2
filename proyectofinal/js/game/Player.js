@@ -60,7 +60,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         Kings.AssetBundles[0].content.ThroughTheFireandFlames.volume = 0.7;
         Kings.AssetBundles[0].content.ThroughTheFireandFlames.loop = true;
         Kings.AssetBundles[0].content.ThroughTheFireandFlames.play();
-
     };
 
     Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
@@ -99,7 +98,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 this.camera.position.x = 0;
                 this.camera.position.y = 15;
                 this.camera.position.z = this.position.z + 7;
-                this.camera.aim = { x: 0, y: -2, z: 0.1};
+                this.camera.aim = { x: 0, y: -2, z: 7};
 
                 Kings.game.light.spot.position = [
                     this.camera.position.x - this.position.x,
@@ -118,12 +117,12 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         var moving = false;
         var backflip = false;
         if (this.live) {
-            this.fuel -= 0.05;
+            this.fuel -= 0.035;
             this.position.z += this.velocity;
             if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
                 if (!this.buttonPressed) {
                     this.cameraMode++;
-                    if (this.cameraMode > 2) {
+                    if (this.cameraMode > 1) {
                         this.cameraMode = 0;
                     }
                     this.buttonPressed = true;
@@ -171,8 +170,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 }
             }
         } else {
-            var x = (5 * Math.sin(this.deathAngle * (Math.PI / 180.0))) + this.position.x;
-            var z = (5 * Math.cos(this.deathAngle * (Math.PI / 180.0))) + this.position.z;
+            var x = (10 * Math.sin(this.deathAngle * (Math.PI / 180.0))) + this.position.x;
+            var z = (10 * Math.cos(this.deathAngle * (Math.PI / 180.0))) + this.position.z;
             this.camera.position.x = x;
             this.camera.position.y = 2;
             this.camera.position.z = z;
@@ -195,7 +194,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.explode();
         }
 
-        var newy = Math.abs(this.position.y) * 0.2;
+        var newy = Math.abs(this.position.y) * 0.3;
         if (this.jumping) {
             if (this.position.y < -0.1) {
                 this.position.y += Math.abs(this.position.y) * 0.2;
@@ -253,7 +252,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.onFloor = false;
             (function() {
                 self.trashFunction = self.addUpdateFunction(function(){
-                    if (self.position.y >= -2) {
+                    if (self.shape.groups[1].position.y >= -2) {
                         for (var i = 0; i < self.shape.groups.length; i++) {
                             self.shape.groups[i].position.x += self.directions[i].x;
                             self.shape.groups[i].position.z += self.directions[i].z;
@@ -308,7 +307,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.slowDown = function() {
-        if (this.aceleration > -0.3) {
+        if (this.aceleration > -0.5) {
             this.aceleration -= 0.05;
         }
     };
@@ -318,7 +317,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.motorAccelSound.currentTime = 0.19;
         }
         this.motorAccelSound.play();
-        if (this.aceleration < 0.3) {
+        if (this.aceleration < 0.5) {
             this.aceleration += 0.05;
         }
     };

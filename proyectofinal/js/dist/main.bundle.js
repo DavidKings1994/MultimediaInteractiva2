@@ -19009,15 +19009,15 @@
 
 	    __webpack_require__(6);
 	    __webpack_require__(7);
-	    __webpack_require__(19);
-	    __webpack_require__(20);
 	    __webpack_require__(24);
 	    __webpack_require__(25);
+	    __webpack_require__(29);
 	    __webpack_require__(30);
-	    __webpack_require__(31);
-	    __webpack_require__(33);
-	    __webpack_require__(34);
 	    __webpack_require__(35);
+	    __webpack_require__(36);
+	    __webpack_require__(38);
+	    __webpack_require__(39);
+	    __webpack_require__(40);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19050,10 +19050,11 @@
 	            }
 	        });
 	        Kings.game.shaders = {
-	            grayscale: __webpack_require__(36),
-	            blur: __webpack_require__(37),
-	            hdr: __webpack_require__(38),
-	            crt: __webpack_require__(39)
+	            grayscale: __webpack_require__(41),
+	            blur: __webpack_require__(42),
+	            hdr: __webpack_require__(43),
+	            crt: __webpack_require__(44),
+	            basic: __webpack_require__(45)
 	        };
 
 	        Kings.game.hui = new Kings.HUI();
@@ -19105,10 +19106,10 @@
 	                    fuelMeter.setLevel(Kings.game.player.fuel);
 	                    if (road.sections[road.sections.length - 1].id % 50 == 0) {
 	                        Kings.game.player.velocity += 0.02;
-	                        if (Kings.game.player.velocity > 2) {
-	                            Kings.game.player.velocity = 2;
+	                        if (Kings.game.player.velocity > 3) {
+	                            Kings.game.player.velocity = 3;
 	                        }
-	                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 2, 4, 7));
+	                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 3, 4, 8));
 	                    }
 	                }
 	            });
@@ -25818,7 +25819,7 @@
 
 	    __webpack_require__(8);
 	    __webpack_require__(9);
-	    __webpack_require__(11);
+	    __webpack_require__(10);
 	    __webpack_require__(12);
 	    __webpack_require__(13);
 	    __webpack_require__(14);
@@ -25826,6 +25827,9 @@
 	    __webpack_require__(16);
 	    __webpack_require__(17);
 	    __webpack_require__(18);
+	    __webpack_require__(19);
+	    __webpack_require__(20);
+	    __webpack_require__(23);
 
 	    Kings.Graphics = function(parameters) {
 	        var self = this;
@@ -25870,7 +25874,7 @@
 	        Kings.pMatrix = glMatrix.mat4.create();
 	        Kings.wMatrix = glMatrix.mat4.create();
 	        Kings.vMatrix = glMatrix.mat4.create();
-	        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
+	        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
 	        Kings.mvMatrixStack = [];
 
 	        this.lastTime = 0;
@@ -25909,11 +25913,11 @@
 	        draw: function() {
 	            if (this.ready) {
 	                this.resizeView();
-	                gl.clearColor(0, 0, 0, 1);
+	                gl.clearColor(0.0, 0.0, 0.0, 1);
 	                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-	                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
+	                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
 
 	                for (var i = 0; i < this.elements.length; i++) {
 	                    //if (Kings.Gameobject != null) {
@@ -26070,7 +26074,71 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(10);
+	    Kings.Vector = function(parameters) {
+	        this.x = parameters.x;
+	        this.y = parameters.y;
+	        this.z = parameters.z;
+	    };
+
+	    Kings.Vector.prototype = {
+	        constructor: Kings.Vector,
+
+	        crossProduct: function(v2) {
+	            return new Kings.Vector({
+	                x:   ( (this.y * v2.z) - (this.z * v2.y) ),
+	                y: - ( (this.x * v2.z) - (this.z * v2.x) ),
+	                z:   ( (this.x * v2.y) - (this.y * v2.x) )
+	            });
+	        },
+
+	        dotProduct: function(v) {
+	            return (this.x * v.x) + (this.y * v.y) + (this.z * v.z);
+	        },
+
+	        magnitude: function() {
+	            return Math.sqrt((this.x * this.x) + (this.y * this.y) + (this.z * this.z));
+	        },
+
+	        normalize: function() {
+	            var mag = this.magnitude();
+	            return new Kings.Vector({
+	                x: this.x / mag,
+	                y: this.y / mag,
+	                z: this.z / mag
+	            });
+	        },
+
+	        angleBetweenVectors: function(v2) {
+	            var vec1 = new Kings.Vector({ x: this.x, y: this.y, z: this.z });
+	            var vec2 = new Kings.Vector({ x: v2.x, y: v2.y, z: v2.z });
+
+	            vec1 = vec1.normalize();
+	            vec2 = vec2.normalize();
+
+	            var cosine = vec1.dotProduct(vec2);
+
+	            if (cosine > 1.0) {
+	                return 0;
+	            } else {
+	                return Math.acos(cosine);
+	            }
+	        },
+
+	        clone: function() {
+	            return new Kings.Vector({ x: this.x, y: this.y, z: this.z });
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(11);
 
 	    Kings.Triangle = function(parameters) {
 	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
@@ -26197,7 +26265,7 @@
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -26231,13 +26299,13 @@
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(10);
+	    __webpack_require__(11);
 
 	    Kings.Plane = function(parameters) {
 	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
@@ -26380,13 +26448,13 @@
 
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(10);
+	    __webpack_require__(11);
 
 	    Kings.Cube = function(parameters) {
 	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
@@ -26617,13 +26685,13 @@
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(10);
+	    __webpack_require__(11);
 
 	    Kings.Grid = function(parameters) {
 	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
@@ -26832,7 +26900,7 @@
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -26886,7 +26954,7 @@
 
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -26895,6 +26963,7 @@
 	    Kings.Camera = function(parameters) {
 	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
 	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.up = parameters.up || { x: 0, y: 1, z: 0 }
 	        this.aim = parameters.aim || { x: 0, y: 0, z: 10 };
 	    };
 
@@ -26913,14 +26982,14 @@
 	            Kings.GL.lookAt(
 	                glMatrix.vec3.fromValues(this.position.x, this.position.y, this.position.z),
 	                glMatrix.vec3.fromValues(this.position.x + this.aim.x, this.position.y + this.aim.y, this.position.z + this.aim.z),
-	                glMatrix.vec3.fromValues(0, 1, 0)
+	                glMatrix.vec3.fromValues(this.up.x, this.up.y, this.up.z)
 	            );
 
 	            glMatrix.mat4.lookAt(
 	                Kings.vMatrix,
 	                glMatrix.vec3.fromValues(this.position.x, this.position.y, this.position.z),
 	                glMatrix.vec3.fromValues(this.position.x + this.aim.x, this.position.y + this.aim.y, this.position.z + this.aim.z),
-	                glMatrix.vec3.fromValues(0, 1, 0)
+	                glMatrix.vec3.fromValues(this.up.x, this.up.y, this.up.z)
 	            );
 
 	            glMatrix.mat4.translate(Kings.wMatrix, Kings.wMatrix, glMatrix.vec3.fromValues(
@@ -26948,7 +27017,7 @@
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -26972,7 +27041,7 @@
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27064,7 +27133,7 @@
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27131,7 +27200,7 @@
 	            this.planeVertexPositionBuffer.numItems = 4;
 	        },
 
-	        drawScreen: function(i, texture) {            
+	        drawScreen: function(i, texture) {
 	            this.vertexPositionAttribute = this.effects[i].getAttributeLocation('aVertexPosition');
 	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
 	            this.textureCoordAttribute = this.effects[i].getAttributeLocation('aTextureCoord');
@@ -27139,7 +27208,7 @@
 
 	            gl.clearColor(0, 0, 0, 1);
 	            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 200.0);
+	            glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 200.0);
 
 	            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -27182,7 +27251,236 @@
 
 
 /***/ },
-/* 19 */
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(21);
+
+	    Kings.ParticleExplosion = function(parameters) {
+	        Kings.ParticleSistem.call(this, parameters);
+	        for (var i = 0; i < parameters.particleNumber; i++) {
+	            var direction = {
+	                x: (Math.random() - 0.5) * 0.7,
+	                y: (Math.random() - 0.5) * 0.7,
+	                z: (Math.random() - 0.5) * 0.7
+	            };
+	            this.particles[i] = new Kings.Particle({
+	                texture: Kings.AssetBundles[0].content.explosionParticle,
+	                position: { x: this.position.x, y: this.position.y + 1, z: this.position.z },
+	                direction: direction,
+	                life: this.lifeSpan,
+	                size: this.size
+	            });
+	        }
+	    };
+
+	    Kings.ParticleExplosion.prototype = Object.create(Kings.ParticleSistem.prototype);
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(22);
+
+	    Kings.ParticleSistem = function(parameters) {
+	        Kings.GameObject.call(this, parameters);
+	        this.particles = [];
+	        this.gravity = parameters.gravity || { x: 0, y: 0, z: 0 };
+	        this.keepAlive = parameters.keepAlive || false;
+	        this.lifeSpan = parameters.lifeSpan || 100;
+	        this.texture = parameters.texture;
+	        this.size = parameters.size;
+	    };
+
+	    Kings.ParticleSistem.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.ParticleSistem.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	        if (this.particles.length > 0) {
+	            for (var i = 0; i < this.particles.length; i++) {
+	                if(!this.particles[i].update(this.gravity)) {
+	                    if (this.keepAlive) {
+	                        this.particles[i].reset();
+	                    } else {
+	                        this.particles.splice(i, 1);
+	                    }
+	                }
+	            }
+	            return true;
+	        }
+	        return false;
+	    };
+
+	    Kings.ParticleSistem.prototype.draw = function(camera) {
+	        if (this.particles.length > 0) {
+	            for (var i = 0; i < this.particles.length; i++) {
+	                this.particles[i].draw(camera);
+	            }
+	        }
+	    }
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Particle = function(parameters) {
+	        parameters.shape = new Kings.Plane({
+	            texture: parameters.texture,
+	            width: parameters.size,
+	            height: parameters.size
+	        });
+	        Kings.GameObject.call(this, parameters);
+	        this.direction = parameters.direction;
+	        this.life = parameters.life || 100;
+	        this.originalLife = parameters.life || 100;
+	        this.originalPosition = new Kings.Vector({
+	            x: this.position.x,
+	            y: this.position.y,
+	            z: this.position.z
+	        });
+	        this.originalDirection = new Kings.Vector({
+	            x: this.direction.x,
+	            y: this.direction.y,
+	            z: this.direction.z
+	        });
+	    };
+
+	    Kings.Particle.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Particle.prototype.update = function(gravity) {
+	        if (this.life > 0) {
+	            Kings.GameObject.prototype.update.call(this);
+	            this.direction.x += gravity.x;
+	            this.direction.y += gravity.y;
+	            this.direction.z += gravity.z;
+
+	            this.position.x += this.direction.x;
+	            this.position.y += this.direction.y;
+	            this.position.z += this.direction.z;
+
+	            this.life--;
+	            return true;
+	        } else {
+	            return false;
+	        }
+	    };
+
+	    Kings.Particle.prototype.draw = function(camera) {
+	        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+	        gl.enable(gl.BLEND);
+	        gl.disable(gl.DEPTH_TEST);
+
+	        var look = new Kings.Vector({
+	            x: camera.position.x - this.position.x,
+	            y: camera.position.y - this.position.y,
+	            z: camera.position.z - this.position.z
+	        });
+
+	        var cup = new Kings.Vector({ x: camera.up.x, y: camera.up.y, z: camera.up.z});
+	        var right = cup.crossProduct(look);
+	        var up = look.crossProduct(right);
+
+	        this.rotation.x = right.angleBetweenVectors(
+	            new Kings.Vector({ x: 1, y: 0, z: 0})
+	        );
+	        this.rotation.z = up.angleBetweenVectors(
+	            new Kings.Vector({ x: 0, y: 1, z: 0})
+	        );
+	        this.rotation.y = look.angleBetweenVectors(
+	            new Kings.Vector({ x: 0, y: 0, z: 1})
+	        );
+
+	        Kings.GL.mvPushMatrix();
+	        Kings.GL.mvTranslate(this.position);
+	        Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	        Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	        Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+
+	        this.shape.draw(Kings.game.shaders.basic);
+
+	        Kings.GL.mvPopMatrix();
+
+	        gl.disable(gl.BLEND);
+	        gl.enable(gl.DEPTH_TEST);
+	    };
+
+	    Kings.Particle.prototype.reset = function() {
+	        this.position = this.originalPosition.clone();
+	        this.direction = this.originalDirection.clone();
+	        this.life = (this.originalLife + 0);
+	    }
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(21);
+
+	    Kings.ParticleFire = function(parameters) {
+	        parameters.keepAlive = true;
+	        Kings.ParticleSistem.call(this, parameters);
+	        this.right = true;
+	        for (var i = 0; i < parameters.particleNumber; i++) {
+	            var direction = {
+	                x: 0,
+	                y: Math.random() * 0.1,
+	                z: 0
+	            };
+	            var position = {
+	                x: this.position.x + (Math.random() - 0.5),
+	                y: this.position.y + (Math.random() - 0.5),
+	                z: this.position.z + (Math.random() - 0.5)
+	            }
+	            this.particles[i] = new Kings.Particle({
+	                texture: Kings.AssetBundles[0].content.fireParticle,
+	                position: position,
+	                direction: direction,
+	                life: this.lifeSpan * (Math.random() + 0.1),
+	                size: this.size
+	            });
+	        }
+	    };
+
+	    Kings.ParticleFire.prototype = Object.create(Kings.ParticleSistem.prototype);
+
+	    Kings.ParticleFire.prototype.update = function() {
+	        Kings.ParticleSistem.prototype.update.call(this);
+	        var t = Math.random();
+	        if (this.right) {
+	            if (t > 0.9) {
+	                this.gravity.x = 0.01;
+	                this.right = false;
+	            }
+	        } else {
+	            if (t > 0.9) {
+	                this.gravity.x = -0.01;
+	                this.right = true;
+	            }
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -27247,7 +27545,6 @@
 	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.volume = 0.7;
 	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.loop = true;
 	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.play();
-
 	    };
 
 	    Kings.Player.prototype = Object.create(Kings.GameObject.prototype);
@@ -27286,7 +27583,7 @@
 	                this.camera.position.x = 0;
 	                this.camera.position.y = 15;
 	                this.camera.position.z = this.position.z + 7;
-	                this.camera.aim = { x: 0, y: -2, z: 0.1};
+	                this.camera.aim = { x: 0, y: -2, z: 7};
 
 	                Kings.game.light.spot.position = [
 	                    this.camera.position.x - this.position.x,
@@ -27305,12 +27602,12 @@
 	        var moving = false;
 	        var backflip = false;
 	        if (this.live) {
-	            this.fuel -= 0.05;
+	            this.fuel -= 0.035;
 	            this.position.z += this.velocity;
 	            if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
 	                if (!this.buttonPressed) {
 	                    this.cameraMode++;
-	                    if (this.cameraMode > 2) {
+	                    if (this.cameraMode > 1) {
 	                        this.cameraMode = 0;
 	                    }
 	                    this.buttonPressed = true;
@@ -27358,8 +27655,8 @@
 	                }
 	            }
 	        } else {
-	            var x = (5 * Math.sin(this.deathAngle * (Math.PI / 180.0))) + this.position.x;
-	            var z = (5 * Math.cos(this.deathAngle * (Math.PI / 180.0))) + this.position.z;
+	            var x = (10 * Math.sin(this.deathAngle * (Math.PI / 180.0))) + this.position.x;
+	            var z = (10 * Math.cos(this.deathAngle * (Math.PI / 180.0))) + this.position.z;
 	            this.camera.position.x = x;
 	            this.camera.position.y = 2;
 	            this.camera.position.z = z;
@@ -27382,7 +27679,7 @@
 	            this.explode();
 	        }
 
-	        var newy = Math.abs(this.position.y) * 0.2;
+	        var newy = Math.abs(this.position.y) * 0.3;
 	        if (this.jumping) {
 	            if (this.position.y < -0.1) {
 	                this.position.y += Math.abs(this.position.y) * 0.2;
@@ -27440,7 +27737,7 @@
 	            this.onFloor = false;
 	            (function() {
 	                self.trashFunction = self.addUpdateFunction(function(){
-	                    if (self.position.y >= -2) {
+	                    if (self.shape.groups[1].position.y >= -2) {
 	                        for (var i = 0; i < self.shape.groups.length; i++) {
 	                            self.shape.groups[i].position.x += self.directions[i].x;
 	                            self.shape.groups[i].position.z += self.directions[i].z;
@@ -27495,7 +27792,7 @@
 	    };
 
 	    Kings.Player.prototype.slowDown = function() {
-	        if (this.aceleration > -0.3) {
+	        if (this.aceleration > -0.5) {
 	            this.aceleration -= 0.05;
 	        }
 	    };
@@ -27505,7 +27802,7 @@
 	            this.motorAccelSound.currentTime = 0.19;
 	        }
 	        this.motorAccelSound.play();
-	        if (this.aceleration < 0.3) {
+	        if (this.aceleration < 0.5) {
 	            this.aceleration += 0.05;
 	        }
 	    };
@@ -27527,14 +27824,14 @@
 
 
 /***/ },
-/* 20 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(21);
-	    __webpack_require__(22);
+	    __webpack_require__(26);
+	    __webpack_require__(27);
 
 	    Kings.LoadManager = {
 	        loadBundle: function(name, callback) {
@@ -27670,15 +27967,15 @@
 
 
 /***/ },
-/* 21 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(22);
-	    __webpack_require__(23);
-	    __webpack_require__(10);
+	    __webpack_require__(27);
+	    __webpack_require__(28);
+	    __webpack_require__(11);
 
 	    Kings.ObjLoader = {
 	        loadMtl: function(input, path, callback) {
@@ -27907,7 +28204,7 @@
 
 
 /***/ },
-/* 22 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28026,7 +28323,7 @@
 
 
 /***/ },
-/* 23 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28045,7 +28342,7 @@
 
 
 /***/ },
-/* 24 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28127,16 +28424,16 @@
 
 
 /***/ },
-/* 25 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(26);
-	    __webpack_require__(27);
-	    __webpack_require__(28);
-	    __webpack_require__(29);
+	    __webpack_require__(31);
+	    __webpack_require__(32);
+	    __webpack_require__(33);
+	    __webpack_require__(34);
 
 	    Kings.Road = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
@@ -28227,11 +28524,28 @@
 	                [0,0,0,0,3],
 	                [0,0,0,3,0],
 	                [0,0,3,0,0],
-	            ]
+	            ],
+	            [
+	                [2,2,2,2,0],
+	                [2,2,2,0,0],
+	                [2,2,0,0,2],
+	                [2,0,0,2,2],
+	                [0,0,2,2,2],
+	                [0,2,2,2,2],
+	            ],
+	            [
+	                [0,2,2,2,2],
+	                [0,0,2,2,2],
+	                [2,0,0,2,2],
+	                [2,2,0,0,2],
+	                [2,2,2,0,0],
+	                [2,2,2,2,0],
+	            ],
 	        ];
 	        this.currentString = -1;
 	        this.stringPosition = 0;
 	        this.pastCombination = 0;
+	        this.emptySectionsPassed = 0;
 	    };
 
 	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
@@ -28250,9 +28564,10 @@
 	            });
 	            var elements = [];
 	            if (
-	                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0) ||
-	                (this.sections[this.numberOfSections - 1].id % 3 == 0 && this.currentString != -1)
+	                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0  && this.currentString == -1 && this.emptySectionsPassed > 1) ||
+	                (this.sections[this.numberOfSections - 1].id % 4 == 0 && this.currentString != -1 && this.emptySectionsPassed > 1)
 	            ) {
+	                this.emptySectionsPassed = 0;
 	                var probability = Math.random();
 	                var elementType;
 	                if (probability > 0.9 && this.currentString == -1) {
@@ -28344,6 +28659,8 @@
 	                        }
 	                    }
 	                }
+	            } else {
+	                this.emptySectionsPassed++;
 	            }
 	            section.objects = elements;
 	            this.sections.push(section);
@@ -28357,7 +28674,7 @@
 	    Kings.Road.prototype.draw = function() {
 	        this.terrainRight.draw();
 	        this.terrainLeft.draw();
-	        for (var i = 0; i < this.sections.length; i++) {
+	        for (var i = this.sections.length - 1; i >= 0 ; i--) {
 	            this.sections[i].draw();
 	        }
 	    };
@@ -28404,7 +28721,7 @@
 
 
 /***/ },
-/* 26 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28445,7 +28762,7 @@
 
 
 /***/ },
-/* 27 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28463,6 +28780,8 @@
 	            size: { x: 2, y: 1, z: 0.5 },
 	            onCollision: function() {
 	                if (self.active) {
+	                    Kings.AssetBundles[0].content.crash.currentTime = 0;
+	                    Kings.AssetBundles[0].content.crash.play();
 	                    Kings.game.player.drainTank(30);
 	                    self.active = false;
 	                }
@@ -28481,7 +28800,7 @@
 
 
 /***/ },
-/* 28 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28516,7 +28835,7 @@
 
 
 /***/ },
-/* 29 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28533,6 +28852,25 @@
 	            size: { x: 1.3, y: 2, z: 1.3 },
 	            onCollision: function() {
 	                if (self.active) {
+	                    self.explosion = new Kings.ParticleExplosion({
+	                        particleNumber: 20,
+	                        lifeSpan: 50,
+	                        size: 2,
+	                        position: { x: self.position.x, y: self.position.y, z: self.position.z },
+	                        gravity: { x: 0, y: 0.005, z: 0 }
+	                    });
+	                    self.fire = new Kings.ParticleFire({
+	                        particleNumber: 20,
+	                        lifeSpan: 20,
+	                        size: 2,
+	                        position: new Kings.Vector({
+	                            x: self.position.x,
+	                            y: self.position.y + 1,
+	                            z: self.position.z
+	                        }),
+	                    });
+	                    Kings.AssetBundles[0].content.explosion.currentTime = 0;
+	                    Kings.AssetBundles[0].content.explosion.play();
 	                    Kings.game.player.drainTank(30);
 	                    self.active = false;
 	                }
@@ -28546,12 +28884,25 @@
 
 	    Kings.OilDrum.prototype.update = function() {
 	        Kings.GameObject.prototype.update.call(this);
+	        if (this.explosion != undefined) {
+	            this.explosion.update();
+	            this.fire.update();
+	        }
+	    };
+
+	    Kings.OilDrum.prototype.draw = function() {
+	        if (this.explosion != undefined) {
+	            this.explosion.draw(Kings.game.camera);
+	            this.fire.draw(Kings.game.camera);
+	        } else {
+	            Kings.GameObject.prototype.draw.call(this);
+	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
-/* 30 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28611,16 +28962,16 @@
 
 
 /***/ },
-/* 31 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(10);
-	    __webpack_require__(32);
-	    __webpack_require__(16);
-	    __webpack_require__(13);
+	    __webpack_require__(11);
+	    __webpack_require__(37);
+	    __webpack_require__(17);
+	    __webpack_require__(14);
 
 	    Kings.Terrain = function(parameters) {
 	        Kings.Grid.call(this, parameters);
@@ -28751,7 +29102,7 @@
 
 
 /***/ },
-/* 32 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28822,7 +29173,7 @@
 
 
 /***/ },
-/* 33 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28884,7 +29235,7 @@
 
 
 /***/ },
-/* 34 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28930,14 +29281,14 @@
 	            gl.disable(gl.BLEND);
 	            gl.enable(gl.DEPTH_TEST);
 	            Kings.GL.mvPopMatrix();
-	            glMatrix.mat4.perspective(Kings.pMatrix, 45, ratio, 0.1, 200.0);
+	            glMatrix.mat4.perspective(Kings.pMatrix, 45, ratio, 0.01, 200.0);
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
-/* 35 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29006,7 +29357,7 @@
 
 
 /***/ },
-/* 36 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29042,7 +29393,7 @@
 
 
 /***/ },
-/* 37 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29087,7 +29438,7 @@
 
 
 /***/ },
-/* 38 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29127,7 +29478,7 @@
 
 
 /***/ },
-/* 39 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29182,6 +29533,43 @@
 	    });
 
 	    return crt;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 45 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var basic = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision mediump float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
+	                // 'if(gl_FragColor.a < 0.5)',
+	                //     'discard;',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return basic;
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 

@@ -67,7 +67,8 @@
             grayscale: require('./Processing/Postprocessing/Shaders/Grayscale.js'),
             blur: require('./Processing/Postprocessing/Shaders/SpeedBlur.js'),
             hdr: require('./Processing/Postprocessing/Shaders/HDR.js'),
-            crt: require('./Processing/Postprocessing/Shaders/CRT.js')
+            crt: require('./Processing/Postprocessing/Shaders/CRT.js'),
+            basic: require('./Processing/Postprocessing/Shaders/Basic.js')
         };
 
         Kings.game.hui = new Kings.HUI();
@@ -119,10 +120,10 @@
                     fuelMeter.setLevel(Kings.game.player.fuel);
                     if (road.sections[road.sections.length - 1].id % 50 == 0) {
                         Kings.game.player.velocity += 0.02;
-                        if (Kings.game.player.velocity > 2) {
-                            Kings.game.player.velocity = 2;
+                        if (Kings.game.player.velocity > 3) {
+                            Kings.game.player.velocity = 3;
                         }
-                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 2, 4, 7));
+                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 3, 4, 8));
                     }
                 }
             });

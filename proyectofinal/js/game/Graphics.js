@@ -2,6 +2,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
     require('./Utils/MatrixOperations.js');
+    require('./Matemathic/Vector.js');
     require('./Geometry/Triangle.js');
     require('./Geometry/Plane.js');
     require('./Geometry/Cube.js');
@@ -11,6 +12,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     require('./Processing/Utils.js');
     require('./Processing/Postprocessing/Renderer.js');
     require('./Processing/Postprocessing/Layer.js');
+    require('./Particles/ParticleExplosion.js');
+    require('./Particles/ParticleFire.js');
 
     Kings.Graphics = function(parameters) {
         var self = this;
@@ -55,7 +58,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         Kings.pMatrix = glMatrix.mat4.create();
         Kings.wMatrix = glMatrix.mat4.create();
         Kings.vMatrix = glMatrix.mat4.create();
-        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
+        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
         Kings.mvMatrixStack = [];
 
         this.lastTime = 0;
@@ -94,11 +97,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         draw: function() {
             if (this.ready) {
                 this.resizeView();
-                gl.clearColor(0, 0, 0, 1);
+                gl.clearColor(0.0, 0.0, 0.0, 1);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
+                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
 
                 for (var i = 0; i < this.elements.length; i++) {
                     //if (Kings.Gameobject != null) {

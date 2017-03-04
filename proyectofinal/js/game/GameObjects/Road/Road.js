@@ -95,11 +95,28 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 [0,0,0,0,3],
                 [0,0,0,3,0],
                 [0,0,3,0,0],
-            ]
+            ],
+            [
+                [2,2,2,2,0],
+                [2,2,2,0,0],
+                [2,2,0,0,2],
+                [2,0,0,2,2],
+                [0,0,2,2,2],
+                [0,2,2,2,2],
+            ],
+            [
+                [0,2,2,2,2],
+                [0,0,2,2,2],
+                [2,0,0,2,2],
+                [2,2,0,0,2],
+                [2,2,2,0,0],
+                [2,2,2,2,0],
+            ],
         ];
         this.currentString = -1;
         this.stringPosition = 0;
         this.pastCombination = 0;
+        this.emptySectionsPassed = 0;
     };
 
     Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
@@ -118,9 +135,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             });
             var elements = [];
             if (
-                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0) ||
-                (this.sections[this.numberOfSections - 1].id % 3 == 0 && this.currentString != -1)
+                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0  && this.currentString == -1 && this.emptySectionsPassed > 1) ||
+                (this.sections[this.numberOfSections - 1].id % 4 == 0 && this.currentString != -1 && this.emptySectionsPassed > 1)
             ) {
+                this.emptySectionsPassed = 0;
                 var probability = Math.random();
                 var elementType;
                 if (probability > 0.9 && this.currentString == -1) {
@@ -212,6 +230,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                         }
                     }
                 }
+            } else {
+                this.emptySectionsPassed++;
             }
             section.objects = elements;
             this.sections.push(section);
@@ -225,7 +245,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Road.prototype.draw = function() {
         this.terrainRight.draw();
         this.terrainLeft.draw();
-        for (var i = 0; i < this.sections.length; i++) {
+        for (var i = this.sections.length - 1; i >= 0 ; i--) {
             this.sections[i].draw();
         }
     };
