@@ -18,6 +18,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Graphics = function(parameters) {
         var self = this;
         window.gl = parameters.canvas.getContext("webgl");
+        window.context2D = parameters.canvas.getContext("2d");
         if (!gl) {
             alert('No se puede incializar');
         }

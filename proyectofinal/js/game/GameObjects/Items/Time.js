@@ -1,13 +1,16 @@
 define(['jquery', 'glMatrix'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
-    Kings.Gasoline = function(parameters) {
+    Kings.Time = function(parameters) {
         var self = this;
-        parameters.shape = Kings.AssetBundles[0].content.Gas
+        parameters.shape = new Kings.Cube({
+            texture: Kings.AssetBundles[0].content.watch,
+            size: 1
+        });
         Kings.GameObject.call(this, parameters);
         this.hovering = true;
         this.hoverAltitude = 0;
-        this.content = 5;
+        this.content = 20;
         this.active = true;
         this.body = new Kings.RigidBody({
             position: this.position,
@@ -15,18 +18,18 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             size: { x: 0.5, y: 0.7, z: 0.5 },
             onCollision: function() {
                 if (self.active) {
-                    Kings.AssetBundles[0].content.bubbling.currentTime = 0;
-                    Kings.AssetBundles[0].content.bubbling.play();
-                    Kings.game.player.fillTank(self.content);
+                    Kings.AssetBundles[0].content.time.currentTime = 0;
+                    Kings.AssetBundles[0].content.time.play();
+                    Kings.game.player.fillTime(self.content);
                     self.active = false;
                 }
             }
         });
     };
 
-    Kings.Gasoline.prototype = Object.create(Kings.GameObject.prototype);
+    Kings.Time.prototype = Object.create(Kings.GameObject.prototype);
 
-    Kings.Gasoline.prototype.update = function() {
+    Kings.Time.prototype.update = function() {
         Kings.GameObject.prototype.update.call(this);
         this.rotation.y += 0.5;
         if (this.hovering) {
@@ -46,7 +49,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
     };
 
-    Kings.Gasoline.prototype.draw = function() {
+    Kings.Time.prototype.draw = function() {
         if (this.active) {
             Kings.GameObject.prototype.draw.call(this);
         }

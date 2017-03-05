@@ -19014,10 +19014,12 @@
 	    __webpack_require__(29);
 	    __webpack_require__(30);
 	    __webpack_require__(35);
+	    __webpack_require__(47);
 	    __webpack_require__(36);
 	    __webpack_require__(38);
 	    __webpack_require__(39);
 	    __webpack_require__(40);
+	    __webpack_require__(46);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19085,7 +19087,11 @@
 	            var fuelMeter = new Kings.FuelMeter({
 	                position: { x: 10, y: -6, z: 0 }
 	            });
+	            var slowTimeMeter = new Kings.SlowTimeMeter({
+	                position: { x: -6, y: 6, z: 0 }
+	            });
 	            Kings.game.hui.addElement(fuelMeter);
+	            Kings.game.hui.addElement(slowTimeMeter);
 
 	            var road = new Kings.Road({
 	                texture: Kings.AssetBundles[0].content.road,
@@ -19104,6 +19110,7 @@
 	                    road.terrainRight.position.z = Kings.game.player.position.z + 35;
 	                    road.terrainLeft.position.z = Kings.game.player.position.z + 35;
 	                    fuelMeter.setLevel(Kings.game.player.fuel);
+	                    slowTimeMeter.setLevel(Kings.game.player.slowTime);
 	                    if (road.sections[road.sections.length - 1].id % 50 == 0) {
 	                        Kings.game.player.velocity += 0.02;
 	                        if (Kings.game.player.velocity > 3) {
@@ -25834,6 +25841,7 @@
 	    Kings.Graphics = function(parameters) {
 	        var self = this;
 	        window.gl = parameters.canvas.getContext("webgl");
+	        window.context2D = parameters.canvas.getContext("2d");
 	        if (!gl) {
 	            alert('No se puede incializar');
 	        }
@@ -27491,6 +27499,7 @@
 	        this.live = true;
 	        this.deathAngle = 0;
 	        this.fuel = 100;
+	        this.slowTime = 100;
 	        this.motorSound = parameters.motorSound;
 	        this.motorAccelSound = parameters.motorAccelSound;
 	        this.velocity = (parameters.velocity + 0) || 0;
@@ -27625,10 +27634,11 @@
 	                    this.speedUp();
 	                }
 	            }
-	            if (Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+	            if (Kings.keyboard.isDown(Kings.keyboard.keys.S) && this.slowTime > 0) {
 	                if (!Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
 	                    this.slowDown();
 	                    backflip = true;
+	                    this.slowTime -= 0.2;
 	                    if (this.rotation.x > -45) {
 	                        this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 1, 2);
 	                    }
@@ -27712,7 +27722,7 @@
 	            }
 	        }
 
-	        if (!Kings.keyboard.isDown(Kings.keyboard.keys.S) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+	        if ((!Kings.keyboard.isDown(Kings.keyboard.keys.S) || this.slowTime <= 0) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
 	            if (this.aceleration > 0) {
 	                this.aceleration -= 0.05;
 	                if (this.blurId != null) {
@@ -27777,6 +27787,7 @@
 	        }
 	        this.live = true;
 	        this.fuel = 100;
+	        this.slowTime = 100;
 	    };
 
 	    Kings.Player.prototype.moveA = function() {
@@ -27794,7 +27805,7 @@
 	    };
 
 	    Kings.Player.prototype.slowDown = function() {
-	        if (this.aceleration > -0.5) {
+	        if (this.aceleration > -0.9) {
 	            this.aceleration -= 0.05;
 	        }
 	    };
@@ -27820,6 +27831,13 @@
 	        this.fuel -= cant;
 	        if (this.fuel < 0) {
 	            this.explode();
+	        }
+	    };
+
+	    Kings.Player.prototype.fillTime = function(cant) {
+	        this.slowTime += cant;
+	        if (this.slowTime > 100) {
+	            this.slowTime = 100;
 	        }
 	    };
 
@@ -28643,9 +28661,16 @@
 	                                elements.push(new Kings.Barrier({
 	                                    position: { x: x, y: -2, z: section.position.z },
 	                                }));
-	                                elements.push(new Kings.Gasoline({
-	                                    position: { x: x, y: 0, z: section.position.z },
-	                                }));
+	                                var r = Math.random() * 100;
+	                                if (r > 80) {
+	                                    elements.push(new Kings.Time({
+	                                        position: { x: x, y: 0, z: section.position.z },
+	                                    }));
+	                                } else {
+	                                    elements.push(new Kings.Gasoline({
+	                                        position: { x: x, y: 0, z: section.position.z },
+	                                    }));
+	                                }
 	                                // elements.push(new Kings.Cone({
 	                                //     position: { x: x, y: -2, z: section.position.z }
 	                                // }));
@@ -28868,6 +28893,7 @@
 
 	    Kings.OilDrum = function(parameters) {
 	        parameters.shape = Kings.AssetBundles[0].content.oildrum
+	        parameters.rotation = { x: 0, y: 180, z: 0 };
 	        Kings.GameObject.call(this, parameters);
 	        var self = this;
 	        this.active = true;
@@ -28947,7 +28973,7 @@
 	            size: { x: 0.5, y: 0.7, z: 0.5 },
 	            onCollision: function() {
 	                if (self.active) {
-	                    Kings.AssetBundles[0].content.currentTime = 0;
+	                    Kings.AssetBundles[0].content.bubbling.currentTime = 0;
 	                    Kings.AssetBundles[0].content.bubbling.play();
 	                    Kings.game.player.fillTank(self.content);
 	                    self.active = false;
@@ -29595,6 +29621,141 @@
 	    });
 
 	    return basic;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.SlowTimeMeter = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.meter = new Kings.Plane({
+	            width: 12,
+	            height: 3,
+	            texture: Kings.AssetBundles[0].content.lifeBar
+	        });
+	        this.bar = new Kings.Plane({
+	            width: 8.25,
+	            height: 0.5,
+	            texture: Kings.AssetBundles[0].content.bar,
+	        });
+	        this.level = 100;
+	        this.shader = new Kings.Shader({
+	            gl: gl,
+	            vertexShaderSource: [
+	                'attribute vec3 aVertexPosition;',
+	                'attribute vec2 aTextureCoord;',
+	                'uniform mat4 uMVMatrix;',
+	                'uniform mat4 uPMatrix;',
+	                'varying vec2 vTextureCoord;',
+	                'void main(void) {',
+	                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	                   'vTextureCoord = aTextureCoord;',
+	                '}'
+	            ].join("\n"),
+	            fragmentShaderSource: [
+	                'precision mediump float;',
+	                'varying vec2 vTextureCoord;',
+	                'uniform sampler2D uSampler;',
+	                'void main(void) {',
+	                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
+	                '}'
+	            ].join("\n")
+	        });
+	    };
+
+	    Kings.SlowTimeMeter.prototype = {
+	        constructor: Kings.SlowTimeMeter,
+
+	        setLevel: function(l) {
+	            if (l >= 0 && l <= 100) {
+	                this.level = l;
+	            }
+	        },
+
+	        update: function() {
+	            this.offset = Kings.Processing.map(this.level, 0, 100, -7, 1.25);
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate({ x: this.offset, y: 0, z: 0 });
+	            this.bar.draw(this.shader);
+	            Kings.GL.mvPopMatrix();
+	            this.meter.draw(this.shader);
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Time = function(parameters) {
+	        var self = this;
+	        parameters.shape = new Kings.Cube({
+	            texture: Kings.AssetBundles[0].content.watch,
+	            size: 1
+	        });
+	        Kings.GameObject.call(this, parameters);
+	        this.hovering = true;
+	        this.hoverAltitude = 0;
+	        this.content = 20;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 0.5, y: 0.7, z: 0.5 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    Kings.AssetBundles[0].content.time.currentTime = 0;
+	                    Kings.AssetBundles[0].content.time.play();
+	                    Kings.game.player.fillTime(self.content);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	    };
+
+	    Kings.Time.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Time.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	        this.rotation.y += 0.5;
+	        if (this.hovering) {
+	            if (this.hoverAltitude < 0.2) {
+	                this.hoverAltitude += 0.01;
+	                this.position.y += 0.01;
+	            } else {
+	                this.hovering = false;
+	            }
+	        } else {
+	            if (this.hoverAltitude > -0.2) {
+	                this.hoverAltitude -= 0.01;
+	                this.position.y -= 0.01;
+	            } else {
+	                this.hovering = true;
+	            }
+	        }
+	    };
+
+	    Kings.Time.prototype.draw = function() {
+	        if (this.active) {
+	            Kings.GameObject.prototype.draw.call(this);
+	        }
+	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 

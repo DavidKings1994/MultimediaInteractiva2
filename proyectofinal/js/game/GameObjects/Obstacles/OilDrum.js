@@ -3,6 +3,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     Kings.OilDrum = function(parameters) {
         parameters.shape = Kings.AssetBundles[0].content.oildrum
+        parameters.rotation = { x: 0, y: 180, z: 0 };
         Kings.GameObject.call(this, parameters);
         var self = this;
         this.active = true;

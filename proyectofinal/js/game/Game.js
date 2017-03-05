@@ -28,10 +28,12 @@
     require('./Utils/Keyboard.js');
     require('./GameObjects/Road/Road.js');
     require('./GameObjects/Items/Gasoline.js');
+    require('./GameObjects/Items/Time.js');
     require('./Geometry/Terrain.js');
     require('./Physics/RigidBody.js');
     require('./HUI/HUI.js');
     require('./HUI/FuelMeter.js');
+    require('./HUI/SlowTimeMeter.js');
 
     $.fn.initGame = function( parameters ) {
         var self = this;
@@ -99,7 +101,11 @@
             var fuelMeter = new Kings.FuelMeter({
                 position: { x: 10, y: -6, z: 0 }
             });
+            var slowTimeMeter = new Kings.SlowTimeMeter({
+                position: { x: -6, y: 6, z: 0 }
+            });
             Kings.game.hui.addElement(fuelMeter);
+            Kings.game.hui.addElement(slowTimeMeter);
 
             var road = new Kings.Road({
                 texture: Kings.AssetBundles[0].content.road,
@@ -118,6 +124,7 @@
                     road.terrainRight.position.z = Kings.game.player.position.z + 35;
                     road.terrainLeft.position.z = Kings.game.player.position.z + 35;
                     fuelMeter.setLevel(Kings.game.player.fuel);
+                    slowTimeMeter.setLevel(Kings.game.player.slowTime);
                     if (road.sections[road.sections.length - 1].id % 50 == 0) {
                         Kings.game.player.velocity += 0.02;
                         if (Kings.game.player.velocity > 3) {

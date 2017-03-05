@@ -208,9 +208,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                                 elements.push(new Kings.Barrier({
                                     position: { x: x, y: -2, z: section.position.z },
                                 }));
-                                elements.push(new Kings.Gasoline({
-                                    position: { x: x, y: 0, z: section.position.z },
-                                }));
+                                var r = Math.random() * 100;
+                                if (r > 80) {
+                                    elements.push(new Kings.Time({
+                                        position: { x: x, y: 0, z: section.position.z },
+                                    }));
+                                } else {
+                                    elements.push(new Kings.Gasoline({
+                                        position: { x: x, y: 0, z: section.position.z },
+                                    }));
+                                }
                                 // elements.push(new Kings.Cone({
                                 //     position: { x: x, y: -2, z: section.position.z }
                                 // }));

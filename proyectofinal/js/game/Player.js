@@ -14,6 +14,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.live = true;
         this.deathAngle = 0;
         this.fuel = 100;
+        this.slowTime = 100;
         this.motorSound = parameters.motorSound;
         this.motorAccelSound = parameters.motorAccelSound;
         this.velocity = (parameters.velocity + 0) || 0;
@@ -148,10 +149,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                     this.speedUp();
                 }
             }
-            if (Kings.keyboard.isDown(Kings.keyboard.keys.S)) {
+            if (Kings.keyboard.isDown(Kings.keyboard.keys.S) && this.slowTime > 0) {
                 if (!Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
                     this.slowDown();
                     backflip = true;
+                    this.slowTime -= 0.2;
                     if (this.rotation.x > -45) {
                         this.rotation.x -= this.turningSpeed * Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 1, 2);
                     }
@@ -235,7 +237,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             }
         }
 
-        if (!Kings.keyboard.isDown(Kings.keyboard.keys.S) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
+        if ((!Kings.keyboard.isDown(Kings.keyboard.keys.S) || this.slowTime <= 0) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
             if (this.aceleration > 0) {
                 this.aceleration -= 0.05;
                 if (this.blurId != null) {
@@ -300,6 +302,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
         this.live = true;
         this.fuel = 100;
+        this.slowTime = 100;
     };
 
     Kings.Player.prototype.moveA = function() {
@@ -317,7 +320,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     };
 
     Kings.Player.prototype.slowDown = function() {
-        if (this.aceleration > -0.5) {
+        if (this.aceleration > -0.9) {
             this.aceleration -= 0.05;
         }
     };
@@ -343,6 +346,13 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.fuel -= cant;
         if (this.fuel < 0) {
             this.explode();
+        }
+    };
+
+    Kings.Player.prototype.fillTime = function(cant) {
+        this.slowTime += cant;
+        if (this.slowTime > 100) {
+            this.slowTime = 100;
         }
     };
 
