@@ -19014,12 +19014,13 @@
 	    __webpack_require__(29);
 	    __webpack_require__(30);
 	    __webpack_require__(35);
-	    __webpack_require__(47);
 	    __webpack_require__(36);
-	    __webpack_require__(38);
+	    __webpack_require__(37);
 	    __webpack_require__(39);
 	    __webpack_require__(40);
-	    __webpack_require__(46);
+	    __webpack_require__(41);
+	    __webpack_require__(42);
+	    __webpack_require__(48);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19052,11 +19053,11 @@
 	            }
 	        });
 	        Kings.game.shaders = {
-	            grayscale: __webpack_require__(41),
-	            blur: __webpack_require__(42),
-	            hdr: __webpack_require__(43),
-	            crt: __webpack_require__(44),
-	            basic: __webpack_require__(45)
+	            grayscale: __webpack_require__(43),
+	            blur: __webpack_require__(44),
+	            hdr: __webpack_require__(45),
+	            crt: __webpack_require__(46),
+	            basic: __webpack_require__(47)
 	        };
 
 	        Kings.game.hui = new Kings.HUI();
@@ -19090,8 +19091,12 @@
 	            var slowTimeMeter = new Kings.SlowTimeMeter({
 	                position: { x: -6, y: 6, z: 0 }
 	            });
+	            var score = new Kings.Score({
+	                position: { x: 10, y: 6, z: 0 }
+	            });
 	            Kings.game.hui.addElement(fuelMeter);
 	            Kings.game.hui.addElement(slowTimeMeter);
+	            Kings.game.hui.addElement(score);
 
 	            var road = new Kings.Road({
 	                texture: Kings.AssetBundles[0].content.road,
@@ -19103,6 +19108,7 @@
 	                    if (Kings.game.player.live) {
 	                        road.terrainRight.pase = Kings.game.player.getVelocity() * 0.2;
 	                        road.terrainLeft.pase = Kings.game.player.getVelocity() * 0.2;
+	                        score.score = road.sections[road.playerIndexLocation].id;
 	                    } else {
 	                        road.terrainRight.pase = 0;
 	                        road.terrainLeft.pase = 0;
@@ -25841,7 +25847,6 @@
 	    Kings.Graphics = function(parameters) {
 	        var self = this;
 	        window.gl = parameters.canvas.getContext("webgl");
-	        window.context2D = parameters.canvas.getContext("2d");
 	        if (!gl) {
 	            alert('No se puede incializar');
 	        }
@@ -27691,10 +27696,10 @@
 	            this.explode();
 	        }
 
-	        var newy = Math.abs(this.position.y) * 0.3;
+	        var newy = Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) /2 : 0.3);
 	        if (this.jumping) {
 	            if (this.position.y < -0.1) {
-	                this.position.y += Math.abs(this.position.y) * 0.2;
+	                this.position.y += Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) / 2 : 0.2);
 	            } else {
 	                this.jumping = false;
 	            }
@@ -27723,14 +27728,16 @@
 	        }
 
 	        if ((!Kings.keyboard.isDown(Kings.keyboard.keys.S) || this.slowTime <= 0) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-	            if (this.aceleration > 0) {
+	            if (this.aceleration > 0.1) {
 	                this.aceleration -= 0.05;
 	                if (this.blurId != null) {
 	                    Kings.game.mainLayer.removeEffect(this.blurId);
 	                    this.blurId = null;
 	                }
-	            } else if (this.aceleration < 0) {
+	            } else if (this.aceleration < -0.1) {
 	                this.aceleration += 0.05;
+	            } else {
+	                this.aceleration = 0;
 	            }
 	        }
 	    };
@@ -29019,8 +29026,71 @@
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
+	    Kings.Time = function(parameters) {
+	        var self = this;
+	        parameters.shape = new Kings.Cube({
+	            texture: Kings.AssetBundles[0].content.watch,
+	            size: 1
+	        });
+	        Kings.GameObject.call(this, parameters);
+	        this.hovering = true;
+	        this.hoverAltitude = 0;
+	        this.content = 20;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 0.5, y: 0.7, z: 0.5 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    Kings.AssetBundles[0].content.time.currentTime = 0;
+	                    Kings.AssetBundles[0].content.time.play();
+	                    Kings.game.player.fillTime(self.content);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	    };
+
+	    Kings.Time.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Time.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	        this.rotation.y += 0.5;
+	        if (this.hovering) {
+	            if (this.hoverAltitude < 0.2) {
+	                this.hoverAltitude += 0.01;
+	                this.position.y += 0.01;
+	            } else {
+	                this.hovering = false;
+	            }
+	        } else {
+	            if (this.hoverAltitude > -0.2) {
+	                this.hoverAltitude -= 0.01;
+	                this.position.y -= 0.01;
+	            } else {
+	                this.hovering = true;
+	            }
+	        }
+	    };
+
+	    Kings.Time.prototype.draw = function() {
+	        if (this.active) {
+	            Kings.GameObject.prototype.draw.call(this);
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 37 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
 	    __webpack_require__(11);
-	    __webpack_require__(37);
+	    __webpack_require__(38);
 	    __webpack_require__(17);
 	    __webpack_require__(14);
 
@@ -29153,7 +29223,7 @@
 
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29224,7 +29294,7 @@
 
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29286,7 +29356,7 @@
 
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29339,7 +29409,7 @@
 
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29408,224 +29478,7 @@
 
 
 /***/ },
-/* 41 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var grayscale = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            'precision mediump float;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main(void) {',
-	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                'float average = (textureColor.r + textureColor.g + textureColor.b) / 3.0;',
-	                'gl_FragColor = vec4(average, average, average, textureColor.a);',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return grayscale;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
 /* 42 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var speedBlur = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            'precision mediump float;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main(void) {',
-	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                'vec2 dir = vec2(vTextureCoord.s - 0.5, vTextureCoord.t - 0.5);',
-	                'vec2 textCoorDir = normalize(dir) / 10.0;',
-	                'for(int i = 0; i < 10; i++) {',
-	                    'vec2 newpos = vec2(vTextureCoord.s - textCoorDir.x, vTextureCoord.t - textCoorDir.y);',
-	                    'if((newpos.x <= 1.0 || newpos.x >= 0.0) && (newpos.y <= 1.0 || newpos.y >= 0.0)) {',
-	                        'vec4 blured = texture2D(uSampler, vec2(newpos.x, newpos.y));',
-	                        'textureColor = mix(textureColor, blured, max(1.0 - (length(dir) * 2.0), 0.2));',
-	                    '}',
-	                    'textCoorDir = textCoorDir * min((length(dir) * 2.0), 0.8);',
-	                '}',
-	                'gl_FragColor = textureColor;',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return speedBlur;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 43 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var hdr = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            'precision highp float;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main(void) {',
-	                'float exposure = 0.5;',
-	                'const float gamma = 2.2;',
-	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                'vec3 hdrColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)).rgb;',
-	                'vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);',
-	                'vec3 correction = pow(mapped, vec3(1.0 / gamma));',
-	                'gl_FragColor = vec4(correction, textureColor.a);',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return hdr;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 44 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var crt = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            '#ifdef GL_ES',
-	            '#define LOWP lowp',
-	                'precision mediump float;',
-	            '#else',
-	                '#define LOWP',
-	            '#endif',
-	            '#define CRT_CASE_BORDR 0.0125',
-	            '#define SCAN_LINE_MULT 1250.0',
-	            'float CRT_CURVE_AMNTx = 0.0; // curve amount on x',
-	            'float CRT_CURVE_AMNTy = 0.0; // curve amount on y',
-	            'varying LOWP vec4 v_color;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main() {',
-	            	'vec2 tc = vec2(vTextureCoord.x, vTextureCoord.y);',
-	            	'float dx = abs(0.5-tc.x);',
-	            	'float dy = abs(0.5-tc.y);',
-	            	'dx *= dx;',
-	            	'dy *= dy;',
-	            	'tc.x -= 0.5;',
-	            	'tc.x *= 1.0 + (dy * CRT_CURVE_AMNTx);',
-	            	'tc.x += 0.5;',
-	            	'tc.y -= 0.5;',
-	            	'tc.y *= 1.0 + (dx * CRT_CURVE_AMNTy);',
-	            	'tc.y += 0.5;',
-	            	'vec4 cta = texture2D(uSampler, vec2(tc.x, tc.y));',
-	            	'cta.rgb += sin(tc.y * SCAN_LINE_MULT) * 0.02;',
-	            	'if(tc.y > 1.0 || tc.x < 0.0 || tc.x > 1.0 || tc.y < 0.0)',
-	            		'cta = vec4(1.0);',
-	            	'gl_FragColor = cta;',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return crt;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var basic = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            'precision mediump float;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main(void) {',
-	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
-	                // 'if(gl_FragColor.a < 0.5)',
-	                //     'discard;',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return basic;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -29697,63 +29550,272 @@
 
 
 /***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var grayscale = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision mediump float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'float average = (textureColor.r + textureColor.g + textureColor.b) / 3.0;',
+	                'gl_FragColor = vec4(average, average, average, textureColor.a);',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return grayscale;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var speedBlur = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision mediump float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'vec2 dir = vec2(vTextureCoord.s - 0.5, vTextureCoord.t - 0.5);',
+	                'vec2 textCoorDir = normalize(dir) / 10.0;',
+	                'for(int i = 0; i < 10; i++) {',
+	                    'vec2 newpos = vec2(vTextureCoord.s - textCoorDir.x, vTextureCoord.t - textCoorDir.y);',
+	                    'if((newpos.x <= 1.0 || newpos.x >= 0.0) && (newpos.y <= 1.0 || newpos.y >= 0.0)) {',
+	                        'vec4 blured = texture2D(uSampler, vec2(newpos.x, newpos.y));',
+	                        'textureColor = mix(textureColor, blured, max(1.0 - (length(dir) * 2.0), 0.2));',
+	                    '}',
+	                    'textCoorDir = textCoorDir * min((length(dir) * 2.0), 0.8);',
+	                '}',
+	                'gl_FragColor = textureColor;',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return speedBlur;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 45 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var hdr = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision highp float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'float exposure = 0.5;',
+	                'const float gamma = 2.2;',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'vec3 hdrColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)).rgb;',
+	                'vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);',
+	                'vec3 correction = pow(mapped, vec3(1.0 / gamma));',
+	                'gl_FragColor = vec4(correction, textureColor.a);',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return hdr;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var crt = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            '#ifdef GL_ES',
+	            '#define LOWP lowp',
+	                'precision mediump float;',
+	            '#else',
+	                '#define LOWP',
+	            '#endif',
+	            '#define CRT_CASE_BORDR 0.0125',
+	            '#define SCAN_LINE_MULT 1250.0',
+	            'float CRT_CURVE_AMNTx = 0.0; // curve amount on x',
+	            'float CRT_CURVE_AMNTy = 0.0; // curve amount on y',
+	            'varying LOWP vec4 v_color;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main() {',
+	            	'vec2 tc = vec2(vTextureCoord.x, vTextureCoord.y);',
+	            	'float dx = abs(0.5-tc.x);',
+	            	'float dy = abs(0.5-tc.y);',
+	            	'dx *= dx;',
+	            	'dy *= dy;',
+	            	'tc.x -= 0.5;',
+	            	'tc.x *= 1.0 + (dy * CRT_CURVE_AMNTx);',
+	            	'tc.x += 0.5;',
+	            	'tc.y -= 0.5;',
+	            	'tc.y *= 1.0 + (dx * CRT_CURVE_AMNTy);',
+	            	'tc.y += 0.5;',
+	            	'vec4 cta = texture2D(uSampler, vec2(tc.x, tc.y));',
+	            	'cta.rgb += sin(tc.y * SCAN_LINE_MULT) * 0.02;',
+	            	'if(tc.y > 1.0 || tc.x < 0.0 || tc.x > 1.0 || tc.y < 0.0)',
+	            		'cta = vec4(1.0);',
+	            	'gl_FragColor = cta;',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return crt;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
 /* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    Kings.Time = function(parameters) {
-	        var self = this;
-	        parameters.shape = new Kings.Cube({
-	            texture: Kings.AssetBundles[0].content.watch,
-	            size: 1
-	        });
-	        Kings.GameObject.call(this, parameters);
-	        this.hovering = true;
-	        this.hoverAltitude = 0;
-	        this.content = 20;
-	        this.active = true;
-	        this.body = new Kings.RigidBody({
-	            position: this.position,
-	            rotation: this.rotation,
-	            size: { x: 0.5, y: 0.7, z: 0.5 },
-	            onCollision: function() {
-	                if (self.active) {
-	                    Kings.AssetBundles[0].content.time.currentTime = 0;
-	                    Kings.AssetBundles[0].content.time.play();
-	                    Kings.game.player.fillTime(self.content);
-	                    self.active = false;
-	                }
-	            }
-	        });
+	    var basic = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision mediump float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
+	                // 'if(gl_FragColor.a < 0.5)',
+	                //     'discard;',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return basic;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 48 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Score = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.score = 0;
+	        $('#CanvasTemporal').remove();
+	        var textCanvas = document.createElement('canvas');
+	        textCanvas.id     = "CanvasTemporal";
+	        textCanvas.width  = Kings.width;
+	        textCanvas.height = Kings.height;
+	        textCanvas.style.zIndex   = 1;
+	        textCanvas.style.position = "absolute";
+	        textCanvas.style.top = "0";
+	        textCanvas.style.left = "0";
+	        document.body.appendChild(textCanvas);
+	        this.context2D = textCanvas.getContext('2d');
 	    };
 
-	    Kings.Time.prototype = Object.create(Kings.GameObject.prototype);
+	    Kings.Score.prototype = {
+	        constructor: Kings.Score,
 
-	    Kings.Time.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	        this.rotation.y += 0.5;
-	        if (this.hovering) {
-	            if (this.hoverAltitude < 0.2) {
-	                this.hoverAltitude += 0.01;
-	                this.position.y += 0.01;
-	            } else {
-	                this.hovering = false;
-	            }
-	        } else {
-	            if (this.hoverAltitude > -0.2) {
-	                this.hoverAltitude -= 0.01;
-	                this.position.y -= 0.01;
-	            } else {
-	                this.hovering = true;
-	            }
-	        }
-	    };
+	        update: function() {
 
-	    Kings.Time.prototype.draw = function() {
-	        if (this.active) {
-	            Kings.GameObject.prototype.draw.call(this);
+	        },
+
+	        draw: function() {
+	            this.resize();
+	            this.context2D.clearRect(0, 0, this.context2D.canvas.width, this.context2D.canvas.height);
+	            this.context2D.font = "40px digital";
+	            this.context2D.fillStyle = 'green';
+	            this.context2D.fillText('Km: ' + this.score, this.context2D.canvas.width - 150, 40);
+	        },
+
+	        resize: function() {
+	            $('#CanvasTemporal').remove();
+	            var textCanvas = document.createElement('canvas');
+	            textCanvas.id     = "CanvasTemporal";
+	            textCanvas.width  = Kings.width;
+	            textCanvas.height = Kings.height;
+	            textCanvas.style.zIndex   = 1;
+	            textCanvas.style.position = "absolute";
+	            textCanvas.style.top = "0";
+	            textCanvas.style.left = "0";
+	            document.body.appendChild(textCanvas);
+	            this.context2D = textCanvas.getContext('2d');
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));

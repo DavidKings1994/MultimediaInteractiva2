@@ -206,10 +206,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.explode();
         }
 
-        var newy = Math.abs(this.position.y) * 0.3;
+        var newy = Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) /2 : 0.3);
         if (this.jumping) {
             if (this.position.y < -0.1) {
-                this.position.y += Math.abs(this.position.y) * 0.2;
+                this.position.y += Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) / 2 : 0.2);
             } else {
                 this.jumping = false;
             }
@@ -238,14 +238,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         }
 
         if ((!Kings.keyboard.isDown(Kings.keyboard.keys.S) || this.slowTime <= 0) && !Kings.keyboard.isDown(Kings.keyboard.keys.W)) {
-            if (this.aceleration > 0) {
+            if (this.aceleration > 0.1) {
                 this.aceleration -= 0.05;
                 if (this.blurId != null) {
                     Kings.game.mainLayer.removeEffect(this.blurId);
                     this.blurId = null;
                 }
-            } else if (this.aceleration < 0) {
+            } else if (this.aceleration < -0.1) {
                 this.aceleration += 0.05;
+            } else {
+                this.aceleration = 0;
             }
         }
     };

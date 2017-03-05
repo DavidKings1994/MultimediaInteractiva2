@@ -34,6 +34,7 @@
     require('./HUI/HUI.js');
     require('./HUI/FuelMeter.js');
     require('./HUI/SlowTimeMeter.js');
+    require('./HUI/Score.js');
 
     $.fn.initGame = function( parameters ) {
         var self = this;
@@ -104,8 +105,12 @@
             var slowTimeMeter = new Kings.SlowTimeMeter({
                 position: { x: -6, y: 6, z: 0 }
             });
+            var score = new Kings.Score({
+                position: { x: 10, y: 6, z: 0 }
+            });
             Kings.game.hui.addElement(fuelMeter);
             Kings.game.hui.addElement(slowTimeMeter);
+            Kings.game.hui.addElement(score);
 
             var road = new Kings.Road({
                 texture: Kings.AssetBundles[0].content.road,
@@ -117,6 +122,7 @@
                     if (Kings.game.player.live) {
                         road.terrainRight.pase = Kings.game.player.getVelocity() * 0.2;
                         road.terrainLeft.pase = Kings.game.player.getVelocity() * 0.2;
+                        score.score = road.sections[road.playerIndexLocation].id;
                     } else {
                         road.terrainRight.pase = 0;
                         road.terrainLeft.pase = 0;

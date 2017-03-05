@@ -4,27 +4,46 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Score = function(parameters) {
         this.position = parameters.position || { x: 0, y: 0, z: 0 };
         this.score = 0;
+        $('#CanvasTemporal').remove();
+        var textCanvas = document.createElement('canvas');
+        textCanvas.id     = "CanvasTemporal";
+        textCanvas.width  = Kings.width;
+        textCanvas.height = Kings.height;
+        textCanvas.style.zIndex   = 1;
+        textCanvas.style.position = "absolute";
+        textCanvas.style.top = "0";
+        textCanvas.style.left = "0";
+        document.body.appendChild(textCanvas);
+        this.context2D = textCanvas.getContext('2d');
     };
 
     Kings.Score.prototype = {
         constructor: Kings.Score,
 
-        setLevel: function(l) {
-            if (l >= 0 && l <= 100) {
-                this.level = l;
-            }
-        },
-
         update: function() {
-            this.neddle.rotation.z = -Kings.Processing.map(this.level, 0, 100, 0, 270);
+
         },
 
         draw: function() {
-            Kings.GL.mvPushMatrix();
-            Kings.GL.mvTranslate(this.position);
-            this.meter.draw(this.shader);
-            this.neddle.draw(this.shader);
-            Kings.GL.mvPopMatrix();
+            this.resize();
+            this.context2D.clearRect(0, 0, this.context2D.canvas.width, this.context2D.canvas.height);
+            this.context2D.font = "40px digital";
+            this.context2D.fillStyle = 'green';
+            this.context2D.fillText('Km: ' + this.score, this.context2D.canvas.width - 150, 40);
+        },
+
+        resize: function() {
+            $('#CanvasTemporal').remove();
+            var textCanvas = document.createElement('canvas');
+            textCanvas.id     = "CanvasTemporal";
+            textCanvas.width  = Kings.width;
+            textCanvas.height = Kings.height;
+            textCanvas.style.zIndex   = 1;
+            textCanvas.style.position = "absolute";
+            textCanvas.style.top = "0";
+            textCanvas.style.left = "0";
+            document.body.appendChild(textCanvas);
+            this.context2D = textCanvas.getContext('2d');
         }
     };
 });
