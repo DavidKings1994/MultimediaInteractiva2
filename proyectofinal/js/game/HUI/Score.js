@@ -7,8 +7,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         $('#CanvasTemporal').remove();
         var textCanvas = document.createElement('canvas');
         textCanvas.id     = "CanvasTemporal";
-        textCanvas.width  = Kings.width;
-        textCanvas.height = Kings.height;
+        textCanvas.width  = gl.canvas.width;
+        textCanvas.height = gl.canvas.height;
         textCanvas.style.zIndex   = 1;
         textCanvas.style.position = "absolute";
         textCanvas.style.top = "0";
@@ -29,15 +29,15 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.context2D.clearRect(0, 0, this.context2D.canvas.width, this.context2D.canvas.height);
             this.context2D.font = "40px digital";
             this.context2D.fillStyle = 'green';
-            this.context2D.fillText('Km: ' + this.score, this.context2D.canvas.width - 150, 40);
+            this.context2D.fillText('Km: ' + this.score, this.context2D.canvas.width - 100, 60);
         },
 
         resize: function() {
             $('#CanvasTemporal').remove();
             var textCanvas = document.createElement('canvas');
             textCanvas.id     = "CanvasTemporal";
-            textCanvas.width  = Kings.width;
-            textCanvas.height = Kings.height;
+            textCanvas.width  = gl.canvas.width;
+            textCanvas.height = gl.canvas.height;
             textCanvas.style.zIndex   = 1;
             textCanvas.style.position = "absolute";
             textCanvas.style.top = "0";

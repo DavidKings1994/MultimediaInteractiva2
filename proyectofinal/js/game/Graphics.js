@@ -25,6 +25,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         Kings.height = parameters.canvas.clientHeight;
         Kings.width = parameters.canvas.clientWidth;
         this.ready = false;
+        this.paused = true;
 
         this.mainLayer = new Kings.Layer({
             name: 'main',
@@ -83,14 +84,16 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         constructor: Kings.Graphics,
 
         update: function() {
-            for (var i = 0; i < this.elements.length; i++) {
-                //if (Kings.Gameobject != null) {
-                    //if(this.elements[i] instanceof Kings.Gameobject) {
-                        this.elements[i].update();
+            if (!this.paused) {
+                for (var i = 0; i < this.elements.length; i++) {
+                    //if (Kings.Gameobject != null) {
+                        //if(this.elements[i] instanceof Kings.Gameobject) {
+                            this.elements[i].update();
+                        //}
                     //}
-                //}
+                }
+                this.camera.update();
             }
-            this.camera.update();
             this.gameUpdate();
         },
 
@@ -145,6 +148,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 Kings.height = displayHeight;
                 this.renderer.resize();
             }
+        },
+
+        pause: function() {
+            this.paused = !this.paused;
+            console.log(this.paused);
         }
     };
 });

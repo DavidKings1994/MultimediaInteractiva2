@@ -5,6 +5,8 @@
         <title>Endless runner</title>
         <link rel="shortcut icon" type="image/x-icon" href="Assets\img\logo.png" />
         <link rel="stylesheet" href="css/main.css">
+        <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
+        <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap-theme.css">
         <script src="js/dist/main.bundle.js" charset="utf-8"></script>
         <script id="2d-vertex-shader" type="notjs">
             attribute vec3 aVertexPosition;
@@ -27,7 +29,6 @@
                vLightWeighting = uAmbientColor * 0.2 + uDirectionalColor * directionalLightWeighting;
             }
         </script>
-
         <script id="2d-fragment-shader" type="notjs">
             precision mediump float;
             varying vec4 vColor;
@@ -36,7 +37,6 @@
                 gl_FragColor = vec4(vColor.xyz * vLightWeighting, 1.0);
             }
         </script>
-
         <script id="2d-vertex-shader-texture" type="notjs">
             attribute vec3 aVertexPosition;
             attribute vec2 aTextureCoord;
@@ -61,7 +61,6 @@
                 // lightLocation = (vec4(uPointLightingLocation, 1.0) * uVMatrix).xyz;
             }
         </script>
-
         <script id="2d-fragment-shader-texture" type="notjs">
             precision mediump float;
             varying vec2 vTextureCoord;
@@ -103,14 +102,23 @@
     </head>
     <body>
         <div id="App">
-            <template v-if='!gameStarted'>
-                <div class="">
-                    <input type="button" v-on:click='start' value="Start">
-                </div>
-            </template>
-            <template v-if='gameStarted'>
-                <canvas id="gameWindow"></canvas>
-            </template>
+            <div class="container" id="mainContainer">
+                <!-- <template v-if='gameStarted'> -->
+                    <div class="gameWindow">
+                        <template v-if='!gameStarted'>
+                            <input
+                                type="button"
+                                v-on:click='startGame()'
+                                value="Iniciar"
+                                class="btn btn-danger btn-lg"
+                                v-bind:class="{ disabled: !ready }"
+                                id="startButon">
+                        </template>
+                        <canvas id="gameWindow"></canvas>
+                    </div>
+                    <leaderboard :players="players"></leaderboard>
+                <!-- </template> -->
+            </div>
         </div>
     </body>
 </html>

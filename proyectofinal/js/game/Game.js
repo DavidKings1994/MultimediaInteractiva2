@@ -66,6 +66,14 @@
                 }
             }
         });
+
+        document.addEventListener( 'keyup', function(event) {
+            var x = event.which || event.keyCode;
+            if (x == 27) {
+                Kings.game.pause();
+            }
+        }, false );
+
         Kings.game.shaders = {
             grayscale: require('./Processing/Postprocessing/Shaders/Grayscale.js'),
             blur: require('./Processing/Postprocessing/Shaders/SpeedBlur.js'),
