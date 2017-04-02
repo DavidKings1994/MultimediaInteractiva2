@@ -1,16 +1,16 @@
 <template>
     <div class="row player">
         <div class="col-xs-2" style="height: 130px;">
-            <img :src="'/MI2/proyectofinal/Assets/img/Screw-Transparent.png'" class="player-screw screw-up screw-left">
-            <img :src="'/MI2/proyectofinal/Assets/img/Screw-Transparent.png'" class="player-screw screw-down screw-left">
+            <img :src="'Assets/img/Screw-Transparent.png'" class="player-screw screw-up screw-left">
+            <img :src="'Assets/img/Screw-Transparent.png'" class="player-screw screw-down screw-left">
         </div>
         <div class="col-xs-8">
             <h1 class="col-xs-12 text">{{ player.puntos }} km</h1>
             <h4 class="col-xs-12 text">{{ player.usuario }}</h4>
         </div>
         <div class="col-xs-2" style="height: 130px;">
-            <img :src="'/MI2/proyectofinal/Assets/img/Screw-Transparent.png'" class="player-screw screw-up screw-right">
-            <img :src="'/MI2/proyectofinal/Assets/img/Screw-Transparent.png'" class="player-screw screw-down screw-right">
+            <img :src="'Assets/img/Screw-Transparent.png'" class="player-screw screw-up screw-right">
+            <img :src="'Assets/img/Screw-Transparent.png'" class="player-screw screw-down screw-right">
         </div>
         <div class="player-foto-place">
             <img :src="player.urlFoto" class="player-foto">

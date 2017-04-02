@@ -3,6 +3,12 @@
     <head>
         <meta charset="utf-8">
         <title>Endless runner</title>
+        <meta property="og:url"           content="http://lmad.davidreyes.tk/proyectofinal/" />
+        <meta property="og:type"          content="website" />
+        <meta property="og:title"         content="Endless highway" />
+        <meta property="og:description"   content="Proyecto para multimedia interactiva" />
+        <meta property="og:image"         content="http://lmad.davidreyes.tk/proyectofinal/Assets/img/portada.jpg" />
+        <meta property="fb:app_id"        content="2372239756248316" />
         <link rel="shortcut icon" type="image/x-icon" href="Assets\img\logo.png" />
         <link rel="stylesheet" href="css/main.css">
         <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
@@ -103,21 +109,34 @@
     <body>
         <div id="App">
             <div class="container" id="mainContainer">
-                <!-- <template v-if='gameStarted'> -->
-                    <div class="gameWindow">
-                        <template v-if='!gameStarted'>
-                            <input
-                                type="button"
-                                v-on:click='startGame()'
-                                value="Iniciar"
-                                class="btn btn-danger btn-lg"
-                                v-bind:class="{ disabled: !ready }"
-                                id="startButon">
-                        </template>
-                        <canvas id="gameWindow"></canvas>
+                <div class="row" style="width: 85vw; margin: 0 auto;">
+                    <div class="col-xs-5">
+                        <div class="fb-login-button" data-size="large" data-auto-logout-link="true"></div>
                     </div>
-                    <leaderboard :players="players"></leaderboard>
-                <!-- </template> -->
+                    <div class="col-xs-2">
+                        <div class="fb-like" data-href="http://lmad.davidreyes.tk/proyectofinal" data-layout="button_count" data-action="like" data-size="large" data-show-faces="true"></div>
+                        <div class="fb-share-button"
+                            data-href="http://lmad.davidreyes.tk/proyectofinal/"
+                            data-layout="button"
+                            data-size="large">
+                        </div>
+                    </div>
+                    <div class="col-xs-1 col-xs-offset-4">
+                        <span
+                            class="btnConfig glyphicon glyphicon-cog"
+                            data-toggle="tooltip" title="Configuraciones"
+                            v-on:click="showConfig = true">
+                        </span>
+                    </div>
+                </div>
+                <config v-if="showConfig" v-on:cerrar="showConfig = false"></config>
+                <div class="gameWindow">
+                    <template v-if='!gameStarted || gamePaused'>
+                        <loading v-on:start="startGame()"></loading>
+                    </template>
+                    <canvas id="gameWindow"></canvas>
+                </div>
+                <leaderboard></leaderboard>
             </div>
         </div>
     </body>

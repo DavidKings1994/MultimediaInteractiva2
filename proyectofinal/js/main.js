@@ -1,4 +1,10 @@
-define(['vue', 'vuex', "./game/Game"],  function(Vue, Vuex, Game) {
+define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Game, Store) {
+
+    Vue.component('leaderboard', require('./views/leaderboard/leaderboard.vue'));
+    Vue.component('player-plate', require('./views/leaderboard/plate.vue'));
+    Vue.component('config', require('./views/configuration/config.vue'));
+    Vue.component('loading', require('./views/game/loading.vue'));
+
     $(document).ready(function() {
         window.addEventListener('keydown', function(e) {
             if(e.keyCode == 32 && e.target == document.body) {
@@ -6,35 +12,21 @@ define(['vue', 'vuex', "./game/Game"],  function(Vue, Vuex, Game) {
             }
         });
 
-        Vue.use(Vuex);
-
-        Vue.component('leaderboard', require('./views/leaderboard/leaderboard.vue'));
-        Vue.component('player-plate', require('./views/leaderboard/plate.vue'));
-        Vue.component('config', require('./views/configuration/config.vue'));
-
-        const store = new Vuex.Store({
-            state: {
-                ready: false,
-                score: 0,
-                gameStarted: false
-            },
-            mutations: {
-                setScore: function (state, score) {
-                    state.score = score;
-                },
-                setGameState: function(state, e) {
-                    state.gameStarted = e;
-                },
-                setGameReady: function() {
-                    state.ready = true;
-                }
-            }
-        });
+        var store = require('./store/store.js');
+        var json = localStorage.getItem('configurationERMI');
+        if (json != null) {
+            var valores = JSON.parse(json);
+            store.commit('setConfig', {
+                masterVolume: valores.masterVolume,
+                music: valores.music,
+                sfx: valores.sfx
+            });
+        }
 
         new Vue({
             el: '#App',
             data: {
-
+                showConfig: false
             },
             computed: {
                 score: function() {
@@ -42,16 +34,34 @@ define(['vue', 'vuex', "./game/Game"],  function(Vue, Vuex, Game) {
                 },
                 gameStarted: function() {
                     return store.state.gameStarted;
+                },
+                gamePaused: function() {
+                    return !store.state.gamePause;
+                },
+                gameReady: function() {
+                    return store.state.ready;
+                },
+                gameOver: function() {
+                    return store.state.gameOver;
+                }
+            },
+            watch: {
+                gameOver: function() {
+                    if (this.gameOver) {
+                        this.testAPI();
+                        $('meta[property="og:description"]').attr('content', 'Mi puntuacion: ' + this.score + ' km!');
+                    }
                 }
             },
             methods: {
                 startGame: function() {
                     store.commit('setGameState', true);
-                    $('#gameWindow').initGame();
+                    store.commit('setGameOver', false);
+                    $( document ).trigger( "gamePause" );
                 },
                 uploadInformation: function(parameters) {
                     var self = this;
-                    $.post("./../php/registro.php",
+                    $.post("./php/registro.php",
                     {
                         nombre: parameters.name,
                         puntos: parseInt(parameters.score.toString()),
@@ -59,7 +69,7 @@ define(['vue', 'vuex', "./game/Game"],  function(Vue, Vuex, Game) {
                         urlFoto: parameters.url
                     },
                     function(data, status){
-                        // self.downloadInformation();
+                        store.commit('setUpdate', true);
                     });
                 },
                 checkLoginState: function() {
@@ -126,6 +136,9 @@ define(['vue', 'vuex', "./game/Game"],  function(Vue, Vuex, Game) {
                     js.src = "//connect.facebook.net/en_US/sdk.js";
                     fjs.parentNode.insertBefore(js, fjs);
                 }(document, 'script', 'facebook-jssdk'));
+            },
+            mounted: function() {
+                $('#gameWindow').initGame();
             }
         });
     });

@@ -36,6 +36,8 @@
     require('./HUI/SlowTimeMeter.js');
     require('./HUI/Score.js');
 
+    var store = require('./../store/store.js');
+
     $.fn.initGame = function( parameters ) {
         var self = this;
         Kings.keyboard = new Kings.Keyboard();
@@ -51,6 +53,7 @@
                             Kings.game.elements[i].restart();
                         }
                     }
+                    store.commit('setGameOver', false);
                 }
             },
             light: {
@@ -71,6 +74,7 @@
             var x = event.which || event.keyCode;
             if (x == 27) {
                 Kings.game.pause();
+                store.commit('setGameState', !Kings.game.paused);
             }
         }, false );
 
@@ -96,6 +100,26 @@
         Kings.AssetBundles = [];
         Kings.LoadManager.loadBundle('core', function() {
             console.log(Kings.AssetBundles[0]);
+
+            $( document ).on( "volumeSet", function() {
+                var masterVolume = parseFloat(store.state.configuration.masterVolume) / 100;
+                Kings.AssetBundles[0].content.alert.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+                Kings.AssetBundles[0].content.bubbling.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+                Kings.AssetBundles[0].content.crash.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+                Kings.AssetBundles[0].content.explosion.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+                Kings.AssetBundles[0].content.motorAccel.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+                Kings.AssetBundles[0].content.motorIddle.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+                Kings.AssetBundles[0].content.time.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+                Kings.AssetBundles[0].content.ThroughTheFireandFlames.volume = parseFloat(store.state.configuration.music) / 100 * masterVolume;
+            });
+            $( document ).trigger( "volumeSet" );
+
+            $( document ).on( "gamePause", function() {
+                Kings.game.pause();
+                store.commit('pauseGame', !Kings.game.paused);
+            });
+            $( document ).trigger( "gamePause" );
+
             Kings.game.player = new Kings.Player({
                 velocity: 1,
                 position: { x: 0, y: -2, z: 0 },
@@ -152,6 +176,7 @@
             Kings.game.addElement(road);
 
             Kings.game.ready = true;
+            store.commit('setGameReady');
         });
     };
 }));

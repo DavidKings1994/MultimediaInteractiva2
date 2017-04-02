@@ -1,4 +1,4 @@
-define(['jquery', 'glMatrix'],  function($, glMatrix) {
+define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store) {
     var Kings = window.Kings || {};
 
     Kings.Player = function(parameters) {
@@ -58,7 +58,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             }
         });
         this.motorSound.play();
-        Kings.AssetBundles[0].content.ThroughTheFireandFlames.volume = 0.7;
         Kings.AssetBundles[0].content.ThroughTheFireandFlames.loop = true;
         Kings.AssetBundles[0].content.ThroughTheFireandFlames.play();
     };
@@ -194,6 +193,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 this.blurId = null;
             }
             if (this.deathCam == null) {
+                this.explode();
                 this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.grayscale);
             }
             Kings.AssetBundles[0].content.ThroughTheFireandFlames.pause();
@@ -275,6 +275,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 });
             }());
             this.live = false;
+            store.commit('setGameOver', true);
         }
     };
 

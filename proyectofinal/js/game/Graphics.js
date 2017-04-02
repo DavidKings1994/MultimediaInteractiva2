@@ -17,6 +17,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     Kings.Graphics = function(parameters) {
         var self = this;
+        Kings.canvas = parameters.canvas;
         window.gl = parameters.canvas.getContext("webgl");
         if (!gl) {
             alert('No se puede incializar');
@@ -25,7 +26,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         Kings.height = parameters.canvas.clientHeight;
         Kings.width = parameters.canvas.clientWidth;
         this.ready = false;
-        this.paused = true;
+        this.paused = false;
 
         this.mainLayer = new Kings.Layer({
             name: 'main',
@@ -152,7 +153,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         pause: function() {
             this.paused = !this.paused;
-            console.log(this.paused);
         }
     };
 });

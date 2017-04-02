@@ -34,7 +34,7 @@
 /******/ 	__webpack_require__.c = installedModules;
 
 /******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
+/******/ 	__webpack_require__.p = "C:\\xampp\\htdocs\\MI2\\proyectofinal/Assets/";
 
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(0);
@@ -44,7 +44,13 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(2), __webpack_require__(67), __webpack_require__(4)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Vue, Vuex, Game) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(2), __webpack_require__(26), __webpack_require__(4), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Vue, Vuex, Game, Store) {
+
+	    Vue.component('leaderboard', __webpack_require__(51));
+	    Vue.component('player-plate', __webpack_require__(64));
+	    Vue.component('config', __webpack_require__(69));
+	    Vue.component('loading', __webpack_require__(74));
+
 	    $(document).ready(function() {
 	        window.addEventListener('keydown', function(e) {
 	            if(e.keyCode == 32 && e.target == document.body) {
@@ -52,35 +58,21 @@
 	            }
 	        });
 
-	        Vue.use(Vuex);
-
-	        Vue.component('leaderboard', __webpack_require__(49));
-	        Vue.component('player-plate', __webpack_require__(62));
-	        Vue.component('config', __webpack_require__(68));
-
-	        const store = new Vuex.Store({
-	            state: {
-	                ready: false,
-	                score: 0,
-	                gameStarted: false
-	            },
-	            mutations: {
-	                setScore: function (state, score) {
-	                    state.score = score;
-	                },
-	                setGameState: function(state, e) {
-	                    state.gameStarted = e;
-	                },
-	                setGameReady: function() {
-	                    state.ready = true;
-	                }
-	            }
-	        });
+	        var store = __webpack_require__(25);
+	        var json = localStorage.getItem('configurationERMI');
+	        if (json != null) {
+	            var valores = JSON.parse(json);
+	            store.commit('setConfig', {
+	                masterVolume: valores.masterVolume,
+	                music: valores.music,
+	                sfx: valores.sfx
+	            });
+	        }
 
 	        new Vue({
 	            el: '#App',
 	            data: {
-
+	                showConfig: false
 	            },
 	            computed: {
 	                score: function() {
@@ -88,16 +80,34 @@
 	                },
 	                gameStarted: function() {
 	                    return store.state.gameStarted;
+	                },
+	                gamePaused: function() {
+	                    return !store.state.gamePause;
+	                },
+	                gameReady: function() {
+	                    return store.state.ready;
+	                },
+	                gameOver: function() {
+	                    return store.state.gameOver;
+	                }
+	            },
+	            watch: {
+	                gameOver: function() {
+	                    if (this.gameOver) {
+	                        this.testAPI();
+	                        $('meta[property="og:description"]').attr('content', 'Mi puntuacion: ' + this.score + ' km!');
+	                    }
 	                }
 	            },
 	            methods: {
 	                startGame: function() {
 	                    store.commit('setGameState', true);
-	                    $('#gameWindow').initGame();
+	                    store.commit('setGameOver', false);
+	                    $( document ).trigger( "gamePause" );
 	                },
 	                uploadInformation: function(parameters) {
 	                    var self = this;
-	                    $.post("./../php/registro.php",
+	                    $.post("./php/registro.php",
 	                    {
 	                        nombre: parameters.name,
 	                        puntos: parseInt(parameters.score.toString()),
@@ -105,7 +115,7 @@
 	                        urlFoto: parameters.url
 	                    },
 	                    function(data, status){
-	                        // self.downloadInformation();
+	                        store.commit('setUpdate', true);
 	                    });
 	                },
 	                checkLoginState: function() {
@@ -172,6 +182,9 @@
 	                    js.src = "//connect.facebook.net/en_US/sdk.js";
 	                    fjs.parentNode.insertBefore(js, fjs);
 	                }(document, 'script', 'facebook-jssdk'));
+	            },
+	            mounted: function() {
+	                $('#gameWindow').initGame();
 	            }
 	        });
 	    });
@@ -19770,13 +19783,94 @@
 /***/ function(module, exports) {
 
 	// shim for using process in browser
-
 	var process = module.exports = {};
 
-	// cached from whatever global is present so that test runners that stub it don't break things.
-	var cachedSetTimeout = setTimeout;
-	var cachedClearTimeout = clearTimeout;
+	// cached from whatever global is present so that test runners that stub it
+	// don't break things.  But we need to wrap it in a try catch in case it is
+	// wrapped in strict mode code which doesn't define any globals.  It's inside a
+	// function because try/catches deoptimize in certain engines.
 
+	var cachedSetTimeout;
+	var cachedClearTimeout;
+
+	function defaultSetTimout() {
+	    throw new Error('setTimeout has not been defined');
+	}
+	function defaultClearTimeout () {
+	    throw new Error('clearTimeout has not been defined');
+	}
+	(function () {
+	    try {
+	        if (typeof setTimeout === 'function') {
+	            cachedSetTimeout = setTimeout;
+	        } else {
+	            cachedSetTimeout = defaultSetTimout;
+	        }
+	    } catch (e) {
+	        cachedSetTimeout = defaultSetTimout;
+	    }
+	    try {
+	        if (typeof clearTimeout === 'function') {
+	            cachedClearTimeout = clearTimeout;
+	        } else {
+	            cachedClearTimeout = defaultClearTimeout;
+	        }
+	    } catch (e) {
+	        cachedClearTimeout = defaultClearTimeout;
+	    }
+	} ())
+	function runTimeout(fun) {
+	    if (cachedSetTimeout === setTimeout) {
+	        //normal enviroments in sane situations
+	        return setTimeout(fun, 0);
+	    }
+	    // if setTimeout wasn't available but was latter defined
+	    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+	        cachedSetTimeout = setTimeout;
+	        return setTimeout(fun, 0);
+	    }
+	    try {
+	        // when when somebody has screwed with setTimeout but no I.E. maddness
+	        return cachedSetTimeout(fun, 0);
+	    } catch(e){
+	        try {
+	            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+	            return cachedSetTimeout.call(null, fun, 0);
+	        } catch(e){
+	            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+	            return cachedSetTimeout.call(this, fun, 0);
+	        }
+	    }
+
+
+	}
+	function runClearTimeout(marker) {
+	    if (cachedClearTimeout === clearTimeout) {
+	        //normal enviroments in sane situations
+	        return clearTimeout(marker);
+	    }
+	    // if clearTimeout wasn't available but was latter defined
+	    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+	        cachedClearTimeout = clearTimeout;
+	        return clearTimeout(marker);
+	    }
+	    try {
+	        // when when somebody has screwed with setTimeout but no I.E. maddness
+	        return cachedClearTimeout(marker);
+	    } catch (e){
+	        try {
+	            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+	            return cachedClearTimeout.call(null, marker);
+	        } catch (e){
+	            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+	            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+	            return cachedClearTimeout.call(this, marker);
+	        }
+	    }
+
+
+
+	}
 	var queue = [];
 	var draining = false;
 	var currentQueue;
@@ -19801,7 +19895,7 @@
 	    if (draining) {
 	        return;
 	    }
-	    var timeout = cachedSetTimeout(cleanUpNextTick);
+	    var timeout = runTimeout(cleanUpNextTick);
 	    draining = true;
 
 	    var len = queue.length;
@@ -19818,7 +19912,7 @@
 	    }
 	    currentQueue = null;
 	    draining = false;
-	    cachedClearTimeout(timeout);
+	    runClearTimeout(timeout);
 	}
 
 	process.nextTick = function (fun) {
@@ -19830,7 +19924,7 @@
 	    }
 	    queue.push(new Item(fun, args));
 	    if (queue.length === 1 && !draining) {
-	        cachedSetTimeout(drainQueue, 0);
+	        runTimeout(drainQueue);
 	    }
 	};
 
@@ -19900,17 +19994,19 @@
 	    __webpack_require__(6);
 	    __webpack_require__(7);
 	    __webpack_require__(24);
-	    __webpack_require__(25);
-	    __webpack_require__(29);
-	    __webpack_require__(30);
-	    __webpack_require__(35);
-	    __webpack_require__(36);
+	    __webpack_require__(27);
+	    __webpack_require__(31);
+	    __webpack_require__(32);
 	    __webpack_require__(37);
+	    __webpack_require__(38);
 	    __webpack_require__(39);
-	    __webpack_require__(40);
 	    __webpack_require__(41);
 	    __webpack_require__(42);
 	    __webpack_require__(43);
+	    __webpack_require__(44);
+	    __webpack_require__(45);
+
+	    var store = __webpack_require__(25);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -19927,6 +20023,7 @@
 	                            Kings.game.elements[i].restart();
 	                        }
 	                    }
+	                    store.commit('setGameOver', false);
 	                }
 	            },
 	            light: {
@@ -19947,15 +20044,16 @@
 	            var x = event.which || event.keyCode;
 	            if (x == 27) {
 	                Kings.game.pause();
+	                store.commit('setGameState', !Kings.game.paused);
 	            }
 	        }, false );
 
 	        Kings.game.shaders = {
-	            grayscale: __webpack_require__(44),
-	            blur: __webpack_require__(45),
-	            hdr: __webpack_require__(46),
-	            crt: __webpack_require__(47),
-	            basic: __webpack_require__(48)
+	            grayscale: __webpack_require__(46),
+	            blur: __webpack_require__(47),
+	            hdr: __webpack_require__(48),
+	            crt: __webpack_require__(49),
+	            basic: __webpack_require__(50)
 	        };
 
 	        Kings.game.hui = new Kings.HUI();
@@ -19972,6 +20070,26 @@
 	        Kings.AssetBundles = [];
 	        Kings.LoadManager.loadBundle('core', function() {
 	            console.log(Kings.AssetBundles[0]);
+
+	            $( document ).on( "volumeSet", function() {
+	                var masterVolume = parseFloat(store.state.configuration.masterVolume) / 100;
+	                Kings.AssetBundles[0].content.alert.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+	                Kings.AssetBundles[0].content.bubbling.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+	                Kings.AssetBundles[0].content.crash.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+	                Kings.AssetBundles[0].content.explosion.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+	                Kings.AssetBundles[0].content.motorAccel.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+	                Kings.AssetBundles[0].content.motorIddle.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+	                Kings.AssetBundles[0].content.time.volume = parseFloat(store.state.configuration.sfx) / 100 * masterVolume;
+	                Kings.AssetBundles[0].content.ThroughTheFireandFlames.volume = parseFloat(store.state.configuration.music) / 100 * masterVolume;
+	            });
+	            $( document ).trigger( "volumeSet" );
+
+	            $( document ).on( "gamePause", function() {
+	                Kings.game.pause();
+	                store.commit('pauseGame', !Kings.game.paused);
+	            });
+	            $( document ).trigger( "gamePause" );
+
 	            Kings.game.player = new Kings.Player({
 	                velocity: 1,
 	                position: { x: 0, y: -2, z: 0 },
@@ -20028,6 +20146,7 @@
 	            Kings.game.addElement(road);
 
 	            Kings.game.ready = true;
+	            store.commit('setGameReady');
 	        });
 	    };
 	}));
@@ -26744,6 +26863,7 @@
 
 	    Kings.Graphics = function(parameters) {
 	        var self = this;
+	        Kings.canvas = parameters.canvas;
 	        window.gl = parameters.canvas.getContext("webgl");
 	        if (!gl) {
 	            alert('No se puede incializar');
@@ -26752,7 +26872,7 @@
 	        Kings.height = parameters.canvas.clientHeight;
 	        Kings.width = parameters.canvas.clientWidth;
 	        this.ready = false;
-	        this.paused = true;
+	        this.paused = false;
 
 	        this.mainLayer = new Kings.Layer({
 	            name: 'main',
@@ -26879,7 +26999,6 @@
 
 	        pause: function() {
 	            this.paused = !this.paused;
-	            console.log(this.paused);
 	        }
 	    };
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -28394,7 +28513,7 @@
 /* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
 	    var Kings = window.Kings || {};
 
 	    Kings.Player = function(parameters) {
@@ -28454,7 +28573,6 @@
 	            }
 	        });
 	        this.motorSound.play();
-	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.volume = 0.7;
 	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.loop = true;
 	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.play();
 	    };
@@ -28590,6 +28708,7 @@
 	                this.blurId = null;
 	            }
 	            if (this.deathCam == null) {
+	                this.explode();
 	                this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.grayscale);
 	            }
 	            Kings.AssetBundles[0].content.ThroughTheFireandFlames.pause();
@@ -28671,6 +28790,7 @@
 	                });
 	            }());
 	            this.live = false;
+	            store.commit('setGameOver', true);
 	        }
 	    };
 
@@ -28764,4457 +28884,53 @@
 /* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
+	var Vue = __webpack_require__(2);
+	var Vuex = __webpack_require__(26);
 
-	    __webpack_require__(26);
-	    __webpack_require__(27);
+	Vue.use(Vuex);
 
-	    Kings.LoadManager = {
-	        loadBundle: function(name, callback) {
-	            var self = this;
-	            this.successCount = 0;
-	            this.errorCount = 0;
-	            this.downloadQueue = [];
-
-	            $.getJSON("./AssetConfig.json", function(json) {
-	                var bundle = {};
-
-	                var getAssetName = function(path) {
-	                    var filename = path.replace(/^.*[\\\/]/, '');
-	                    return filename.replace(/\.[^/.]+$/, "");
-	                };
-
-	                for (var i = 0; i < json.bundles.length; i++) {
-	                    if(json.bundles[i].name == name) {
-	                        self.downloadQueue = json.bundles[i].contents;
-	                    }
-	                }
-
-	                for (var i = 0; i < self.downloadQueue.length; i++) {
-	                    (function() {
-	                        var path = json.assetRoot + self.downloadQueue[i];
-	                        var type = self.getFileExtension(path);
-	                        switch (type) {
-	                            case 'png':
-	                            case 'jpg': {
-	                                var texture = gl.createTexture();
-	                                texture.image = new Image();
-	                                texture.image.addEventListener("load", function() {
-	                                    self.successCount++;
-	                                    bundle[getAssetName(path)] = texture;
-	                                    console.log('loaded texture: ' + getAssetName(path));
-	                                    if (self.isDone()) {
-	                                        Kings.AssetBundles.push({
-	                                            name: name,
-	                                            content: bundle
-	                                        });
-	                                        callback();
-	                                    }
-	                                }, false);
-	                                texture.image.addEventListener("error", function() {
-	                                    self.errorCount++;
-	                                    console.log('error texture: ' + getAssetName(path));
-	                                    if (self.isDone()) {
-	                                        Kings.AssetBundles.push({
-	                                            name: name,
-	                                            content: bundle
-	                                        });
-	                                        callback();
-	                                    }
-	                                }, false);
-	                                texture.image.src = path;
-	                                break;
-	                            }
-	                            case 'obj': {
-	                                var mtlpath = path.substring(0, path.lastIndexOf('/') + 1);
-	                                var completePath = mtlpath + getAssetName(path);
-	                                completePath += '.mtl';
-	                                var startDate = new Date();
-	                                self.readTextFile(completePath, function(data) {
-	                                    Kings.ObjLoader.loadMtl(data, mtlpath, function(materials) {
-	                                        self.readTextFile(path, function(data) {
-	                                            Kings.ObjLoader.loadObj(data, materials, getAssetName(path), function(model) {
-	                                                bundle[getAssetName(path)] = model;
-	                                                self.successCount++;
-	                                                var endDate   = new Date();
-	                                                var seconds = (endDate.getTime() - startDate.getTime()) / 1000;
-	                                                console.log('loaded model: ' + getAssetName(path) + ' in ' + seconds + 's');
-	                                                if (self.isDone()) {
-	                                                    Kings.AssetBundles.push({
-	                                                        name: name,
-	                                                        content: bundle
-	                                                    });
-	                                                    callback();
-	                                                }
-	                                            });
-	                                        });
-	                                    });
-	                                });
-	                                break;
-	                            }
-	                            case 'wav':
-	                            case 'mp3': {
-	                                var audio = new Audio(path);
-	                                bundle[getAssetName(path)] = audio;
-	                                console.log('loaded audio: ' + getAssetName(path));
-	                                self.successCount++;
-	                                if (self.isDone()) {
-	                                    Kings.AssetBundles.push({
-	                                        name: name,
-	                                        content: bundle
-	                                    });
-	                                    callback();
-	                                }
-	                                break;
-	                            }
-	                        }
-	                    }());
-	                }
-	            });
-	        },
-
-	        readTextFile: function(file, callback) {
-	            var self = this;
-	            var rawFile = new XMLHttpRequest();
-	            rawFile.open("GET", file, false);
-	            rawFile.onreadystatechange = function () {
-	                if(rawFile.readyState === 4) {
-	                    if(rawFile.status === 200 || rawFile.status == 0) {
-	                        callback(rawFile.responseText);
-	                    }
-	                }
-	            }
-	            rawFile.send(null);
-	        },
-
-	        getFileExtension: function(filename) {
-	            return filename.substr(filename.lastIndexOf('.')+1);
-	        },
-
-	        isDone: function() {
-	            return (this.downloadQueue.length == this.successCount + this.errorCount);
-	        },
-
-	        getProgress: function() {
-	            return (this.successCount + this.errorCount) / this.downloadQueue.length;
+	module.exports = new Vuex.Store({
+	    state: {
+	        ready: false,
+	        update: false,
+	        score: 0,
+	        gameStarted: false,
+	        gamePause: false,
+	        gameOver: false,
+	        configuration: {
+	            masterVolume: 100,
+	            music: 100,
+	            sfx: 100
 	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	    },
+	    mutations: {
+	        setScore: function (state, score) {
+	            state.score = score;
+	        },
+	        setGameState: function(state, e) {
+	            state.gameStarted = e;
+	        },
+	        setGameOver: function(state, e) {
+	            state.gameOver = e;
+	        },
+	        pauseGame: function(state, e) {
+	            state.gamePause = e;
+	        },
+	        setGameReady: function(state) {
+	            state.ready = true;
+	        },
+	        setConfig: function(state, config) {
+	            state.configuration = config;
+	        },
+	        setUpdate: function(state, u) {
+	            state.update = u;
+	        }
+	    }
+	});
 
 
 /***/ },
 /* 26 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    __webpack_require__(27);
-	    __webpack_require__(28);
-	    __webpack_require__(11);
-
-	    Kings.ObjLoader = {
-	        loadMtl: function(input, path, callback) {
-	            var lines = input.split(/\r?\n/);
-	            var materials = [];
-	            var onQueue = 0;
-	            var done = 0;
-	            for (var i = 0; i < lines.length; i++) {
-	                if(lines[i].charAt(0) != '#'){
-	                    var data = lines[i].split(' ');
-	                    switch (data[0]) {
-	                        case 'map_Kd': {
-	                            (function(){
-	                                var num = onQueue;
-	                                Kings.Texture.loadTexture(path + data[1], function(texture) {
-	                                    materials[num].texture = texture;
-	                                    done++;
-	                                    if (done == onQueue) {
-	                                        callback(materials);
-	                                    }
-	                                });
-	                            }());
-	                            onQueue++;
-	                            break;
-	                        }
-	                        case 'newmtl': {
-	                            (function(){
-	                                materials.push({
-	                                    name: data[1]
-	                                });
-	                            }());
-	                            break;
-	                        }
-	                    }
-	                }
-	            }
-	        },
-
-	        loadObj: function(input, materials, mainMesh, callback) {
-	            var lines = input.split(/\r?\n/);
-	            var step = 'start';
-	            var groups = [];
-	            groups.push({
-	                faces: [],
-	                texture: null
-	            });
-	            var vertex = [];
-	            var normals = [];
-	            var textureCoords = [];
-	            for (var i = 0; i < lines.length; i++) {
-	                var data = lines[i].split(' ');
-	                (function(){
-	                    switch (data[0]) {
-	                        case 'usemtl': {
-	                            for (var j = 0; j < materials.length; j++) {
-	                                if (materials[j].name == data[1]) {
-	                                    groups[groups.length - 1].texture = materials[j].texture;
-	                                }
-	                            }
-	                            break;
-	                        }
-	                        case 'o': {
-	                            if (step != 'start') {
-	                                groups.push({
-	                                    faces: [],
-	                                    texture: null
-	                                });
-	                                step = 'start';
-	                            }
-	                            groups[groups.length - 1].name = data[1];
-	                            break;
-	                        }
-	                        case 'v': {
-	                            vertex.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
-	                            break;
-	                        }
-	                        case 'vt': {
-	                            textureCoords.push(parseFloat(data[1]), parseFloat(data[2]));
-	                            break;
-	                        }
-	                        case 'vn': {
-	                            normals.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
-	                            break;
-	                        }
-	                        case 'f': {
-	                            step = 'end';
-	                            var v = [];
-	                            var t = [];
-	                            var n = [];
-	                            for (var k = 1; k < data.length; k++) {
-	                                var indices = data[k].split('/');
-	                                v.push(parseFloat(indices[0]));
-	                                t.push(parseFloat(indices[1]));
-	                                n.push(parseFloat(indices[2]));
-	                            }
-	                            groups[groups.length - 1].faces.push(new Kings.Face({
-	                                vertex: v,
-	                                normal: n,
-	                                textureCoord: t
-	                            }));
-	                            break;
-	                        }
-	                    }
-	                }());
-	            }
-	            for (var i = 0; i < groups.length; i++) {
-	                var v = [];
-	                var t = [];
-	                var n = [];
-	                for (var j = 0; j < groups[i].faces.length; j++) {
-	                    v.push(
-	                        vertex[((groups[i].faces[j].vertex[0] - 1) * 3) + 0],
-	                        vertex[((groups[i].faces[j].vertex[0] - 1) * 3) + 1],
-	                        vertex[((groups[i].faces[j].vertex[0] - 1) * 3) + 2],
-
-	                        vertex[((groups[i].faces[j].vertex[1] - 1) * 3) + 0],
-	                        vertex[((groups[i].faces[j].vertex[1] - 1) * 3) + 1],
-	                        vertex[((groups[i].faces[j].vertex[1] - 1) * 3) + 2],
-
-	                        vertex[((groups[i].faces[j].vertex[2] - 1) * 3) + 0],
-	                        vertex[((groups[i].faces[j].vertex[2] - 1) * 3) + 1],
-	                        vertex[((groups[i].faces[j].vertex[2] - 1) * 3) + 2]
-	                    );
-	                    n.push(
-	                        normals[((groups[i].faces[j].normal[0] - 1) * 3) + 0],
-	                        normals[((groups[i].faces[j].normal[0] - 1) * 3) + 1],
-	                        normals[((groups[i].faces[j].normal[0] - 1) * 3) + 2],
-
-	                        normals[((groups[i].faces[j].normal[1] - 1) * 3) + 0],
-	                        normals[((groups[i].faces[j].normal[1] - 1) * 3) + 1],
-	                        normals[((groups[i].faces[j].normal[1] - 1) * 3) + 2],
-
-	                        normals[((groups[i].faces[j].normal[2] - 1) * 3) + 0],
-	                        normals[((groups[i].faces[j].normal[2] - 1) * 3) + 1],
-	                        normals[((groups[i].faces[j].normal[2] - 1) * 3) + 2]
-	                    );
-	                    t.push(
-	                        textureCoords[((groups[i].faces[j].textureCoord[0] - 1) * 2) + 0],
-	                        textureCoords[((groups[i].faces[j].textureCoord[0] - 1) * 2) + 1],
-
-	                        textureCoords[((groups[i].faces[j].textureCoord[1] - 1) * 2) + 0],
-	                        textureCoords[((groups[i].faces[j].textureCoord[1] - 1) * 2) + 1],
-
-	                        textureCoords[((groups[i].faces[j].textureCoord[2] - 1) * 2) + 0],
-	                        textureCoords[((groups[i].faces[j].textureCoord[2] - 1) * 2) + 1]
-	                    );
-	                }
-	                groups[i].vertex = v;
-	                groups[i].normals = n;
-	                groups[i].textureCoords = t;
-	            }
-	            if (mainMesh != null) {
-	                var index = 0;
-	                for (var i = 0; i < groups.length; i++) {
-	                    if (groups[i].name == mainMesh) {
-	                        index = i;
-	                    }
-	                }
-	                if (index != 0) {
-	                    var g = [];
-	                    for (var i = 0; i < groups.length; i++) {
-	                        if (i != index) {
-	                            g.push(new Kings.Model({
-	                                vertices: groups[i].vertex,
-	                                textureCoords: groups[i].textureCoords,
-	                                vertexNormals: groups[i].normals,
-	                                texture: groups[i].texture,
-	                                name: groups[i].name,
-	                            }));
-	                        }
-	                    }
-	                    var model = new Kings.Model({
-	                        vertices: groups[index].vertex,
-	                        textureCoords: groups[index].textureCoords,
-	                        vertexNormals: groups[index].normals,
-	                        texture: groups[index].texture,
-	                        name: groups[index].name,
-	                        groups: g
-	                    });
-	                    callback(model);
-	                } else {
-	                    var g = [];
-	                    for (var i = 1; i < groups.length; i++) {
-	                        g.push(new Kings.Model({
-	                            vertices: groups[i].vertex,
-	                            textureCoords: groups[i].textureCoords,
-	                            vertexNormals: groups[i].normals,
-	                            texture: groups[i].texture,
-	                            name: groups[i].name,
-	                        }));
-	                    }
-	                    var model = new Kings.Model({
-	                        vertices: groups[0].vertex,
-	                        textureCoords: groups[0].textureCoords,
-	                        vertexNormals: groups[0].normals,
-	                        texture: groups[0].texture,
-	                        name: groups[0].name,
-	                        groups: g
-	                    });
-	                    callback(model);
-	                }
-	            } else {
-	                var g = [];
-	                for (var i = 1; i < groups.length; i++) {
-	                    g.push(new Kings.Model({
-	                        vertices: groups[i].vertex,
-	                        textureCoords: groups[i].textureCoords,
-	                        vertexNormals: groups[i].normals,
-	                        texture: groups[i].texture,
-	                        name: groups[i].name,
-	                    }));
-	                }
-	                var model = new Kings.Model({
-	                    vertices: groups[0].vertex,
-	                    textureCoords: groups[0].textureCoords,
-	                    vertexNormals: groups[0].normals,
-	                    texture: groups[0].texture,
-	                    name: groups[0].name,
-	                    groups: g
-	                });
-	                callback(model);
-	            }
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Model = function(parameters) {
-	        this.name = parameters.name || '';
-	        this.groups = parameters.groups || [];
-	        this.texture = parameters.texture || null;
-	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
-	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
-	        this.offset = parameters.offset || { x: 0, y: 0, z: 0 };
-	        if (this.texture != null) {
-	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
-	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
-	            this.textureCoordAttribute = Kings.textureShader.getAttributeLocation('aTextureCoord');
-	            gl.enableVertexAttribArray(this.textureCoordAttribute);
-	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
-	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
-	            Kings.Texture.handleTexture(this.texture);
-	        } else {
-	            this.vertexPositionAttribute = Kings.colorShader.getAttributeLocation('aVertexPosition');
-	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
-	            this.vertexColorAttribute = Kings.colorShader.getAttributeLocation('aVertexColor');
-	            gl.enableVertexAttribArray(this.vertexColorAttribute);
-	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
-	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
-	        }
-	        this.initBuffers(parameters.textureCoords, parameters.colors, parameters.vertices, parameters.vertexNormals);
-	    };
-
-	    Kings.Model.prototype = {
-	        constructor: Kings.Model,
-
-	        initBuffers: function(textureCoords, colors, vertices, vertexNormals) {
-	            if (this.texture != null) {
-	                this.planeTextureCoordBuffer = gl.createBuffer();
-	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
-	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-	                this.planeTextureCoordBuffer.itemSize = 2;
-	                this.planeTextureCoordBuffer.numItems = textureCoords.length / 2;
-
-	            } else {
-	                this.planeVertexColorBuffer = gl.createBuffer();
-	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
-	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-	                this.planeVertexColorBuffer.itemSize = 4;
-	                this.planeVertexColorBuffer.numItems = colors.length / 4;
-	            }
-
-	            this.planeVertexPositionBuffer = gl.createBuffer();
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
-	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-	            this.planeVertexPositionBuffer.itemSize = 3;
-	            this.planeVertexPositionBuffer.numItems = vertices.length / 3;
-
-	            this.planeVertexNormalBuffer = gl.createBuffer();
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
-	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
-	            this.planeVertexNormalBuffer.itemSize = 3;
-	            this.planeVertexNormalBuffer.numItems = vertexNormals.length / 3;
-	        },
-
-	        draw: function() {
-	            Kings.GL.mvPushMatrix();
-	            Kings.GL.mvTranslate(this.position);
-	            Kings.GL.mvTranslate(this.offset);
-	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
-	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
-	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
-	            Kings.GL.mvTranslate({ x: -this.offset.x, y: -this.offset.y, z: -this.offset.z} );
-
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
-	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
-	            gl.vertexAttribPointer(this.vertexNormalAttribute, this.planeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-	            if (this.texture != null) {
-	                gl.useProgram(Kings.textureShader.getProgram());
-	                gl.activeTexture(gl.TEXTURE0);
-	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
-	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
-
-	                Kings.GL.setLightUniforms(Kings.textureShader);
-
-	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
-	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-	                Kings.GL.setMatrixUniforms(Kings.textureShader);
-	            } else {
-	                gl.useProgram(Kings.colorShader.getProgram());
-	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
-	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-	                Kings.GL.setLightUniforms(Kings.colorShader);
-	                Kings.GL.setMatrixUniforms(Kings.colorShader);
-	            }
-
-	            gl.drawArrays(gl.TRIANGLES, 0, this.planeVertexPositionBuffer.numItems);
-
-	            for (var i = 0; i < this.groups.length; i++) {
-	                this.groups[i].draw();
-	            }
-
-	            Kings.GL.mvPopMatrix();
-	        },
-
-	        update: function() {
-	            for (var i = 0; i < this.groups.length; i++) {
-	                this.groups[i].update();
-	            }
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 28 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Face = function(parameters) {
-	        this.vertex = parameters.vertex;
-	        this.normal = parameters.normal;
-	        this.textureCoord = parameters.textureCoord;
-	    };
-
-	    Kings.Face.prototype = {
-	        constructor: Kings.Face,
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 29 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Keyboard = function(mode) {
-	        var self = this;
-	        this.pressedKeys = {};
-	        this.keys = {
-	            BACKSPACE: 8,
-	            TAB:       9,
-	            RETURN:   13,
-	            ESC:      27,
-	            SPACE:    32,
-	            PAGEUP:   33,
-	            PAGEDOWN: 34,
-	            END:      35,
-	            HOME:     36,
-	            LEFT:     37,
-	            UP:       38,
-	            RIGHT:    39,
-	            DOWN:     40,
-	            INSERT:   45,
-	            DELETE:   46,
-	            ZERO:     48, ONE: 49, TWO: 50, THREE: 51, FOUR: 52, FIVE: 53, SIX: 54, SEVEN: 55, EIGHT: 56, NINE: 57,
-	            A:        65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
-	            TILDA:    192
-	        };
-	        this.stake = [];
-	        document.addEventListener( 'keydown', function(evt) { self.onKeyDown(evt) }, false );
-	        document.addEventListener( 'keyup', function(evt) { self.onKeyUp(evt) }, false );
-	    };
-
-	    Kings.Keyboard.prototype = {
-	        constructor: Kings.Keyboard,
-
-	        isDown: function(keyCode) {
-	            return this.pressedKeys[keyCode];
-	        },
-
-	        onKeyDown: function(event) {
-	            this.pressedKeys[event.keyCode] = true;
-	            this.stake.unshift(event.keyCode);
-	            if (this.stake.length > 10) {
-	                this.stake.pop();
-	            }
-	        },
-
-	        onKeyUp: function(event) {
-	            delete this.pressedKeys[event.keyCode];
-	            this.stake.unshift(this.getLastKeyPressed());
-	        },
-
-	        getLastKeyPressed: function() {
-	            for (var i = 0; i < this.stake.length; i++) {
-	                if (this.pressedKeys[this.stake[i]]) {
-	                    return this.stake[i];
-	                }
-	            }
-	            return null;
-	        },
-
-	        firstKeyPressed: function(key1, key2) {
-	            for (var i = 0; i < this.stake.length; i++) {
-	                if (this.stake[i] == key1) {
-	                    if (this.pressedKeys[this.stake[i]]) {
-	                        return this.stake[i];
-	                    }
-	                } else if (this.stake[i] == key2) {
-	                    if (this.pressedKeys[this.stake[i]]) {
-	                        return this.stake[i];
-	                    }
-	                }
-	            }
-	            return null;
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 30 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    __webpack_require__(31);
-	    __webpack_require__(32);
-	    __webpack_require__(33);
-	    __webpack_require__(34);
-
-	    Kings.Road = function(parameters) {
-	        Kings.GameObject.call(this, parameters);
-	        this.gameUpdate = function() { parameters.update() };
-	        this.difficulty = 4;
-	        this.playerIndexLocation = 0;
-	        this.sections = [];
-	        this.numberOfSections = parameters.numberOfSections || 4;
-	        this.sectionSize = parameters.sectionSize || 4;
-	        for (var i = 0; i < this.numberOfSections; i++) {
-	            if(i>1) {
-	                this.sections.push(new Kings.RoadSection({
-	                    id: i,
-	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
-	                    sectionSize: this.sectionSize,
-	                    texture: this.texture
-	                }));
-	            } else {
-	                this.sections.push(new Kings.RoadSection({
-	                    id: i,
-	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
-	                    sectionSize: this.sectionSize,
-	                    texture: this.texture
-	                }));
-	            }
-	        }
-	        this.terrainLeft = new Kings.Terrain({
-	            position: { x: 16, y: this.position.y, z: 0},
-	            rotation: { x: 90, y: 0, z: 0},
-	            texture: Kings.AssetBundles[0].content.ground2,
-	            width: 20.0,
-	            height: 80.0,
-	            cols: 10.0,
-	            rows: 10.0,
-	            maxHeight: 10,
-	            staticEdge: 'bottom'
-	        });
-	        this.terrainRight = new Kings.Terrain({
-	            position: { x: -16, y: this.position.y, z: 0},
-	            rotation: { x: 90, y: 0, z: 0},
-	            texture: Kings.AssetBundles[0].content.ground2,
-	            width: 20.0,
-	            height: 80.0,
-	            cols: 10.0,
-	            rows: 10.0,
-	            maxHeight: 10,
-	            staticEdge: 'top'
-	        });
-	        this.combinations = [ //0 = nada, 1 = barreera/gasolina, 2 = barril, 3 = gasolina
-	            [2,2,0,0,0],
-	            [0,0,0,2,2],
-	            [2,2,2,0,0],
-	            [0,0,2,2,2],
-	            [2,2,2,0,0],
-	            [0,0,2,2,2],
-	            [2,2,1,2,2],
-	            [2,2,2,2,1],
-	            [1,2,2,2,2],
-	            [0,0,1,2,2],
-	            [2,2,1,0,0],
-	            [0,0,3,0,0],
-	            [0,0,0,0,3],
-	            [3,0,0,0,0],
-	            [2,0,2,0,2],
-	        ];
-	        this.string = [
-	            [
-	                [2,0,2,0,2],
-	                [0,2,0,2,0],
-	                [2,0,2,0,2],
-	                [0,2,0,2,0],
-	                [2,0,2,0,2],
-	                [0,2,0,2,0],
-	            ],
-	            [
-	                [2,2,2,0,2],
-	                [0,0,2,2,2],
-	                [2,2,2,0,2],
-	                [0,0,2,2,2],
-	                [2,2,2,0,2],
-	                [0,0,2,2,2],
-	            ],
-	            [
-	                [3,0,0,0,0],
-	                [0,3,0,0,0],
-	                [0,0,3,0,0],
-	                [0,0,0,3,0],
-	                [0,0,0,0,3],
-	                [0,0,0,3,0],
-	                [0,0,3,0,0],
-	            ],
-	            [
-	                [2,2,2,2,0],
-	                [2,2,2,0,0],
-	                [2,2,0,0,2],
-	                [2,0,0,2,2],
-	                [0,0,2,2,2],
-	                [0,2,2,2,2],
-	            ],
-	            [
-	                [0,2,2,2,2],
-	                [0,0,2,2,2],
-	                [2,0,0,2,2],
-	                [2,2,0,0,2],
-	                [2,2,2,0,0],
-	                [2,2,2,2,0],
-	            ],
-	        ];
-	        this.currentString = -1;
-	        this.stringPosition = 0;
-	        this.pastCombination = 0;
-	        this.emptySectionsPassed = 0;
-	    };
-
-	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.Road.prototype.update = function(v) {
-	        this.gameUpdate();
-	        this.terrainRight.update();
-	        this.terrainLeft.update();
-	        this.sections[this.playerIndexLocation].active = true;
-	        if(this.playerIndexLocation > 1) {
-	            var section = new Kings.RoadSection({
-	                id: this.sections[this.numberOfSections - 1].id + 1,
-	                position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize) },
-	                sectionSize: this.sectionSize,
-	                texture: this.texture,
-	            });
-	            var elements = [];
-	            if (
-	                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0  && this.currentString == -1 && this.emptySectionsPassed > 1) ||
-	                (this.sections[this.numberOfSections - 1].id % 4 == 0 && this.currentString != -1 && this.emptySectionsPassed > 1)
-	            ) {
-	                this.emptySectionsPassed = 0;
-	                var probability = Math.random();
-	                var elementType;
-	                if (probability > 0.9 && this.currentString == -1) {
-	                    this.currentString = Math.floor(Math.random() * this.string.length);
-	                    this.stringPosition = 0;
-	                } else {
-	                    elementType = Math.floor(Math.random() * this.combinations.length);
-	                    if (elementType == this.pastCombination) {
-	                        if (elementType < this.combinations.length - 1) {
-	                            elementType++;
-	                        } else if(elementType > 0) {
-	                            elementType--;
-	                        }
-	                    }
-	                    this.pastCombination = elementType;
-	                }
-	                if (this.currentString != -1) {
-	                    for (var i = 0; i < this.string[this.currentString][this.stringPosition].length; i++) {
-	                        var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
-	                        switch (this.string[this.currentString][this.stringPosition][i]) {
-	                            case 0: {
-	                                //nada
-	                                break;
-	                            }
-	                            case 1: {
-	                                elements.push(new Kings.Barrier({
-	                                    position: { x: x, y: -2, z: section.position.z },
-	                                }));
-	                                elements.push(new Kings.Gasoline({
-	                                    position: { x: x, y: 0, z: section.position.z },
-	                                }));
-	                                // elements.push(new Kings.Cone({
-	                                //     position: { x: x, y: -2, z: section.position.z }
-	                                // }));
-	                                break;
-	                            }
-	                            case 2: {
-	                                elements.push(new Kings.OilDrum({
-	                                    position: { x: x, y: -2, z: section.position.z }
-	                                }));
-	                                break;
-	                            }
-	                            case 3: {
-	                                elements.push(new Kings.Gasoline({
-	                                    position: { x: x, y: -1.7, z: section.position.z }
-	                                }));
-	                                break;
-	                            }
-	                            default: {
-	                                break;
-	                            }
-	                        }
-	                    }
-	                    this.stringPosition++;
-	                    if (this.stringPosition == this.string[this.currentString][this.stringPosition].length) {
-	                        this.currentString = -1;
-	                    }
-	                } else {
-	                    for (var i = 0; i < this.combinations[elementType].length; i++) {
-	                        var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
-	                        switch (this.combinations[elementType][i]) {
-	                            case 0: {
-	                                //nada
-	                                break;
-	                            }
-	                            case 1: {
-	                                elements.push(new Kings.Barrier({
-	                                    position: { x: x, y: -2, z: section.position.z },
-	                                }));
-	                                var r = Math.random() * 100;
-	                                if (r > 80) {
-	                                    elements.push(new Kings.Time({
-	                                        position: { x: x, y: 0, z: section.position.z },
-	                                    }));
-	                                } else {
-	                                    elements.push(new Kings.Gasoline({
-	                                        position: { x: x, y: 0, z: section.position.z },
-	                                    }));
-	                                }
-	                                // elements.push(new Kings.Cone({
-	                                //     position: { x: x, y: -2, z: section.position.z }
-	                                // }));
-	                                break;
-	                            }
-	                            case 2: {
-	                                elements.push(new Kings.OilDrum({
-	                                    position: { x: x, y: -2, z: section.position.z }
-	                                }));
-	                                break;
-	                            }
-	                            case 3: {
-	                                elements.push(new Kings.Gasoline({
-	                                    position: { x: x, y: -1.7, z: section.position.z }
-	                                }));
-	                                break;
-	                            }
-	                            default: {
-	                                break;
-	                            }
-	                        }
-	                    }
-	                }
-	            } else {
-	                this.emptySectionsPassed++;
-	            }
-	            section.objects = elements;
-	            this.sections.push(section);
-	            this.sections.splice(0,1);
-	        }
-	        for (var i = 0; i < this.sections.length; i++) {
-	            this.sections[i].update();
-	        }
-	    };
-
-	    Kings.Road.prototype.draw = function() {
-	        this.terrainRight.draw();
-	        this.terrainLeft.draw();
-	        for (var i = this.sections.length - 1; i >= 0 ; i--) {
-	            this.sections[i].draw();
-	        }
-	    };
-
-	    Kings.Road.prototype.locatePlayer = function(v) {
-	        for (var i = 0; i < this.sections.length; i++) {
-	            if(
-	                v.z > (this.sections[i].position.z - this.sectionSize) &&
-	                v.z < (this.sections[i].position.z + this.sectionSize)
-	            ) {
-	                this.playerIndexLocation = i;
-	            }
-	        }
-	    },
-
-	    Kings.Road.prototype.insideRoad = function(position) {
-	        if((position.x > -this.sectionSize && position.x < this.sectionSize)) {
-	            return true;
-	        }
-	        return false;
-	    },
-
-	    Kings.Road.prototype.restart = function() {
-	        this.sections = [];
-	        for (var i = 0; i < this.numberOfSections; i++) {
-	            if(i>1) {
-	                this.sections.push(new Kings.RoadSection({
-	                    id: i,
-	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
-	                    sectionSize: this.sectionSize,
-	                    texture: this.texture
-	                }));
-	            } else {
-	                this.sections.push(new Kings.RoadSection({
-	                    id: i,
-	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
-	                    sectionSize: this.sectionSize,
-	                    texture: this.texture
-	                }));
-	            }
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 31 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.RoadSection = function(parameters) {
-	        this.id = parameters.id;
-	        this.active = false;
-	        parameters.rotation = { x: 90, y: 0, z: 0};
-	        parameters.shape = new Kings.Plane({
-	            height: parameters.sectionSize,
-	            width: parameters.sectionSize,
-	            texture: parameters.texture
-	        });
-	        Kings.GameObject.call(this, parameters);
-	        this.objects = parameters.element || [];
-	    };
-
-	    Kings.RoadSection.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.RoadSection.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	        for (var i = 0; i < this.objects.length; i++) {
-	            this.objects[i].update();
-	            if (this.active) {
-	                this.objects[i].body.checkCollisionWithBody(Kings.game.player.body);
-	                this.orderDepth(Kings.game.camera);
-	            }
-	        }
-	    };
-
-	    Kings.RoadSection.prototype.draw = function() {
-	        Kings.GameObject.prototype.draw.call(this);
-	        for (var i = 0; i < this.objects.length; i++) {
-	            this.objects[i].draw();
-	        }
-	    };
-
-	    Kings.RoadSection.prototype.orderDepth = function(camera) {
-	        for (var i = 0; i < this.objects.length; i++) {
-	            var vec = new Kings.Vector({
-	                x: camera.position.x - this.objects[i].position.x,
-	                y: camera.position.y - this.objects[i].position.y,
-	                z: camera.position.z - this.objects[i].position.z
-	            });
-	            this.objects[i].distance = vec.magnitude();
-	        }
-	        this.objects.sort(function(a,b) {
-	            return (b.distance - a.distance);
-	        });
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 32 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Barrier = function(parameters) {
-	        parameters.shape = Kings.AssetBundles[0].content.barriere
-	        parameters.rotation = { x: 0, y: -180, z: 0 };
-	        Kings.GameObject.call(this, parameters);
-	        var self = this;
-	        this.active = true;
-	        this.body = new Kings.RigidBody({
-	            position: this.position,
-	            rotation: this.rotation,
-	            size: { x: 2, y: 1, z: 0.5 },
-	            onCollision: function() {
-	                if (self.active) {
-	                    Kings.AssetBundles[0].content.crash.currentTime = 0;
-	                    Kings.AssetBundles[0].content.crash.play();
-	                    Kings.game.player.drainTank(30);
-	                    self.active = false;
-	                }
-	            }
-	        });
-	        this.hovering = true;
-	        this.content = 5;
-	    };
-
-	    Kings.Barrier.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.Barrier.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 33 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Cone = function(parameters) {
-	        parameters.shape = Kings.AssetBundles[0].content.cone
-	        Kings.GameObject.call(this, parameters);
-	        var self = this;
-	        this.active = true;
-	        this.body = new Kings.RigidBody({
-	            position: this.position,
-	            rotation: this.rotation,
-	            size: { x: 0.5, y: 0.7, z: 0.5 },
-	            onCollision: function() {
-	                if (self.active) {
-	                    Kings.game.player.drainTank(30);
-	                    self.active = false;
-	                }
-	            }
-	        });
-	        this.hovering = true;
-	        this.content = 5;
-	    };
-
-	    Kings.Cone.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.Cone.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 34 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.OilDrum = function(parameters) {
-	        parameters.shape = Kings.AssetBundles[0].content.oildrum
-	        parameters.rotation = { x: 0, y: 180, z: 0 };
-	        Kings.GameObject.call(this, parameters);
-	        var self = this;
-	        this.active = true;
-	        this.body = new Kings.RigidBody({
-	            position: this.position,
-	            rotation: this.rotation,
-	            size: { x: 1.3, y: 2, z: 1.3 },
-	            onCollision: function() {
-	                if (self.active) {
-	                    self.explosion = new Kings.ParticleExplosion({
-	                        particleNumber: 20,
-	                        lifeSpan: 50,
-	                        size: 2,
-	                        position: { x: self.position.x, y: self.position.y, z: self.position.z },
-	                        gravity: { x: 0, y: 0.005, z: 0 }
-	                    });
-	                    self.fire = new Kings.ParticleFire({
-	                        particleNumber: 20,
-	                        lifeSpan: 20,
-	                        size: 2,
-	                        position: new Kings.Vector({
-	                            x: self.position.x,
-	                            y: self.position.y + 1,
-	                            z: self.position.z
-	                        }),
-	                    });
-	                    Kings.AssetBundles[0].content.explosion.currentTime = 0;
-	                    Kings.AssetBundles[0].content.explosion.play();
-	                    Kings.game.player.drainTank(30);
-	                    self.active = false;
-	                }
-	            }
-	        });
-	        this.hovering = true;
-	        this.content = 5;
-	    };
-
-	    Kings.OilDrum.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.OilDrum.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	        if (this.explosion != undefined) {
-	            this.explosion.update();
-	            this.fire.update();
-	        }
-	    };
-
-	    Kings.OilDrum.prototype.draw = function() {
-	        if (this.explosion != undefined) {
-	            this.explosion.draw(Kings.game.camera);
-	            this.fire.draw(Kings.game.camera);
-	        } else {
-	            Kings.GameObject.prototype.draw.call(this);
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 35 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Gasoline = function(parameters) {
-	        var self = this;
-	        parameters.shape = Kings.AssetBundles[0].content.Gas
-	        Kings.GameObject.call(this, parameters);
-	        this.hovering = true;
-	        this.hoverAltitude = 0;
-	        this.content = 5;
-	        this.active = true;
-	        this.body = new Kings.RigidBody({
-	            position: this.position,
-	            rotation: this.rotation,
-	            size: { x: 0.5, y: 0.7, z: 0.5 },
-	            onCollision: function() {
-	                if (self.active) {
-	                    Kings.AssetBundles[0].content.bubbling.currentTime = 0;
-	                    Kings.AssetBundles[0].content.bubbling.play();
-	                    Kings.game.player.fillTank(self.content);
-	                    self.active = false;
-	                }
-	            }
-	        });
-	    };
-
-	    Kings.Gasoline.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.Gasoline.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	        this.rotation.y += 0.5;
-	        if (this.hovering) {
-	            if (this.hoverAltitude < 0.2) {
-	                this.hoverAltitude += 0.01;
-	                this.position.y += 0.01;
-	            } else {
-	                this.hovering = false;
-	            }
-	        } else {
-	            if (this.hoverAltitude > -0.2) {
-	                this.hoverAltitude -= 0.01;
-	                this.position.y -= 0.01;
-	            } else {
-	                this.hovering = true;
-	            }
-	        }
-	    };
-
-	    Kings.Gasoline.prototype.draw = function() {
-	        if (this.active) {
-	            Kings.GameObject.prototype.draw.call(this);
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 36 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Time = function(parameters) {
-	        var self = this;
-	        parameters.shape = new Kings.Cube({
-	            texture: Kings.AssetBundles[0].content.watch,
-	            size: 1
-	        });
-	        Kings.GameObject.call(this, parameters);
-	        this.hovering = true;
-	        this.hoverAltitude = 0;
-	        this.content = 20;
-	        this.active = true;
-	        this.body = new Kings.RigidBody({
-	            position: this.position,
-	            rotation: this.rotation,
-	            size: { x: 0.5, y: 0.7, z: 0.5 },
-	            onCollision: function() {
-	                if (self.active) {
-	                    Kings.AssetBundles[0].content.time.currentTime = 0;
-	                    Kings.AssetBundles[0].content.time.play();
-	                    Kings.game.player.fillTime(self.content);
-	                    self.active = false;
-	                }
-	            }
-	        });
-	    };
-
-	    Kings.Time.prototype = Object.create(Kings.GameObject.prototype);
-
-	    Kings.Time.prototype.update = function() {
-	        Kings.GameObject.prototype.update.call(this);
-	        this.rotation.y += 0.5;
-	        if (this.hovering) {
-	            if (this.hoverAltitude < 0.2) {
-	                this.hoverAltitude += 0.01;
-	                this.position.y += 0.01;
-	            } else {
-	                this.hovering = false;
-	            }
-	        } else {
-	            if (this.hoverAltitude > -0.2) {
-	                this.hoverAltitude -= 0.01;
-	                this.position.y -= 0.01;
-	            } else {
-	                this.hovering = true;
-	            }
-	        }
-	    };
-
-	    Kings.Time.prototype.draw = function() {
-	        if (this.active) {
-	            Kings.GameObject.prototype.draw.call(this);
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 37 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    __webpack_require__(11);
-	    __webpack_require__(38);
-	    __webpack_require__(17);
-	    __webpack_require__(14);
-
-	    Kings.Terrain = function(parameters) {
-	        Kings.Grid.call(this, parameters);
-	        this.staticEdge = parameters.staticEdge || '';
-	        this.maxHeight = parameters.maxHeight || 5;
-	        this.zValues = [];
-	        this.zPosition = 0;
-	        this.pase = 0.05 || parameters.pase;
-	    };
-
-	    Kings.Terrain.prototype = Object.create(Kings.Grid.prototype);
-
-	    Kings.Terrain.prototype.constructor = Kings.Terrain;
-
-	    Kings.Terrain.prototype.update = function() {
-	        var yoff = 0;
-	        for (var y = 0; y < this.rows+1; y++) {
-	            this.zValues[y] = [];
-	            var xoff = this.zPosition;
-	            for (var x = 0; x < this.cols+1; x++) {
-	                if (this.staticEdge != '') {
-	                    switch (this.staticEdge) {
-	                        case 'right': {
-	                            var softness = 1 - Kings.Processing.map(x, 0, this.cols, 0, 1);
-	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
-	                            break;
-	                        }
-	                        case 'left': {
-	                            var softness = Kings.Processing.map(x, 0, this.cols + 1, 0, 1);
-	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
-	                            break;
-	                        }
-	                        case 'top': {
-	                            var softness = 1 - Kings.Processing.map(y, 0, this.rows, 0, 1);
-	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
-	                            break;
-	                        }
-	                        case 'bottom': {
-	                            var softness = Kings.Processing.map(y, 0, this.rows + 1, 0, 1);
-	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
-	                            break;
-	                        }
-	                    }
-	                } else {
-	                    this.zValues[y][x] = Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight);
-	                }
-	                xoff += 0.35;
-	            }
-	            yoff += 0.35;
-	        }
-	        this.zPosition += this.pase;//0.05;
-
-	        var stepx = this.width / this.cols;
-	        var stepy = this.height / this.rows;
-
-	        this.gridTextureCoordBuffer = gl.createBuffer();
-	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridTextureCoordBuffer);
-	        var textureCoords = [];
-	        for (var y = 0; y < this.rows; y++) {
-	            for (var x = 0; x < this.cols; x++) {
-	                textureCoords = textureCoords.concat([
-	                    0.0, 0.0 + this.zPosition,
-	                    1.0, 0.0 + this.zPosition,
-	                    0.0, 1.0 + this.zPosition,
-
-	                    1.0, 0.0 + this.zPosition,
-	                    1.0, 1.0 + this.zPosition,
-	                    0.0, 1.0 + this.zPosition,
-	                ]);
-	            }
-	        }
-	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-	        this.gridTextureCoordBuffer.itemSize = 2;
-	        this.gridTextureCoordBuffer.numItems = 6 * (this.cols * this.rows);
-
-	        this.gridVertexPositionBuffer = gl.createBuffer();
-	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexPositionBuffer);
-	        var vertices = [];
-	        for (var y = 0; y < this.rows; y++) {
-	            for (var x = 0; x < this.cols; x++) {
-	                vertices = vertices.concat([
-	                    (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + 0), 0 + this.zValues[x][y],
-	                    (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + 0), 0 + this.zValues[x+1][y],
-	                    (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0 + this.zValues[x][y+1],
-
-	                    (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + 0), 0 + this.zValues[x+1][y],
-	                    (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0 + this.zValues[x+1][y+1],
-	                    (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0 + this.zValues[x][y+1],
-	                ]);
-	            }
-	        }
-	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-	        this.gridVertexPositionBuffer.itemSize = 3;
-	        this.gridVertexPositionBuffer.numItems = 6 * (this.cols * this.rows);
-
-	        this.gridVertexNormalBuffer = gl.createBuffer();
-	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexNormalBuffer);
-	        var vertexNormals = [];
-	        for (var y = 0; y < this.rows; y++) {
-	            for (var x = 0; x < this.cols; x++) {
-	                var offset = (((x * y) + x) * 6 * 3);
-	                var normal1 = Kings.Processing.calculateNormal(
-	                    [vertices[offset], vertices[offset+1], vertices[offset+2]],
-	                    [vertices[offset+3], vertices[offset+4], vertices[offset+5]],
-	                    [vertices[offset+6], vertices[offset+7], vertices[offset+8]]
-	                );
-	                var normal2 = Kings.Processing.calculateNormal(
-	                    [vertices[offset+9], vertices[offset+10], vertices[offset+11]],
-	                    [vertices[offset+12], vertices[offset+13], vertices[offset+14]],
-	                    [vertices[offset+15], vertices[offset+16], vertices[offset+17]]
-	                )
-	                vertexNormals = vertexNormals.concat([
-	                    normal1[0], normal1[1], normal1[2],
-	                    normal1[0], normal1[1], normal1[2],
-	                    normal1[0], normal1[1], normal1[2],
-
-	                    normal2[0], normal2[1], normal2[2],
-	                    normal2[0], normal2[1], normal2[2],
-	                    normal2[0], normal2[1], normal2[2],
-	                ]);
-	            }
-	        }
-	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
-	        this.gridVertexNormalBuffer.itemSize = 3;
-	        this.gridVertexNormalBuffer.numItems = 6 * (this.cols * this.rows);
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 38 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.PerlinNoise = {
-	        noise: function(x, y, z) {
-	            var p = new Array(512)
-	            var permutation = [ 151,160,137,91,90,15,
-	                131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
-	                190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
-	                88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
-	                77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
-	                102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
-	                135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
-	                5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
-	                223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
-	                129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
-	                251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
-	                49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-	                138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
-	            ];
-	            for (var i=0; i < 256 ; i++)
-	            p[256+i] = p[i] = permutation[i];
-
-	            var X = Math.floor(x) & 255,
-	            Y = Math.floor(y) & 255,
-	            Z = Math.floor(z) & 255;
-	            x -= Math.floor(x);
-	            y -= Math.floor(y);
-	            z -= Math.floor(z);
-	            var    u = this.fade(x),
-	            v = this.fade(y),
-	            w = this.fade(z);
-	            var A = p[X  ]+Y, AA = p[A]+Z, AB = p[A+1]+Z,
-	            B = p[X+1]+Y, BA = p[B]+Z, BB = p[B+1]+Z;
-
-	            return this.scale(this.lerp(w, this.lerp(v, this.lerp(u, this.grad(p[AA  ], x  , y  , z   ), 
-	            this.grad(p[BA  ], x-1, y  , z   )),
-	            this.lerp(u, this.grad(p[AB  ], x  , y-1, z   ),
-	            this.grad(p[BB  ], x-1, y-1, z   ))),
-	            this.lerp(v, this.lerp(u, this.grad(p[AA+1], x  , y  , z-1 ),
-	            this.grad(p[BA+1], x-1, y  , z-1 )),
-	            this.lerp(u, this.grad(p[AB+1], x  , y-1, z-1 ),
-	            this.grad(p[BB+1], x-1, y-1, z-1 )))));
-	        },
-
-	        fade: function(t) {
-	            return t * t * t * (t * (t * 6 - 15) + 10);
-	        },
-
-	        lerp: function( t, a, b) {
-	            return a + t * (b - a);
-	        },
-
-	        grad: function(hash, x, y, z) {
-	            var h = hash & 15;
-	            var u = h<8 ? x : y,
-	            v = h<4 ? y : h==12||h==14 ? x : z;
-	            return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
-	        },
-
-	        scale: function(n) {
-	            return (1 + n)/2;
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 39 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.RigidBody = function(parameters) {
-	        this.position = parameters.position || { x: 0, y: 0, z: 0};
-	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0};
-	        this.size = parameters.size || { x: 0, y: 0, z: 0};
-	        this.callback = parameters.onCollision;
-	    };
-
-	    Kings.RigidBody.prototype = {
-	        constructor: Kings.RigidBody,
-
-	        checkCollisionWithBody: function(body) {
-	            if (
-	                this.position.z - (this.size.z / 2) <= body.position.z + (body.size.z / 2) &&
-	                this.position.z + (this.size.z / 2) >= body.position.z - (body.size.z / 2)
-	            ) {
-	                if (
-	                    this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
-	                    this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
-	                ) {
-	                    if (
-	                        this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&
-	                        this.position.y + (this.size.y / 2) >= body.position.y - (body.size.y / 2)
-	                    ) {
-	                        if (this.callback !== undefined) {
-	                            this.callback();
-	                        }
-	                        return true;
-	                    }
-	                }
-	            }
-	            return false;
-	        },
-
-	        checkCollisionWithLine: function(line, segments) {
-	            var m = line.end.y - line.start.y / line.end.x - line.start.x;
-	            var b = line.end.y - (m * line.end.x);
-	            var lenght = line.end.y - line.start.y;
-	            var step = lenght / segments;
-	            for (var i = 0; i < lenght; i+=step) {
-	                if (line.start.z > this.position.z - (this.size.z / 2) && line.start.z < this.position.z + (this.size.z / 2)) {
-	                    var x = (i == 0 && b == 0) ? 0 : (line.start.y + i - b) / m;
-	                    if (x > this.position.x - (this.size.x / 2) && x < this.position.x + (this.size.x / 2)) {
-	                        var y = i;
-	                        if (line.start.y + y >= this.position.y && line.start.y + y < this.position.y + this.size.y) {
-	                            return true;
-	                        }
-	                    }
-	                }
-	            }
-	            return false;
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 40 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.HUI = function(parameters) {
-	        this.elements = [];
-	    };
-
-	    Kings.HUI.prototype = {
-	        constructor: Kings.HUI,
-
-	        addElement: function(element) {
-	            if (element != null) {
-	                this.elements.push(element);
-	            }
-	        },
-
-	        update: function() {
-	            for (var i = 0; i < this.elements.length; i++) {
-	                this.elements[i].update();
-	            }
-	        },
-
-	        draw: function() {
-	            var ratio = gl.canvas.width / gl.canvas.height;
-	            glMatrix.mat4.identity(Kings.pMatrix);
-	            glMatrix.mat4.ortho(Kings.pMatrix, -10.0 - ratio, 10.0 + ratio, -10.0 + ratio, 10.0  - ratio, 0.1, 100.0);
-
-	            Kings.GL.mvPushMatrix();
-	            Kings.GL.lookAt(
-	                glMatrix.vec3.fromValues(0,0,1),
-	                glMatrix.vec3.fromValues(0,0,0),
-	                glMatrix.vec3.fromValues(0, 1, 0)
-	            );
-
-	            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-	            gl.enable(gl.BLEND);
-	            gl.disable(gl.DEPTH_TEST);
-	            for (var i = 0; i < this.elements.length; i++) {
-	                this.elements[i].draw();
-	            }
-	            gl.disable(gl.BLEND);
-	            gl.enable(gl.DEPTH_TEST);
-	            Kings.GL.mvPopMatrix();
-	            glMatrix.mat4.perspective(Kings.pMatrix, 45, ratio, 0.01, 200.0);
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 41 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.FuelMeter = function(parameters) {
-	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
-	        this.meter = new Kings.Plane({
-	            width: 3,
-	            height: 3,
-	            texture: Kings.AssetBundles[0].content.fuelMeter
-	        });
-	        this.neddle = new Kings.Plane({
-	            width: 3,
-	            height: 3,
-	            texture: Kings.AssetBundles[0].content.meterNeedle
-	        });
-	        this.level = 100;
-	        this.shader = new Kings.Shader({
-	            gl: gl,
-	            vertexShaderSource: [
-	                'attribute vec3 aVertexPosition;',
-	                'attribute vec2 aTextureCoord;',
-	                'uniform mat4 uMVMatrix;',
-	                'uniform mat4 uPMatrix;',
-	                'varying vec2 vTextureCoord;',
-	                'void main(void) {',
-	                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	                   'vTextureCoord = aTextureCoord;',
-	                '}'
-	            ].join("\n"),
-	            fragmentShaderSource: [
-	                'precision mediump float;',
-	                'varying vec2 vTextureCoord;',
-	                'uniform sampler2D uSampler;',
-	                'void main(void) {',
-	                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
-	                '}'
-	            ].join("\n")
-	        });
-	    };
-
-	    Kings.FuelMeter.prototype = {
-	        constructor: Kings.FuelMeter,
-
-	        setLevel: function(l) {
-	            if (l >= 0 && l <= 100) {
-	                this.level = l;
-	            }
-	        },
-
-	        update: function() {
-	            this.neddle.rotation.z = -Kings.Processing.map(this.level, 0, 100, 0, 270);
-	        },
-
-	        draw: function() {
-	            Kings.GL.mvPushMatrix();
-	            Kings.GL.mvTranslate(this.position);
-	            this.meter.draw(this.shader);
-	            this.neddle.draw(this.shader);
-	            Kings.GL.mvPopMatrix();
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 42 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.SlowTimeMeter = function(parameters) {
-	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
-	        this.meter = new Kings.Plane({
-	            width: 12,
-	            height: 3,
-	            texture: Kings.AssetBundles[0].content.lifeBar
-	        });
-	        this.bar = new Kings.Plane({
-	            width: 8.25,
-	            height: 0.5,
-	            texture: Kings.AssetBundles[0].content.bar,
-	        });
-	        this.level = 100;
-	        this.shader = new Kings.Shader({
-	            gl: gl,
-	            vertexShaderSource: [
-	                'attribute vec3 aVertexPosition;',
-	                'attribute vec2 aTextureCoord;',
-	                'uniform mat4 uMVMatrix;',
-	                'uniform mat4 uPMatrix;',
-	                'varying vec2 vTextureCoord;',
-	                'void main(void) {',
-	                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	                   'vTextureCoord = aTextureCoord;',
-	                '}'
-	            ].join("\n"),
-	            fragmentShaderSource: [
-	                'precision mediump float;',
-	                'varying vec2 vTextureCoord;',
-	                'uniform sampler2D uSampler;',
-	                'void main(void) {',
-	                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
-	                '}'
-	            ].join("\n")
-	        });
-	    };
-
-	    Kings.SlowTimeMeter.prototype = {
-	        constructor: Kings.SlowTimeMeter,
-
-	        setLevel: function(l) {
-	            if (l >= 0 && l <= 100) {
-	                this.level = l;
-	            }
-	        },
-
-	        update: function() {
-	            this.offset = Kings.Processing.map(this.level, 0, 100, -7, 1.25);
-	        },
-
-	        draw: function() {
-	            Kings.GL.mvPushMatrix();
-	            Kings.GL.mvTranslate(this.position);
-	            Kings.GL.mvPushMatrix();
-	            Kings.GL.mvTranslate({ x: this.offset, y: 0, z: 0 });
-	            this.bar.draw(this.shader);
-	            Kings.GL.mvPopMatrix();
-	            this.meter.draw(this.shader);
-	            Kings.GL.mvPopMatrix();
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 43 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    Kings.Score = function(parameters) {
-	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
-	        this.score = 0;
-	        $('#CanvasTemporal').remove();
-	        var textCanvas = document.createElement('canvas');
-	        textCanvas.id     = "CanvasTemporal";
-	        textCanvas.width  = gl.canvas.width;
-	        textCanvas.height = gl.canvas.height;
-	        textCanvas.style.zIndex   = 1;
-	        textCanvas.style.position = "absolute";
-	        textCanvas.style.top = "0";
-	        textCanvas.style.left = "0";
-	        document.body.appendChild(textCanvas);
-	        this.context2D = textCanvas.getContext('2d');
-	    };
-
-	    Kings.Score.prototype = {
-	        constructor: Kings.Score,
-
-	        update: function() {
-
-	        },
-
-	        draw: function() {
-	            this.resize();
-	            this.context2D.clearRect(0, 0, this.context2D.canvas.width, this.context2D.canvas.height);
-	            this.context2D.font = "40px digital";
-	            this.context2D.fillStyle = 'green';
-	            this.context2D.fillText('Km: ' + this.score, this.context2D.canvas.width - 100, 60);
-	        },
-
-	        resize: function() {
-	            $('#CanvasTemporal').remove();
-	            var textCanvas = document.createElement('canvas');
-	            textCanvas.id     = "CanvasTemporal";
-	            textCanvas.width  = gl.canvas.width;
-	            textCanvas.height = gl.canvas.height;
-	            textCanvas.style.zIndex   = 1;
-	            textCanvas.style.position = "absolute";
-	            textCanvas.style.top = "0";
-	            textCanvas.style.left = "0";
-	            document.body.appendChild(textCanvas);
-	            this.context2D = textCanvas.getContext('2d');
-	        }
-	    };
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 44 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var grayscale = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            'precision mediump float;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main(void) {',
-	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                'float average = (textureColor.r + textureColor.g + textureColor.b) / 3.0;',
-	                'gl_FragColor = vec4(average, average, average, textureColor.a);',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return grayscale;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var speedBlur = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            'precision mediump float;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main(void) {',
-	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                'vec2 dir = vec2(vTextureCoord.s - 0.5, vTextureCoord.t - 0.5);',
-	                'vec2 textCoorDir = normalize(dir) / 10.0;',
-	                'for(int i = 0; i < 10; i++) {',
-	                    'vec2 newpos = vec2(vTextureCoord.s - textCoorDir.x, vTextureCoord.t - textCoorDir.y);',
-	                    'if((newpos.x <= 1.0 || newpos.x >= 0.0) && (newpos.y <= 1.0 || newpos.y >= 0.0)) {',
-	                        'vec4 blured = texture2D(uSampler, vec2(newpos.x, newpos.y));',
-	                        'textureColor = mix(textureColor, blured, max(1.0 - (length(dir) * 2.0), 0.2));',
-	                    '}',
-	                    'textCoorDir = textCoorDir * min((length(dir) * 2.0), 0.8);',
-	                '}',
-	                'gl_FragColor = textureColor;',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return speedBlur;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var hdr = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            'precision highp float;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main(void) {',
-	                'float exposure = 0.5;',
-	                'const float gamma = 2.2;',
-	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                'vec3 hdrColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)).rgb;',
-	                'vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);',
-	                'vec3 correction = pow(mapped, vec3(1.0 / gamma));',
-	                'gl_FragColor = vec4(correction, textureColor.a);',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return hdr;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 47 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var crt = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            '#ifdef GL_ES',
-	            '#define LOWP lowp',
-	                'precision mediump float;',
-	            '#else',
-	                '#define LOWP',
-	            '#endif',
-	            '#define CRT_CASE_BORDR 0.0125',
-	            '#define SCAN_LINE_MULT 1250.0',
-	            'float CRT_CURVE_AMNTx = 0.0; // curve amount on x',
-	            'float CRT_CURVE_AMNTy = 0.0; // curve amount on y',
-	            'varying LOWP vec4 v_color;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main() {',
-	            	'vec2 tc = vec2(vTextureCoord.x, vTextureCoord.y);',
-	            	'float dx = abs(0.5-tc.x);',
-	            	'float dy = abs(0.5-tc.y);',
-	            	'dx *= dx;',
-	            	'dy *= dy;',
-	            	'tc.x -= 0.5;',
-	            	'tc.x *= 1.0 + (dy * CRT_CURVE_AMNTx);',
-	            	'tc.x += 0.5;',
-	            	'tc.y -= 0.5;',
-	            	'tc.y *= 1.0 + (dx * CRT_CURVE_AMNTy);',
-	            	'tc.y += 0.5;',
-	            	'vec4 cta = texture2D(uSampler, vec2(tc.x, tc.y));',
-	            	'cta.rgb += sin(tc.y * SCAN_LINE_MULT) * 0.02;',
-	            	'if(tc.y > 1.0 || tc.x < 0.0 || tc.x > 1.0 || tc.y < 0.0)',
-	            		'cta = vec4(1.0);',
-	            	'gl_FragColor = cta;',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return crt;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 48 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
-	    var Kings = window.Kings || {};
-
-	    var basic = new Kings.Shader({
-	        gl: gl,
-	        vertexShaderSource: [
-	            'attribute vec3 aVertexPosition;',
-	            'attribute vec2 aTextureCoord;',
-	            'uniform mat4 uMVMatrix;',
-	            'uniform mat4 uPMatrix;',
-	            'varying vec2 vTextureCoord;',
-	            'void main(void) {',
-	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
-	               'vTextureCoord = aTextureCoord;',
-	            '}'
-	        ].join("\n"),
-	        fragmentShaderSource: [
-	            'precision mediump float;',
-	            'varying vec2 vTextureCoord;',
-	            'uniform sampler2D uSampler;',
-	            'void main(void) {',
-	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
-	                'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
-	                // 'if(gl_FragColor.a < 0.5)',
-	                //     'discard;',
-	            '}'
-	        ].join("\n")
-	    });
-
-	    return basic;
-	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-
-/***/ },
-/* 49 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/* styles */
-	__webpack_require__(50)
-
-	var Component = __webpack_require__(59)(
-	  /* script */
-	  __webpack_require__(60),
-	  /* template */
-	  __webpack_require__(61),
-	  /* scopeId */
-	  null,
-	  /* cssModules */
-	  null
-	)
-	Component.options.__file = "C:\\xampp\\htdocs\\MI2\\proyectofinal\\js\\views\\leaderboard\\leaderboard.vue"
-	if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
-	if (Component.options.functional) {console.error("[vue-loader] leaderboard.vue: functional components are not supported with templates, they should use render functions.")}
-
-	/* hot reload */
-	if (false) {(function () {
-	  var hotAPI = require("vue-hot-reload-api")
-	  hotAPI.install(require("vue"), false)
-	  if (!hotAPI.compatible) return
-	  module.hot.accept()
-	  if (!module.hot.data) {
-	    hotAPI.createRecord("data-v-1959f2dc", Component.options)
-	  } else {
-	    hotAPI.reload("data-v-1959f2dc", Component.options)
-	  }
-	})()}
-
-	module.exports = Component.exports
-
-
-/***/ },
-/* 50 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-
-	// load the styles
-	var content = __webpack_require__(51);
-	if(typeof content === 'string') content = [[module.id, content, '']];
-	if(content.locals) module.exports = content.locals;
-	// add the styles to the DOM
-	var update = __webpack_require__(57)("bd3e9960", content, false);
-	// Hot Module Replacement
-	if(false) {
-	 // When the styles change, update the <style> tags
-	 if(!content.locals) {
-	   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-1959f2dc!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./leaderboard.vue", function() {
-	     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-1959f2dc!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./leaderboard.vue");
-	     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-	     update(newContent);
-	   });
-	 }
-	 // When the module is disposed, remove the <style> tags
-	 module.hot.dispose(function() { update(); });
-	}
-
-/***/ },
-/* 51 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(52)(undefined);
-	// imports
-
-
-	// module
-	exports.push([module.id, "\n.leaderboard {\n    background: #45484d; /* Old browsers */\n    background: -moz-linear-gradient(top, #45484d 0%, #000000 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #45484d 0%,#000000 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #45484d 0%,#000000 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#45484d', endColorstr='#000000',GradientType=0 ); /* IE6-9 */\n    padding: 15px 20px;\n    width: 80vw;\n    height: 500px;\n    overflow-y: scroll;\n    margin: 50px auto;\n    border-style: solid;\n    border-color: rgb(150,0,0);\n}\n", ""]);
-
-	// exports
-
-
-/***/ },
-/* 52 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(Buffer) {/*
-		MIT License http://www.opensource.org/licenses/mit-license.php
-		Author Tobias Koppers @sokra
-	*/
-	// css base code, injected by the css-loader
-	module.exports = function(useSourceMap) {
-		var list = [];
-
-		// return the list of modules as css string
-		list.toString = function toString() {
-			return this.map(function (item) {
-				var content = cssWithMappingToString(item, useSourceMap);
-				if(item[2]) {
-					return "@media " + item[2] + "{" + content + "}";
-				} else {
-					return content;
-				}
-			}).join("");
-		};
-
-		// import a list of modules into the list
-		list.i = function(modules, mediaQuery) {
-			if(typeof modules === "string")
-				modules = [[null, modules, ""]];
-			var alreadyImportedModules = {};
-			for(var i = 0; i < this.length; i++) {
-				var id = this[i][0];
-				if(typeof id === "number")
-					alreadyImportedModules[id] = true;
-			}
-			for(i = 0; i < modules.length; i++) {
-				var item = modules[i];
-				// skip already imported module
-				// this implementation is not 100% perfect for weird media query combinations
-				//  when a module is imported multiple times with different media queries.
-				//  I hope this will never occur (Hey this way we have smaller bundles)
-				if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
-					if(mediaQuery && !item[2]) {
-						item[2] = mediaQuery;
-					} else if(mediaQuery) {
-						item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
-					}
-					list.push(item);
-				}
-			}
-		};
-		return list;
-	};
-
-	function cssWithMappingToString(item, useSourceMap) {
-		var content = item[1] || '';
-		var cssMapping = item[3];
-		if (!cssMapping) {
-			return content;
-		}
-
-		if (useSourceMap) {
-			var sourceMapping = toComment(cssMapping);
-			var sourceURLs = cssMapping.sources.map(function (source) {
-				return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
-			});
-
-			return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
-		}
-
-		return [content].join('\n');
-	}
-
-	// Adapted from convert-source-map (MIT)
-	function toComment(sourceMap) {
-	  var base64 = new Buffer(JSON.stringify(sourceMap)).toString('base64');
-	  var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
-
-	  return '/*# ' + data + ' */';
-	}
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
-
-/***/ },
-/* 53 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(Buffer, global) {/*!
-	 * The buffer module from node.js, for the browser.
-	 *
-	 * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
-	 * @license  MIT
-	 */
-	/* eslint-disable no-proto */
-
-	'use strict'
-
-	var base64 = __webpack_require__(54)
-	var ieee754 = __webpack_require__(55)
-	var isArray = __webpack_require__(56)
-
-	exports.Buffer = Buffer
-	exports.SlowBuffer = SlowBuffer
-	exports.INSPECT_MAX_BYTES = 50
-	Buffer.poolSize = 8192 // not used by this implementation
-
-	var rootParent = {}
-
-	/**
-	 * If `Buffer.TYPED_ARRAY_SUPPORT`:
-	 *   === true    Use Uint8Array implementation (fastest)
-	 *   === false   Use Object implementation (most compatible, even IE6)
-	 *
-	 * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
-	 * Opera 11.6+, iOS 4.2+.
-	 *
-	 * Due to various browser bugs, sometimes the Object implementation will be used even
-	 * when the browser supports typed arrays.
-	 *
-	 * Note:
-	 *
-	 *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
-	 *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
-	 *
-	 *   - Safari 5-7 lacks support for changing the `Object.prototype.constructor` property
-	 *     on objects.
-	 *
-	 *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
-	 *
-	 *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
-	 *     incorrect length in some situations.
-
-	 * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
-	 * get the Object implementation, which is slower but behaves correctly.
-	 */
-	Buffer.TYPED_ARRAY_SUPPORT = global.TYPED_ARRAY_SUPPORT !== undefined
-	  ? global.TYPED_ARRAY_SUPPORT
-	  : typedArraySupport()
-
-	function typedArraySupport () {
-	  function Bar () {}
-	  try {
-	    var arr = new Uint8Array(1)
-	    arr.foo = function () { return 42 }
-	    arr.constructor = Bar
-	    return arr.foo() === 42 && // typed array instances can be augmented
-	        arr.constructor === Bar && // constructor can be set
-	        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
-	        arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
-	  } catch (e) {
-	    return false
-	  }
-	}
-
-	function kMaxLength () {
-	  return Buffer.TYPED_ARRAY_SUPPORT
-	    ? 0x7fffffff
-	    : 0x3fffffff
-	}
-
-	/**
-	 * Class: Buffer
-	 * =============
-	 *
-	 * The Buffer constructor returns instances of `Uint8Array` that are augmented
-	 * with function properties for all the node `Buffer` API functions. We use
-	 * `Uint8Array` so that square bracket notation works as expected -- it returns
-	 * a single octet.
-	 *
-	 * By augmenting the instances, we can avoid modifying the `Uint8Array`
-	 * prototype.
-	 */
-	function Buffer (arg) {
-	  if (!(this instanceof Buffer)) {
-	    // Avoid going through an ArgumentsAdaptorTrampoline in the common case.
-	    if (arguments.length > 1) return new Buffer(arg, arguments[1])
-	    return new Buffer(arg)
-	  }
-
-	  if (!Buffer.TYPED_ARRAY_SUPPORT) {
-	    this.length = 0
-	    this.parent = undefined
-	  }
-
-	  // Common case.
-	  if (typeof arg === 'number') {
-	    return fromNumber(this, arg)
-	  }
-
-	  // Slightly less common case.
-	  if (typeof arg === 'string') {
-	    return fromString(this, arg, arguments.length > 1 ? arguments[1] : 'utf8')
-	  }
-
-	  // Unusual.
-	  return fromObject(this, arg)
-	}
-
-	function fromNumber (that, length) {
-	  that = allocate(that, length < 0 ? 0 : checked(length) | 0)
-	  if (!Buffer.TYPED_ARRAY_SUPPORT) {
-	    for (var i = 0; i < length; i++) {
-	      that[i] = 0
-	    }
-	  }
-	  return that
-	}
-
-	function fromString (that, string, encoding) {
-	  if (typeof encoding !== 'string' || encoding === '') encoding = 'utf8'
-
-	  // Assumption: byteLength() return value is always < kMaxLength.
-	  var length = byteLength(string, encoding) | 0
-	  that = allocate(that, length)
-
-	  that.write(string, encoding)
-	  return that
-	}
-
-	function fromObject (that, object) {
-	  if (Buffer.isBuffer(object)) return fromBuffer(that, object)
-
-	  if (isArray(object)) return fromArray(that, object)
-
-	  if (object == null) {
-	    throw new TypeError('must start with number, buffer, array or string')
-	  }
-
-	  if (typeof ArrayBuffer !== 'undefined') {
-	    if (object.buffer instanceof ArrayBuffer) {
-	      return fromTypedArray(that, object)
-	    }
-	    if (object instanceof ArrayBuffer) {
-	      return fromArrayBuffer(that, object)
-	    }
-	  }
-
-	  if (object.length) return fromArrayLike(that, object)
-
-	  return fromJsonObject(that, object)
-	}
-
-	function fromBuffer (that, buffer) {
-	  var length = checked(buffer.length) | 0
-	  that = allocate(that, length)
-	  buffer.copy(that, 0, 0, length)
-	  return that
-	}
-
-	function fromArray (that, array) {
-	  var length = checked(array.length) | 0
-	  that = allocate(that, length)
-	  for (var i = 0; i < length; i += 1) {
-	    that[i] = array[i] & 255
-	  }
-	  return that
-	}
-
-	// Duplicate of fromArray() to keep fromArray() monomorphic.
-	function fromTypedArray (that, array) {
-	  var length = checked(array.length) | 0
-	  that = allocate(that, length)
-	  // Truncating the elements is probably not what people expect from typed
-	  // arrays with BYTES_PER_ELEMENT > 1 but it's compatible with the behavior
-	  // of the old Buffer constructor.
-	  for (var i = 0; i < length; i += 1) {
-	    that[i] = array[i] & 255
-	  }
-	  return that
-	}
-
-	function fromArrayBuffer (that, array) {
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    // Return an augmented `Uint8Array` instance, for best performance
-	    array.byteLength
-	    that = Buffer._augment(new Uint8Array(array))
-	  } else {
-	    // Fallback: Return an object instance of the Buffer class
-	    that = fromTypedArray(that, new Uint8Array(array))
-	  }
-	  return that
-	}
-
-	function fromArrayLike (that, array) {
-	  var length = checked(array.length) | 0
-	  that = allocate(that, length)
-	  for (var i = 0; i < length; i += 1) {
-	    that[i] = array[i] & 255
-	  }
-	  return that
-	}
-
-	// Deserialize { type: 'Buffer', data: [1,2,3,...] } into a Buffer object.
-	// Returns a zero-length buffer for inputs that don't conform to the spec.
-	function fromJsonObject (that, object) {
-	  var array
-	  var length = 0
-
-	  if (object.type === 'Buffer' && isArray(object.data)) {
-	    array = object.data
-	    length = checked(array.length) | 0
-	  }
-	  that = allocate(that, length)
-
-	  for (var i = 0; i < length; i += 1) {
-	    that[i] = array[i] & 255
-	  }
-	  return that
-	}
-
-	if (Buffer.TYPED_ARRAY_SUPPORT) {
-	  Buffer.prototype.__proto__ = Uint8Array.prototype
-	  Buffer.__proto__ = Uint8Array
-	} else {
-	  // pre-set for values that may exist in the future
-	  Buffer.prototype.length = undefined
-	  Buffer.prototype.parent = undefined
-	}
-
-	function allocate (that, length) {
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    // Return an augmented `Uint8Array` instance, for best performance
-	    that = Buffer._augment(new Uint8Array(length))
-	    that.__proto__ = Buffer.prototype
-	  } else {
-	    // Fallback: Return an object instance of the Buffer class
-	    that.length = length
-	    that._isBuffer = true
-	  }
-
-	  var fromPool = length !== 0 && length <= Buffer.poolSize >>> 1
-	  if (fromPool) that.parent = rootParent
-
-	  return that
-	}
-
-	function checked (length) {
-	  // Note: cannot use `length < kMaxLength` here because that fails when
-	  // length is NaN (which is otherwise coerced to zero.)
-	  if (length >= kMaxLength()) {
-	    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
-	                         'size: 0x' + kMaxLength().toString(16) + ' bytes')
-	  }
-	  return length | 0
-	}
-
-	function SlowBuffer (subject, encoding) {
-	  if (!(this instanceof SlowBuffer)) return new SlowBuffer(subject, encoding)
-
-	  var buf = new Buffer(subject, encoding)
-	  delete buf.parent
-	  return buf
-	}
-
-	Buffer.isBuffer = function isBuffer (b) {
-	  return !!(b != null && b._isBuffer)
-	}
-
-	Buffer.compare = function compare (a, b) {
-	  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
-	    throw new TypeError('Arguments must be Buffers')
-	  }
-
-	  if (a === b) return 0
-
-	  var x = a.length
-	  var y = b.length
-
-	  var i = 0
-	  var len = Math.min(x, y)
-	  while (i < len) {
-	    if (a[i] !== b[i]) break
-
-	    ++i
-	  }
-
-	  if (i !== len) {
-	    x = a[i]
-	    y = b[i]
-	  }
-
-	  if (x < y) return -1
-	  if (y < x) return 1
-	  return 0
-	}
-
-	Buffer.isEncoding = function isEncoding (encoding) {
-	  switch (String(encoding).toLowerCase()) {
-	    case 'hex':
-	    case 'utf8':
-	    case 'utf-8':
-	    case 'ascii':
-	    case 'binary':
-	    case 'base64':
-	    case 'raw':
-	    case 'ucs2':
-	    case 'ucs-2':
-	    case 'utf16le':
-	    case 'utf-16le':
-	      return true
-	    default:
-	      return false
-	  }
-	}
-
-	Buffer.concat = function concat (list, length) {
-	  if (!isArray(list)) throw new TypeError('list argument must be an Array of Buffers.')
-
-	  if (list.length === 0) {
-	    return new Buffer(0)
-	  }
-
-	  var i
-	  if (length === undefined) {
-	    length = 0
-	    for (i = 0; i < list.length; i++) {
-	      length += list[i].length
-	    }
-	  }
-
-	  var buf = new Buffer(length)
-	  var pos = 0
-	  for (i = 0; i < list.length; i++) {
-	    var item = list[i]
-	    item.copy(buf, pos)
-	    pos += item.length
-	  }
-	  return buf
-	}
-
-	function byteLength (string, encoding) {
-	  if (typeof string !== 'string') string = '' + string
-
-	  var len = string.length
-	  if (len === 0) return 0
-
-	  // Use a for loop to avoid recursion
-	  var loweredCase = false
-	  for (;;) {
-	    switch (encoding) {
-	      case 'ascii':
-	      case 'binary':
-	      // Deprecated
-	      case 'raw':
-	      case 'raws':
-	        return len
-	      case 'utf8':
-	      case 'utf-8':
-	        return utf8ToBytes(string).length
-	      case 'ucs2':
-	      case 'ucs-2':
-	      case 'utf16le':
-	      case 'utf-16le':
-	        return len * 2
-	      case 'hex':
-	        return len >>> 1
-	      case 'base64':
-	        return base64ToBytes(string).length
-	      default:
-	        if (loweredCase) return utf8ToBytes(string).length // assume utf8
-	        encoding = ('' + encoding).toLowerCase()
-	        loweredCase = true
-	    }
-	  }
-	}
-	Buffer.byteLength = byteLength
-
-	function slowToString (encoding, start, end) {
-	  var loweredCase = false
-
-	  start = start | 0
-	  end = end === undefined || end === Infinity ? this.length : end | 0
-
-	  if (!encoding) encoding = 'utf8'
-	  if (start < 0) start = 0
-	  if (end > this.length) end = this.length
-	  if (end <= start) return ''
-
-	  while (true) {
-	    switch (encoding) {
-	      case 'hex':
-	        return hexSlice(this, start, end)
-
-	      case 'utf8':
-	      case 'utf-8':
-	        return utf8Slice(this, start, end)
-
-	      case 'ascii':
-	        return asciiSlice(this, start, end)
-
-	      case 'binary':
-	        return binarySlice(this, start, end)
-
-	      case 'base64':
-	        return base64Slice(this, start, end)
-
-	      case 'ucs2':
-	      case 'ucs-2':
-	      case 'utf16le':
-	      case 'utf-16le':
-	        return utf16leSlice(this, start, end)
-
-	      default:
-	        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
-	        encoding = (encoding + '').toLowerCase()
-	        loweredCase = true
-	    }
-	  }
-	}
-
-	Buffer.prototype.toString = function toString () {
-	  var length = this.length | 0
-	  if (length === 0) return ''
-	  if (arguments.length === 0) return utf8Slice(this, 0, length)
-	  return slowToString.apply(this, arguments)
-	}
-
-	Buffer.prototype.equals = function equals (b) {
-	  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
-	  if (this === b) return true
-	  return Buffer.compare(this, b) === 0
-	}
-
-	Buffer.prototype.inspect = function inspect () {
-	  var str = ''
-	  var max = exports.INSPECT_MAX_BYTES
-	  if (this.length > 0) {
-	    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
-	    if (this.length > max) str += ' ... '
-	  }
-	  return '<Buffer ' + str + '>'
-	}
-
-	Buffer.prototype.compare = function compare (b) {
-	  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
-	  if (this === b) return 0
-	  return Buffer.compare(this, b)
-	}
-
-	Buffer.prototype.indexOf = function indexOf (val, byteOffset) {
-	  if (byteOffset > 0x7fffffff) byteOffset = 0x7fffffff
-	  else if (byteOffset < -0x80000000) byteOffset = -0x80000000
-	  byteOffset >>= 0
-
-	  if (this.length === 0) return -1
-	  if (byteOffset >= this.length) return -1
-
-	  // Negative offsets start from the end of the buffer
-	  if (byteOffset < 0) byteOffset = Math.max(this.length + byteOffset, 0)
-
-	  if (typeof val === 'string') {
-	    if (val.length === 0) return -1 // special case: looking for empty string always fails
-	    return String.prototype.indexOf.call(this, val, byteOffset)
-	  }
-	  if (Buffer.isBuffer(val)) {
-	    return arrayIndexOf(this, val, byteOffset)
-	  }
-	  if (typeof val === 'number') {
-	    if (Buffer.TYPED_ARRAY_SUPPORT && Uint8Array.prototype.indexOf === 'function') {
-	      return Uint8Array.prototype.indexOf.call(this, val, byteOffset)
-	    }
-	    return arrayIndexOf(this, [ val ], byteOffset)
-	  }
-
-	  function arrayIndexOf (arr, val, byteOffset) {
-	    var foundIndex = -1
-	    for (var i = 0; byteOffset + i < arr.length; i++) {
-	      if (arr[byteOffset + i] === val[foundIndex === -1 ? 0 : i - foundIndex]) {
-	        if (foundIndex === -1) foundIndex = i
-	        if (i - foundIndex + 1 === val.length) return byteOffset + foundIndex
-	      } else {
-	        foundIndex = -1
-	      }
-	    }
-	    return -1
-	  }
-
-	  throw new TypeError('val must be string, number or Buffer')
-	}
-
-	// `get` is deprecated
-	Buffer.prototype.get = function get (offset) {
-	  console.log('.get() is deprecated. Access using array indexes instead.')
-	  return this.readUInt8(offset)
-	}
-
-	// `set` is deprecated
-	Buffer.prototype.set = function set (v, offset) {
-	  console.log('.set() is deprecated. Access using array indexes instead.')
-	  return this.writeUInt8(v, offset)
-	}
-
-	function hexWrite (buf, string, offset, length) {
-	  offset = Number(offset) || 0
-	  var remaining = buf.length - offset
-	  if (!length) {
-	    length = remaining
-	  } else {
-	    length = Number(length)
-	    if (length > remaining) {
-	      length = remaining
-	    }
-	  }
-
-	  // must be an even number of digits
-	  var strLen = string.length
-	  if (strLen % 2 !== 0) throw new Error('Invalid hex string')
-
-	  if (length > strLen / 2) {
-	    length = strLen / 2
-	  }
-	  for (var i = 0; i < length; i++) {
-	    var parsed = parseInt(string.substr(i * 2, 2), 16)
-	    if (isNaN(parsed)) throw new Error('Invalid hex string')
-	    buf[offset + i] = parsed
-	  }
-	  return i
-	}
-
-	function utf8Write (buf, string, offset, length) {
-	  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
-	}
-
-	function asciiWrite (buf, string, offset, length) {
-	  return blitBuffer(asciiToBytes(string), buf, offset, length)
-	}
-
-	function binaryWrite (buf, string, offset, length) {
-	  return asciiWrite(buf, string, offset, length)
-	}
-
-	function base64Write (buf, string, offset, length) {
-	  return blitBuffer(base64ToBytes(string), buf, offset, length)
-	}
-
-	function ucs2Write (buf, string, offset, length) {
-	  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
-	}
-
-	Buffer.prototype.write = function write (string, offset, length, encoding) {
-	  // Buffer#write(string)
-	  if (offset === undefined) {
-	    encoding = 'utf8'
-	    length = this.length
-	    offset = 0
-	  // Buffer#write(string, encoding)
-	  } else if (length === undefined && typeof offset === 'string') {
-	    encoding = offset
-	    length = this.length
-	    offset = 0
-	  // Buffer#write(string, offset[, length][, encoding])
-	  } else if (isFinite(offset)) {
-	    offset = offset | 0
-	    if (isFinite(length)) {
-	      length = length | 0
-	      if (encoding === undefined) encoding = 'utf8'
-	    } else {
-	      encoding = length
-	      length = undefined
-	    }
-	  // legacy write(string, encoding, offset, length) - remove in v0.13
-	  } else {
-	    var swap = encoding
-	    encoding = offset
-	    offset = length | 0
-	    length = swap
-	  }
-
-	  var remaining = this.length - offset
-	  if (length === undefined || length > remaining) length = remaining
-
-	  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
-	    throw new RangeError('attempt to write outside buffer bounds')
-	  }
-
-	  if (!encoding) encoding = 'utf8'
-
-	  var loweredCase = false
-	  for (;;) {
-	    switch (encoding) {
-	      case 'hex':
-	        return hexWrite(this, string, offset, length)
-
-	      case 'utf8':
-	      case 'utf-8':
-	        return utf8Write(this, string, offset, length)
-
-	      case 'ascii':
-	        return asciiWrite(this, string, offset, length)
-
-	      case 'binary':
-	        return binaryWrite(this, string, offset, length)
-
-	      case 'base64':
-	        // Warning: maxLength not taken into account in base64Write
-	        return base64Write(this, string, offset, length)
-
-	      case 'ucs2':
-	      case 'ucs-2':
-	      case 'utf16le':
-	      case 'utf-16le':
-	        return ucs2Write(this, string, offset, length)
-
-	      default:
-	        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
-	        encoding = ('' + encoding).toLowerCase()
-	        loweredCase = true
-	    }
-	  }
-	}
-
-	Buffer.prototype.toJSON = function toJSON () {
-	  return {
-	    type: 'Buffer',
-	    data: Array.prototype.slice.call(this._arr || this, 0)
-	  }
-	}
-
-	function base64Slice (buf, start, end) {
-	  if (start === 0 && end === buf.length) {
-	    return base64.fromByteArray(buf)
-	  } else {
-	    return base64.fromByteArray(buf.slice(start, end))
-	  }
-	}
-
-	function utf8Slice (buf, start, end) {
-	  end = Math.min(buf.length, end)
-	  var res = []
-
-	  var i = start
-	  while (i < end) {
-	    var firstByte = buf[i]
-	    var codePoint = null
-	    var bytesPerSequence = (firstByte > 0xEF) ? 4
-	      : (firstByte > 0xDF) ? 3
-	      : (firstByte > 0xBF) ? 2
-	      : 1
-
-	    if (i + bytesPerSequence <= end) {
-	      var secondByte, thirdByte, fourthByte, tempCodePoint
-
-	      switch (bytesPerSequence) {
-	        case 1:
-	          if (firstByte < 0x80) {
-	            codePoint = firstByte
-	          }
-	          break
-	        case 2:
-	          secondByte = buf[i + 1]
-	          if ((secondByte & 0xC0) === 0x80) {
-	            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
-	            if (tempCodePoint > 0x7F) {
-	              codePoint = tempCodePoint
-	            }
-	          }
-	          break
-	        case 3:
-	          secondByte = buf[i + 1]
-	          thirdByte = buf[i + 2]
-	          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
-	            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
-	            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
-	              codePoint = tempCodePoint
-	            }
-	          }
-	          break
-	        case 4:
-	          secondByte = buf[i + 1]
-	          thirdByte = buf[i + 2]
-	          fourthByte = buf[i + 3]
-	          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
-	            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
-	            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
-	              codePoint = tempCodePoint
-	            }
-	          }
-	      }
-	    }
-
-	    if (codePoint === null) {
-	      // we did not generate a valid codePoint so insert a
-	      // replacement char (U+FFFD) and advance only 1 byte
-	      codePoint = 0xFFFD
-	      bytesPerSequence = 1
-	    } else if (codePoint > 0xFFFF) {
-	      // encode to utf16 (surrogate pair dance)
-	      codePoint -= 0x10000
-	      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
-	      codePoint = 0xDC00 | codePoint & 0x3FF
-	    }
-
-	    res.push(codePoint)
-	    i += bytesPerSequence
-	  }
-
-	  return decodeCodePointsArray(res)
-	}
-
-	// Based on http://stackoverflow.com/a/22747272/680742, the browser with
-	// the lowest limit is Chrome, with 0x10000 args.
-	// We go 1 magnitude less, for safety
-	var MAX_ARGUMENTS_LENGTH = 0x1000
-
-	function decodeCodePointsArray (codePoints) {
-	  var len = codePoints.length
-	  if (len <= MAX_ARGUMENTS_LENGTH) {
-	    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
-	  }
-
-	  // Decode in chunks to avoid "call stack size exceeded".
-	  var res = ''
-	  var i = 0
-	  while (i < len) {
-	    res += String.fromCharCode.apply(
-	      String,
-	      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
-	    )
-	  }
-	  return res
-	}
-
-	function asciiSlice (buf, start, end) {
-	  var ret = ''
-	  end = Math.min(buf.length, end)
-
-	  for (var i = start; i < end; i++) {
-	    ret += String.fromCharCode(buf[i] & 0x7F)
-	  }
-	  return ret
-	}
-
-	function binarySlice (buf, start, end) {
-	  var ret = ''
-	  end = Math.min(buf.length, end)
-
-	  for (var i = start; i < end; i++) {
-	    ret += String.fromCharCode(buf[i])
-	  }
-	  return ret
-	}
-
-	function hexSlice (buf, start, end) {
-	  var len = buf.length
-
-	  if (!start || start < 0) start = 0
-	  if (!end || end < 0 || end > len) end = len
-
-	  var out = ''
-	  for (var i = start; i < end; i++) {
-	    out += toHex(buf[i])
-	  }
-	  return out
-	}
-
-	function utf16leSlice (buf, start, end) {
-	  var bytes = buf.slice(start, end)
-	  var res = ''
-	  for (var i = 0; i < bytes.length; i += 2) {
-	    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256)
-	  }
-	  return res
-	}
-
-	Buffer.prototype.slice = function slice (start, end) {
-	  var len = this.length
-	  start = ~~start
-	  end = end === undefined ? len : ~~end
-
-	  if (start < 0) {
-	    start += len
-	    if (start < 0) start = 0
-	  } else if (start > len) {
-	    start = len
-	  }
-
-	  if (end < 0) {
-	    end += len
-	    if (end < 0) end = 0
-	  } else if (end > len) {
-	    end = len
-	  }
-
-	  if (end < start) end = start
-
-	  var newBuf
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    newBuf = Buffer._augment(this.subarray(start, end))
-	  } else {
-	    var sliceLen = end - start
-	    newBuf = new Buffer(sliceLen, undefined)
-	    for (var i = 0; i < sliceLen; i++) {
-	      newBuf[i] = this[i + start]
-	    }
-	  }
-
-	  if (newBuf.length) newBuf.parent = this.parent || this
-
-	  return newBuf
-	}
-
-	/*
-	 * Need to make sure that buffer isn't trying to write out of bounds.
-	 */
-	function checkOffset (offset, ext, length) {
-	  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
-	  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
-	}
-
-	Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
-	  offset = offset | 0
-	  byteLength = byteLength | 0
-	  if (!noAssert) checkOffset(offset, byteLength, this.length)
-
-	  var val = this[offset]
-	  var mul = 1
-	  var i = 0
-	  while (++i < byteLength && (mul *= 0x100)) {
-	    val += this[offset + i] * mul
-	  }
-
-	  return val
-	}
-
-	Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
-	  offset = offset | 0
-	  byteLength = byteLength | 0
-	  if (!noAssert) {
-	    checkOffset(offset, byteLength, this.length)
-	  }
-
-	  var val = this[offset + --byteLength]
-	  var mul = 1
-	  while (byteLength > 0 && (mul *= 0x100)) {
-	    val += this[offset + --byteLength] * mul
-	  }
-
-	  return val
-	}
-
-	Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 1, this.length)
-	  return this[offset]
-	}
-
-	Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 2, this.length)
-	  return this[offset] | (this[offset + 1] << 8)
-	}
-
-	Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 2, this.length)
-	  return (this[offset] << 8) | this[offset + 1]
-	}
-
-	Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 4, this.length)
-
-	  return ((this[offset]) |
-	      (this[offset + 1] << 8) |
-	      (this[offset + 2] << 16)) +
-	      (this[offset + 3] * 0x1000000)
-	}
-
-	Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 4, this.length)
-
-	  return (this[offset] * 0x1000000) +
-	    ((this[offset + 1] << 16) |
-	    (this[offset + 2] << 8) |
-	    this[offset + 3])
-	}
-
-	Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
-	  offset = offset | 0
-	  byteLength = byteLength | 0
-	  if (!noAssert) checkOffset(offset, byteLength, this.length)
-
-	  var val = this[offset]
-	  var mul = 1
-	  var i = 0
-	  while (++i < byteLength && (mul *= 0x100)) {
-	    val += this[offset + i] * mul
-	  }
-	  mul *= 0x80
-
-	  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
-
-	  return val
-	}
-
-	Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
-	  offset = offset | 0
-	  byteLength = byteLength | 0
-	  if (!noAssert) checkOffset(offset, byteLength, this.length)
-
-	  var i = byteLength
-	  var mul = 1
-	  var val = this[offset + --i]
-	  while (i > 0 && (mul *= 0x100)) {
-	    val += this[offset + --i] * mul
-	  }
-	  mul *= 0x80
-
-	  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
-
-	  return val
-	}
-
-	Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 1, this.length)
-	  if (!(this[offset] & 0x80)) return (this[offset])
-	  return ((0xff - this[offset] + 1) * -1)
-	}
-
-	Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 2, this.length)
-	  var val = this[offset] | (this[offset + 1] << 8)
-	  return (val & 0x8000) ? val | 0xFFFF0000 : val
-	}
-
-	Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 2, this.length)
-	  var val = this[offset + 1] | (this[offset] << 8)
-	  return (val & 0x8000) ? val | 0xFFFF0000 : val
-	}
-
-	Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 4, this.length)
-
-	  return (this[offset]) |
-	    (this[offset + 1] << 8) |
-	    (this[offset + 2] << 16) |
-	    (this[offset + 3] << 24)
-	}
-
-	Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 4, this.length)
-
-	  return (this[offset] << 24) |
-	    (this[offset + 1] << 16) |
-	    (this[offset + 2] << 8) |
-	    (this[offset + 3])
-	}
-
-	Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 4, this.length)
-	  return ieee754.read(this, offset, true, 23, 4)
-	}
-
-	Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 4, this.length)
-	  return ieee754.read(this, offset, false, 23, 4)
-	}
-
-	Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 8, this.length)
-	  return ieee754.read(this, offset, true, 52, 8)
-	}
-
-	Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
-	  if (!noAssert) checkOffset(offset, 8, this.length)
-	  return ieee754.read(this, offset, false, 52, 8)
-	}
-
-	function checkInt (buf, value, offset, ext, max, min) {
-	  if (!Buffer.isBuffer(buf)) throw new TypeError('buffer must be a Buffer instance')
-	  if (value > max || value < min) throw new RangeError('value is out of bounds')
-	  if (offset + ext > buf.length) throw new RangeError('index out of range')
-	}
-
-	Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  byteLength = byteLength | 0
-	  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
-
-	  var mul = 1
-	  var i = 0
-	  this[offset] = value & 0xFF
-	  while (++i < byteLength && (mul *= 0x100)) {
-	    this[offset + i] = (value / mul) & 0xFF
-	  }
-
-	  return offset + byteLength
-	}
-
-	Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  byteLength = byteLength | 0
-	  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
-
-	  var i = byteLength - 1
-	  var mul = 1
-	  this[offset + i] = value & 0xFF
-	  while (--i >= 0 && (mul *= 0x100)) {
-	    this[offset + i] = (value / mul) & 0xFF
-	  }
-
-	  return offset + byteLength
-	}
-
-	Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
-	  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
-	  this[offset] = (value & 0xff)
-	  return offset + 1
-	}
-
-	function objectWriteUInt16 (buf, value, offset, littleEndian) {
-	  if (value < 0) value = 0xffff + value + 1
-	  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; i++) {
-	    buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
-	      (littleEndian ? i : 1 - i) * 8
-	  }
-	}
-
-	Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    this[offset] = (value & 0xff)
-	    this[offset + 1] = (value >>> 8)
-	  } else {
-	    objectWriteUInt16(this, value, offset, true)
-	  }
-	  return offset + 2
-	}
-
-	Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    this[offset] = (value >>> 8)
-	    this[offset + 1] = (value & 0xff)
-	  } else {
-	    objectWriteUInt16(this, value, offset, false)
-	  }
-	  return offset + 2
-	}
-
-	function objectWriteUInt32 (buf, value, offset, littleEndian) {
-	  if (value < 0) value = 0xffffffff + value + 1
-	  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; i++) {
-	    buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
-	  }
-	}
-
-	Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    this[offset + 3] = (value >>> 24)
-	    this[offset + 2] = (value >>> 16)
-	    this[offset + 1] = (value >>> 8)
-	    this[offset] = (value & 0xff)
-	  } else {
-	    objectWriteUInt32(this, value, offset, true)
-	  }
-	  return offset + 4
-	}
-
-	Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    this[offset] = (value >>> 24)
-	    this[offset + 1] = (value >>> 16)
-	    this[offset + 2] = (value >>> 8)
-	    this[offset + 3] = (value & 0xff)
-	  } else {
-	    objectWriteUInt32(this, value, offset, false)
-	  }
-	  return offset + 4
-	}
-
-	Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) {
-	    var limit = Math.pow(2, 8 * byteLength - 1)
-
-	    checkInt(this, value, offset, byteLength, limit - 1, -limit)
-	  }
-
-	  var i = 0
-	  var mul = 1
-	  var sub = value < 0 ? 1 : 0
-	  this[offset] = value & 0xFF
-	  while (++i < byteLength && (mul *= 0x100)) {
-	    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
-	  }
-
-	  return offset + byteLength
-	}
-
-	Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) {
-	    var limit = Math.pow(2, 8 * byteLength - 1)
-
-	    checkInt(this, value, offset, byteLength, limit - 1, -limit)
-	  }
-
-	  var i = byteLength - 1
-	  var mul = 1
-	  var sub = value < 0 ? 1 : 0
-	  this[offset + i] = value & 0xFF
-	  while (--i >= 0 && (mul *= 0x100)) {
-	    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
-	  }
-
-	  return offset + byteLength
-	}
-
-	Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
-	  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
-	  if (value < 0) value = 0xff + value + 1
-	  this[offset] = (value & 0xff)
-	  return offset + 1
-	}
-
-	Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    this[offset] = (value & 0xff)
-	    this[offset + 1] = (value >>> 8)
-	  } else {
-	    objectWriteUInt16(this, value, offset, true)
-	  }
-	  return offset + 2
-	}
-
-	Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    this[offset] = (value >>> 8)
-	    this[offset + 1] = (value & 0xff)
-	  } else {
-	    objectWriteUInt16(this, value, offset, false)
-	  }
-	  return offset + 2
-	}
-
-	Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    this[offset] = (value & 0xff)
-	    this[offset + 1] = (value >>> 8)
-	    this[offset + 2] = (value >>> 16)
-	    this[offset + 3] = (value >>> 24)
-	  } else {
-	    objectWriteUInt32(this, value, offset, true)
-	  }
-	  return offset + 4
-	}
-
-	Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
-	  value = +value
-	  offset = offset | 0
-	  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
-	  if (value < 0) value = 0xffffffff + value + 1
-	  if (Buffer.TYPED_ARRAY_SUPPORT) {
-	    this[offset] = (value >>> 24)
-	    this[offset + 1] = (value >>> 16)
-	    this[offset + 2] = (value >>> 8)
-	    this[offset + 3] = (value & 0xff)
-	  } else {
-	    objectWriteUInt32(this, value, offset, false)
-	  }
-	  return offset + 4
-	}
-
-	function checkIEEE754 (buf, value, offset, ext, max, min) {
-	  if (value > max || value < min) throw new RangeError('value is out of bounds')
-	  if (offset + ext > buf.length) throw new RangeError('index out of range')
-	  if (offset < 0) throw new RangeError('index out of range')
-	}
-
-	function writeFloat (buf, value, offset, littleEndian, noAssert) {
-	  if (!noAssert) {
-	    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
-	  }
-	  ieee754.write(buf, value, offset, littleEndian, 23, 4)
-	  return offset + 4
-	}
-
-	Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
-	  return writeFloat(this, value, offset, true, noAssert)
-	}
-
-	Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
-	  return writeFloat(this, value, offset, false, noAssert)
-	}
-
-	function writeDouble (buf, value, offset, littleEndian, noAssert) {
-	  if (!noAssert) {
-	    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
-	  }
-	  ieee754.write(buf, value, offset, littleEndian, 52, 8)
-	  return offset + 8
-	}
-
-	Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
-	  return writeDouble(this, value, offset, true, noAssert)
-	}
-
-	Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
-	  return writeDouble(this, value, offset, false, noAssert)
-	}
-
-	// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
-	Buffer.prototype.copy = function copy (target, targetStart, start, end) {
-	  if (!start) start = 0
-	  if (!end && end !== 0) end = this.length
-	  if (targetStart >= target.length) targetStart = target.length
-	  if (!targetStart) targetStart = 0
-	  if (end > 0 && end < start) end = start
-
-	  // Copy 0 bytes; we're done
-	  if (end === start) return 0
-	  if (target.length === 0 || this.length === 0) return 0
-
-	  // Fatal error conditions
-	  if (targetStart < 0) {
-	    throw new RangeError('targetStart out of bounds')
-	  }
-	  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
-	  if (end < 0) throw new RangeError('sourceEnd out of bounds')
-
-	  // Are we oob?
-	  if (end > this.length) end = this.length
-	  if (target.length - targetStart < end - start) {
-	    end = target.length - targetStart + start
-	  }
-
-	  var len = end - start
-	  var i
-
-	  if (this === target && start < targetStart && targetStart < end) {
-	    // descending copy from end
-	    for (i = len - 1; i >= 0; i--) {
-	      target[i + targetStart] = this[i + start]
-	    }
-	  } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
-	    // ascending copy from start
-	    for (i = 0; i < len; i++) {
-	      target[i + targetStart] = this[i + start]
-	    }
-	  } else {
-	    target._set(this.subarray(start, start + len), targetStart)
-	  }
-
-	  return len
-	}
-
-	// fill(value, start=0, end=buffer.length)
-	Buffer.prototype.fill = function fill (value, start, end) {
-	  if (!value) value = 0
-	  if (!start) start = 0
-	  if (!end) end = this.length
-
-	  if (end < start) throw new RangeError('end < start')
-
-	  // Fill 0 bytes; we're done
-	  if (end === start) return
-	  if (this.length === 0) return
-
-	  if (start < 0 || start >= this.length) throw new RangeError('start out of bounds')
-	  if (end < 0 || end > this.length) throw new RangeError('end out of bounds')
-
-	  var i
-	  if (typeof value === 'number') {
-	    for (i = start; i < end; i++) {
-	      this[i] = value
-	    }
-	  } else {
-	    var bytes = utf8ToBytes(value.toString())
-	    var len = bytes.length
-	    for (i = start; i < end; i++) {
-	      this[i] = bytes[i % len]
-	    }
-	  }
-
-	  return this
-	}
-
-	/**
-	 * Creates a new `ArrayBuffer` with the *copied* memory of the buffer instance.
-	 * Added in Node 0.12. Only available in browsers that support ArrayBuffer.
-	 */
-	Buffer.prototype.toArrayBuffer = function toArrayBuffer () {
-	  if (typeof Uint8Array !== 'undefined') {
-	    if (Buffer.TYPED_ARRAY_SUPPORT) {
-	      return (new Buffer(this)).buffer
-	    } else {
-	      var buf = new Uint8Array(this.length)
-	      for (var i = 0, len = buf.length; i < len; i += 1) {
-	        buf[i] = this[i]
-	      }
-	      return buf.buffer
-	    }
-	  } else {
-	    throw new TypeError('Buffer.toArrayBuffer not supported in this browser')
-	  }
-	}
-
-	// HELPER FUNCTIONS
-	// ================
-
-	var BP = Buffer.prototype
-
-	/**
-	 * Augment a Uint8Array *instance* (not the Uint8Array class!) with Buffer methods
-	 */
-	Buffer._augment = function _augment (arr) {
-	  arr.constructor = Buffer
-	  arr._isBuffer = true
-
-	  // save reference to original Uint8Array set method before overwriting
-	  arr._set = arr.set
-
-	  // deprecated
-	  arr.get = BP.get
-	  arr.set = BP.set
-
-	  arr.write = BP.write
-	  arr.toString = BP.toString
-	  arr.toLocaleString = BP.toString
-	  arr.toJSON = BP.toJSON
-	  arr.equals = BP.equals
-	  arr.compare = BP.compare
-	  arr.indexOf = BP.indexOf
-	  arr.copy = BP.copy
-	  arr.slice = BP.slice
-	  arr.readUIntLE = BP.readUIntLE
-	  arr.readUIntBE = BP.readUIntBE
-	  arr.readUInt8 = BP.readUInt8
-	  arr.readUInt16LE = BP.readUInt16LE
-	  arr.readUInt16BE = BP.readUInt16BE
-	  arr.readUInt32LE = BP.readUInt32LE
-	  arr.readUInt32BE = BP.readUInt32BE
-	  arr.readIntLE = BP.readIntLE
-	  arr.readIntBE = BP.readIntBE
-	  arr.readInt8 = BP.readInt8
-	  arr.readInt16LE = BP.readInt16LE
-	  arr.readInt16BE = BP.readInt16BE
-	  arr.readInt32LE = BP.readInt32LE
-	  arr.readInt32BE = BP.readInt32BE
-	  arr.readFloatLE = BP.readFloatLE
-	  arr.readFloatBE = BP.readFloatBE
-	  arr.readDoubleLE = BP.readDoubleLE
-	  arr.readDoubleBE = BP.readDoubleBE
-	  arr.writeUInt8 = BP.writeUInt8
-	  arr.writeUIntLE = BP.writeUIntLE
-	  arr.writeUIntBE = BP.writeUIntBE
-	  arr.writeUInt16LE = BP.writeUInt16LE
-	  arr.writeUInt16BE = BP.writeUInt16BE
-	  arr.writeUInt32LE = BP.writeUInt32LE
-	  arr.writeUInt32BE = BP.writeUInt32BE
-	  arr.writeIntLE = BP.writeIntLE
-	  arr.writeIntBE = BP.writeIntBE
-	  arr.writeInt8 = BP.writeInt8
-	  arr.writeInt16LE = BP.writeInt16LE
-	  arr.writeInt16BE = BP.writeInt16BE
-	  arr.writeInt32LE = BP.writeInt32LE
-	  arr.writeInt32BE = BP.writeInt32BE
-	  arr.writeFloatLE = BP.writeFloatLE
-	  arr.writeFloatBE = BP.writeFloatBE
-	  arr.writeDoubleLE = BP.writeDoubleLE
-	  arr.writeDoubleBE = BP.writeDoubleBE
-	  arr.fill = BP.fill
-	  arr.inspect = BP.inspect
-	  arr.toArrayBuffer = BP.toArrayBuffer
-
-	  return arr
-	}
-
-	var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g
-
-	function base64clean (str) {
-	  // Node strips out invalid characters like \n and \t from the string, base64-js does not
-	  str = stringtrim(str).replace(INVALID_BASE64_RE, '')
-	  // Node converts strings with length < 2 to ''
-	  if (str.length < 2) return ''
-	  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
-	  while (str.length % 4 !== 0) {
-	    str = str + '='
-	  }
-	  return str
-	}
-
-	function stringtrim (str) {
-	  if (str.trim) return str.trim()
-	  return str.replace(/^\s+|\s+$/g, '')
-	}
-
-	function toHex (n) {
-	  if (n < 16) return '0' + n.toString(16)
-	  return n.toString(16)
-	}
-
-	function utf8ToBytes (string, units) {
-	  units = units || Infinity
-	  var codePoint
-	  var length = string.length
-	  var leadSurrogate = null
-	  var bytes = []
-
-	  for (var i = 0; i < length; i++) {
-	    codePoint = string.charCodeAt(i)
-
-	    // is surrogate component
-	    if (codePoint > 0xD7FF && codePoint < 0xE000) {
-	      // last char was a lead
-	      if (!leadSurrogate) {
-	        // no lead yet
-	        if (codePoint > 0xDBFF) {
-	          // unexpected trail
-	          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
-	          continue
-	        } else if (i + 1 === length) {
-	          // unpaired lead
-	          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
-	          continue
-	        }
-
-	        // valid lead
-	        leadSurrogate = codePoint
-
-	        continue
-	      }
-
-	      // 2 leads in a row
-	      if (codePoint < 0xDC00) {
-	        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
-	        leadSurrogate = codePoint
-	        continue
-	      }
-
-	      // valid surrogate pair
-	      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
-	    } else if (leadSurrogate) {
-	      // valid bmp char, but last char was a lead
-	      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
-	    }
-
-	    leadSurrogate = null
-
-	    // encode utf8
-	    if (codePoint < 0x80) {
-	      if ((units -= 1) < 0) break
-	      bytes.push(codePoint)
-	    } else if (codePoint < 0x800) {
-	      if ((units -= 2) < 0) break
-	      bytes.push(
-	        codePoint >> 0x6 | 0xC0,
-	        codePoint & 0x3F | 0x80
-	      )
-	    } else if (codePoint < 0x10000) {
-	      if ((units -= 3) < 0) break
-	      bytes.push(
-	        codePoint >> 0xC | 0xE0,
-	        codePoint >> 0x6 & 0x3F | 0x80,
-	        codePoint & 0x3F | 0x80
-	      )
-	    } else if (codePoint < 0x110000) {
-	      if ((units -= 4) < 0) break
-	      bytes.push(
-	        codePoint >> 0x12 | 0xF0,
-	        codePoint >> 0xC & 0x3F | 0x80,
-	        codePoint >> 0x6 & 0x3F | 0x80,
-	        codePoint & 0x3F | 0x80
-	      )
-	    } else {
-	      throw new Error('Invalid code point')
-	    }
-	  }
-
-	  return bytes
-	}
-
-	function asciiToBytes (str) {
-	  var byteArray = []
-	  for (var i = 0; i < str.length; i++) {
-	    // Node's code seems to be doing this and not & 0x7F..
-	    byteArray.push(str.charCodeAt(i) & 0xFF)
-	  }
-	  return byteArray
-	}
-
-	function utf16leToBytes (str, units) {
-	  var c, hi, lo
-	  var byteArray = []
-	  for (var i = 0; i < str.length; i++) {
-	    if ((units -= 2) < 0) break
-
-	    c = str.charCodeAt(i)
-	    hi = c >> 8
-	    lo = c % 256
-	    byteArray.push(lo)
-	    byteArray.push(hi)
-	  }
-
-	  return byteArray
-	}
-
-	function base64ToBytes (str) {
-	  return base64.toByteArray(base64clean(str))
-	}
-
-	function blitBuffer (src, dst, offset, length) {
-	  for (var i = 0; i < length; i++) {
-	    if ((i + offset >= dst.length) || (i >= src.length)) break
-	    dst[i + offset] = src[i]
-	  }
-	  return i
-	}
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer, (function() { return this; }())))
-
-/***/ },
-/* 54 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-	;(function (exports) {
-		'use strict';
-
-	  var Arr = (typeof Uint8Array !== 'undefined')
-	    ? Uint8Array
-	    : Array
-
-		var PLUS   = '+'.charCodeAt(0)
-		var SLASH  = '/'.charCodeAt(0)
-		var NUMBER = '0'.charCodeAt(0)
-		var LOWER  = 'a'.charCodeAt(0)
-		var UPPER  = 'A'.charCodeAt(0)
-		var PLUS_URL_SAFE = '-'.charCodeAt(0)
-		var SLASH_URL_SAFE = '_'.charCodeAt(0)
-
-		function decode (elt) {
-			var code = elt.charCodeAt(0)
-			if (code === PLUS ||
-			    code === PLUS_URL_SAFE)
-				return 62 // '+'
-			if (code === SLASH ||
-			    code === SLASH_URL_SAFE)
-				return 63 // '/'
-			if (code < NUMBER)
-				return -1 //no match
-			if (code < NUMBER + 10)
-				return code - NUMBER + 26 + 26
-			if (code < UPPER + 26)
-				return code - UPPER
-			if (code < LOWER + 26)
-				return code - LOWER + 26
-		}
-
-		function b64ToByteArray (b64) {
-			var i, j, l, tmp, placeHolders, arr
-
-			if (b64.length % 4 > 0) {
-				throw new Error('Invalid string. Length must be a multiple of 4')
-			}
-
-			// the number of equal signs (place holders)
-			// if there are two placeholders, than the two characters before it
-			// represent one byte
-			// if there is only one, then the three characters before it represent 2 bytes
-			// this is just a cheap hack to not do indexOf twice
-			var len = b64.length
-			placeHolders = '=' === b64.charAt(len - 2) ? 2 : '=' === b64.charAt(len - 1) ? 1 : 0
-
-			// base64 is 4/3 + up to two characters of the original data
-			arr = new Arr(b64.length * 3 / 4 - placeHolders)
-
-			// if there are placeholders, only get up to the last complete 4 chars
-			l = placeHolders > 0 ? b64.length - 4 : b64.length
-
-			var L = 0
-
-			function push (v) {
-				arr[L++] = v
-			}
-
-			for (i = 0, j = 0; i < l; i += 4, j += 3) {
-				tmp = (decode(b64.charAt(i)) << 18) | (decode(b64.charAt(i + 1)) << 12) | (decode(b64.charAt(i + 2)) << 6) | decode(b64.charAt(i + 3))
-				push((tmp & 0xFF0000) >> 16)
-				push((tmp & 0xFF00) >> 8)
-				push(tmp & 0xFF)
-			}
-
-			if (placeHolders === 2) {
-				tmp = (decode(b64.charAt(i)) << 2) | (decode(b64.charAt(i + 1)) >> 4)
-				push(tmp & 0xFF)
-			} else if (placeHolders === 1) {
-				tmp = (decode(b64.charAt(i)) << 10) | (decode(b64.charAt(i + 1)) << 4) | (decode(b64.charAt(i + 2)) >> 2)
-				push((tmp >> 8) & 0xFF)
-				push(tmp & 0xFF)
-			}
-
-			return arr
-		}
-
-		function uint8ToBase64 (uint8) {
-			var i,
-				extraBytes = uint8.length % 3, // if we have 1 byte left, pad 2 bytes
-				output = "",
-				temp, length
-
-			function encode (num) {
-				return lookup.charAt(num)
-			}
-
-			function tripletToBase64 (num) {
-				return encode(num >> 18 & 0x3F) + encode(num >> 12 & 0x3F) + encode(num >> 6 & 0x3F) + encode(num & 0x3F)
-			}
-
-			// go through the array every three bytes, we'll deal with trailing stuff later
-			for (i = 0, length = uint8.length - extraBytes; i < length; i += 3) {
-				temp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
-				output += tripletToBase64(temp)
-			}
-
-			// pad the end with zeros, but make sure to not forget the extra bytes
-			switch (extraBytes) {
-				case 1:
-					temp = uint8[uint8.length - 1]
-					output += encode(temp >> 2)
-					output += encode((temp << 4) & 0x3F)
-					output += '=='
-					break
-				case 2:
-					temp = (uint8[uint8.length - 2] << 8) + (uint8[uint8.length - 1])
-					output += encode(temp >> 10)
-					output += encode((temp >> 4) & 0x3F)
-					output += encode((temp << 2) & 0x3F)
-					output += '='
-					break
-			}
-
-			return output
-		}
-
-		exports.toByteArray = b64ToByteArray
-		exports.fromByteArray = uint8ToBase64
-	}( false ? (this.base64js = {}) : exports))
-
-
-/***/ },
-/* 55 */
-/***/ function(module, exports) {
-
-	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
-	  var e, m
-	  var eLen = nBytes * 8 - mLen - 1
-	  var eMax = (1 << eLen) - 1
-	  var eBias = eMax >> 1
-	  var nBits = -7
-	  var i = isLE ? (nBytes - 1) : 0
-	  var d = isLE ? -1 : 1
-	  var s = buffer[offset + i]
-
-	  i += d
-
-	  e = s & ((1 << (-nBits)) - 1)
-	  s >>= (-nBits)
-	  nBits += eLen
-	  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
-
-	  m = e & ((1 << (-nBits)) - 1)
-	  e >>= (-nBits)
-	  nBits += mLen
-	  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
-
-	  if (e === 0) {
-	    e = 1 - eBias
-	  } else if (e === eMax) {
-	    return m ? NaN : ((s ? -1 : 1) * Infinity)
-	  } else {
-	    m = m + Math.pow(2, mLen)
-	    e = e - eBias
-	  }
-	  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
-	}
-
-	exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
-	  var e, m, c
-	  var eLen = nBytes * 8 - mLen - 1
-	  var eMax = (1 << eLen) - 1
-	  var eBias = eMax >> 1
-	  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
-	  var i = isLE ? 0 : (nBytes - 1)
-	  var d = isLE ? 1 : -1
-	  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
-
-	  value = Math.abs(value)
-
-	  if (isNaN(value) || value === Infinity) {
-	    m = isNaN(value) ? 1 : 0
-	    e = eMax
-	  } else {
-	    e = Math.floor(Math.log(value) / Math.LN2)
-	    if (value * (c = Math.pow(2, -e)) < 1) {
-	      e--
-	      c *= 2
-	    }
-	    if (e + eBias >= 1) {
-	      value += rt / c
-	    } else {
-	      value += rt * Math.pow(2, 1 - eBias)
-	    }
-	    if (value * c >= 2) {
-	      e++
-	      c /= 2
-	    }
-
-	    if (e + eBias >= eMax) {
-	      m = 0
-	      e = eMax
-	    } else if (e + eBias >= 1) {
-	      m = (value * c - 1) * Math.pow(2, mLen)
-	      e = e + eBias
-	    } else {
-	      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
-	      e = 0
-	    }
-	  }
-
-	  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
-
-	  e = (e << mLen) | m
-	  eLen += mLen
-	  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
-
-	  buffer[offset + i - d] |= s * 128
-	}
-
-
-/***/ },
-/* 56 */
-/***/ function(module, exports) {
-
-	var toString = {}.toString;
-
-	module.exports = Array.isArray || function (arr) {
-	  return toString.call(arr) == '[object Array]';
-	};
-
-
-/***/ },
-/* 57 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*
-	  MIT License http://www.opensource.org/licenses/mit-license.php
-	  Author Tobias Koppers @sokra
-	  Modified by Evan You @yyx990803
-	*/
-
-	var hasDocument = typeof document !== 'undefined'
-
-	if (false) {
-	  if (!hasDocument) {
-	    throw new Error(
-	    'vue-style-loader cannot be used in a non-browser environment. ' +
-	    "Use { target: 'node' } in your Webpack config to indicate a server-rendering environment."
-	  ) }
-	}
-
-	var listToStyles = __webpack_require__(58)
-
-	/*
-	type StyleObject = {
-	  id: number;
-	  parts: Array<StyleObjectPart>
-	}
-
-	type StyleObjectPart = {
-	  css: string;
-	  media: string;
-	  sourceMap: ?string
-	}
-	*/
-
-	var stylesInDom = {/*
-	  [id: number]: {
-	    id: number,
-	    refs: number,
-	    parts: Array<(obj?: StyleObjectPart) => void>
-	  }
-	*/}
-
-	var head = hasDocument && (document.head || document.getElementsByTagName('head')[0])
-	var singletonElement = null
-	var singletonCounter = 0
-	var isProduction = false
-	var noop = function () {}
-
-	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-	// tags it will allow on a page
-	var isOldIE = typeof navigator !== 'undefined' && /msie [6-9]\b/.test(navigator.userAgent.toLowerCase())
-
-	module.exports = function (parentId, list, _isProduction) {
-	  isProduction = _isProduction
-
-	  var styles = listToStyles(parentId, list)
-	  addStylesToDom(styles)
-
-	  return function update (newList) {
-	    var mayRemove = []
-	    for (var i = 0; i < styles.length; i++) {
-	      var item = styles[i]
-	      var domStyle = stylesInDom[item.id]
-	      domStyle.refs--
-	      mayRemove.push(domStyle)
-	    }
-	    if (newList) {
-	      styles = listToStyles(parentId, newList)
-	      addStylesToDom(styles)
-	    } else {
-	      styles = []
-	    }
-	    for (var i = 0; i < mayRemove.length; i++) {
-	      var domStyle = mayRemove[i]
-	      if (domStyle.refs === 0) {
-	        for (var j = 0; j < domStyle.parts.length; j++) {
-	          domStyle.parts[j]()
-	        }
-	        delete stylesInDom[domStyle.id]
-	      }
-	    }
-	  }
-	}
-
-	function addStylesToDom (styles /* Array<StyleObject> */) {
-	  for (var i = 0; i < styles.length; i++) {
-	    var item = styles[i]
-	    var domStyle = stylesInDom[item.id]
-	    if (domStyle) {
-	      domStyle.refs++
-	      for (var j = 0; j < domStyle.parts.length; j++) {
-	        domStyle.parts[j](item.parts[j])
-	      }
-	      for (; j < item.parts.length; j++) {
-	        domStyle.parts.push(addStyle(item.parts[j]))
-	      }
-	      if (domStyle.parts.length > item.parts.length) {
-	        domStyle.parts.length = item.parts.length
-	      }
-	    } else {
-	      var parts = []
-	      for (var j = 0; j < item.parts.length; j++) {
-	        parts.push(addStyle(item.parts[j]))
-	      }
-	      stylesInDom[item.id] = { id: item.id, refs: 1, parts: parts }
-	    }
-	  }
-	}
-
-	function createStyleElement () {
-	  var styleElement = document.createElement('style')
-	  styleElement.type = 'text/css'
-	  head.appendChild(styleElement)
-	  return styleElement
-	}
-
-	function addStyle (obj /* StyleObjectPart */) {
-	  var update, remove
-	  var styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]')
-
-	  if (styleElement) {
-	    if (isProduction) {
-	      // has SSR styles and in production mode.
-	      // simply do nothing.
-	      return noop
-	    } else {
-	      // has SSR styles but in dev mode.
-	      // for some reason Chrome can't handle source map in server-rendered
-	      // style tags - source maps in <style> only works if the style tag is
-	      // created and inserted dynamically. So we remove the server rendered
-	      // styles and inject new ones.
-	      styleElement.parentNode.removeChild(styleElement)
-	    }
-	  }
-
-	  if (isOldIE) {
-	    // use singleton mode for IE9.
-	    var styleIndex = singletonCounter++
-	    styleElement = singletonElement || (singletonElement = createStyleElement())
-	    update = applyToSingletonTag.bind(null, styleElement, styleIndex, false)
-	    remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
-	  } else {
-	    // use multi-style-tag mode in all other cases
-	    styleElement = createStyleElement()
-	    update = applyToTag.bind(null, styleElement)
-	    remove = function () {
-	      styleElement.parentNode.removeChild(styleElement)
-	    }
-	  }
-
-	  update(obj)
-
-	  return function updateStyle (newObj /* StyleObjectPart */) {
-	    if (newObj) {
-	      if (newObj.css === obj.css &&
-	          newObj.media === obj.media &&
-	          newObj.sourceMap === obj.sourceMap) {
-	        return
-	      }
-	      update(obj = newObj)
-	    } else {
-	      remove()
-	    }
-	  }
-	}
-
-	var replaceText = (function () {
-	  var textStore = []
-
-	  return function (index, replacement) {
-	    textStore[index] = replacement
-	    return textStore.filter(Boolean).join('\n')
-	  }
-	})()
-
-	function applyToSingletonTag (styleElement, index, remove, obj) {
-	  var css = remove ? '' : obj.css
-
-	  if (styleElement.styleSheet) {
-	    styleElement.styleSheet.cssText = replaceText(index, css)
-	  } else {
-	    var cssNode = document.createTextNode(css)
-	    var childNodes = styleElement.childNodes
-	    if (childNodes[index]) styleElement.removeChild(childNodes[index])
-	    if (childNodes.length) {
-	      styleElement.insertBefore(cssNode, childNodes[index])
-	    } else {
-	      styleElement.appendChild(cssNode)
-	    }
-	  }
-	}
-
-	function applyToTag (styleElement, obj) {
-	  var css = obj.css
-	  var media = obj.media
-	  var sourceMap = obj.sourceMap
-
-	  if (media) {
-	    styleElement.setAttribute('media', media)
-	  }
-
-	  if (sourceMap) {
-	    // https://developer.chrome.com/devtools/docs/javascript-debugging
-	    // this makes source maps inside style tags work properly in Chrome
-	    css += '\n/*# sourceURL=' + sourceMap.sources[0] + ' */'
-	    // http://stackoverflow.com/a/26603875
-	    css += '\n/*# sourceMappingURL=data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + ' */'
-	  }
-
-	  if (styleElement.styleSheet) {
-	    styleElement.styleSheet.cssText = css
-	  } else {
-	    while (styleElement.firstChild) {
-	      styleElement.removeChild(styleElement.firstChild)
-	    }
-	    styleElement.appendChild(document.createTextNode(css))
-	  }
-	}
-
-
-/***/ },
-/* 58 */
-/***/ function(module, exports) {
-
-	/**
-	 * Translates the list format produced by css-loader into something
-	 * easier to manipulate.
-	 */
-	module.exports = function listToStyles (parentId, list) {
-	  var styles = []
-	  var newStyles = {}
-	  for (var i = 0; i < list.length; i++) {
-	    var item = list[i]
-	    var id = item[0]
-	    var css = item[1]
-	    var media = item[2]
-	    var sourceMap = item[3]
-	    var part = {
-	      id: parentId + ':' + i,
-	      css: css,
-	      media: media,
-	      sourceMap: sourceMap
-	    }
-	    if (!newStyles[id]) {
-	      styles.push(newStyles[id] = { id: id, parts: [part] })
-	    } else {
-	      newStyles[id].parts.push(part)
-	    }
-	  }
-	  return styles
-	}
-
-
-/***/ },
-/* 59 */
-/***/ function(module, exports) {
-
-	module.exports = function normalizeComponent (
-	  rawScriptExports,
-	  compiledTemplate,
-	  scopeId,
-	  cssModules
-	) {
-	  var esModule
-	  var scriptExports = rawScriptExports = rawScriptExports || {}
-
-	  // ES6 modules interop
-	  var type = typeof rawScriptExports.default
-	  if (type === 'object' || type === 'function') {
-	    esModule = rawScriptExports
-	    scriptExports = rawScriptExports.default
-	  }
-
-	  // Vue.extend constructor export interop
-	  var options = typeof scriptExports === 'function'
-	    ? scriptExports.options
-	    : scriptExports
-
-	  // render functions
-	  if (compiledTemplate) {
-	    options.render = compiledTemplate.render
-	    options.staticRenderFns = compiledTemplate.staticRenderFns
-	  }
-
-	  // scopedId
-	  if (scopeId) {
-	    options._scopeId = scopeId
-	  }
-
-	  // inject cssModules
-	  if (cssModules) {
-	    var computed = options.computed || (options.computed = {})
-	    Object.keys(cssModules).forEach(function (key) {
-	      var module = cssModules[key]
-	      computed[key] = function () { return module }
-	    })
-	  }
-
-	  return {
-	    esModule: esModule,
-	    exports: scriptExports,
-	    options: options
-	  }
-	}
-
-
-/***/ },
-/* 60 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function($) {//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-
-	module.exports = {
-	    data() {
-	        return {
-	            players: []
-	        };
-	    },
-	    methods: {
-	        downloadInformation: function() {
-	            var self = this;
-	            $.post("./php/consulta.php",{},
-	            function(json, status){
-	                this.players = $.parseJSON(json);
-	            }.bind(this));
-	        },
-	    },
-	    mounted: function() {
-	        this.downloadInformation();
-	    },
-	}
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
-
-/***/ },
-/* 61 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
-	  return _c('div', {
-	    staticClass: "leaderboard content"
-	  }, _vm._l((_vm.players), function(player) {
-	    return _c('div', {
-	      staticClass: "col-md-6"
-	    }, [_c('player-plate', {
-	      attrs: {
-	        "player": player
-	      }
-	    })], 1)
-	  }))
-	},staticRenderFns: []}
-	module.exports.render._withStripped = true
-	if (false) {
-	  module.hot.accept()
-	  if (module.hot.data) {
-	     require("vue-hot-reload-api").rerender("data-v-1959f2dc", module.exports)
-	  }
-	}
-
-/***/ },
-/* 62 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/* styles */
-	__webpack_require__(63)
-
-	var Component = __webpack_require__(59)(
-	  /* script */
-	  __webpack_require__(65),
-	  /* template */
-	  __webpack_require__(66),
-	  /* scopeId */
-	  null,
-	  /* cssModules */
-	  null
-	)
-	Component.options.__file = "C:\\xampp\\htdocs\\MI2\\proyectofinal\\js\\views\\leaderboard\\plate.vue"
-	if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
-	if (Component.options.functional) {console.error("[vue-loader] plate.vue: functional components are not supported with templates, they should use render functions.")}
-
-	/* hot reload */
-	if (false) {(function () {
-	  var hotAPI = require("vue-hot-reload-api")
-	  hotAPI.install(require("vue"), false)
-	  if (!hotAPI.compatible) return
-	  module.hot.accept()
-	  if (!module.hot.data) {
-	    hotAPI.createRecord("data-v-8a4f712a", Component.options)
-	  } else {
-	    hotAPI.reload("data-v-8a4f712a", Component.options)
-	  }
-	})()}
-
-	module.exports = Component.exports
-
-
-/***/ },
-/* 63 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-
-	// load the styles
-	var content = __webpack_require__(64);
-	if(typeof content === 'string') content = [[module.id, content, '']];
-	if(content.locals) module.exports = content.locals;
-	// add the styles to the DOM
-	var update = __webpack_require__(57)("3b771a64", content, false);
-	// Hot Module Replacement
-	if(false) {
-	 // When the styles change, update the <style> tags
-	 if(!content.locals) {
-	   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-8a4f712a!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./plate.vue", function() {
-	     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-8a4f712a!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./plate.vue");
-	     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-	     update(newContent);
-	   });
-	 }
-	 // When the module is disposed, remove the <style> tags
-	 module.hot.dispose(function() { update(); });
-	}
-
-/***/ },
-/* 64 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(52)(undefined);
-	// imports
-
-
-	// module
-	exports.push([module.id, "\n.player {\n    height: 130px;\n    color: white;\n    border-style: solid;\n    border-color: dimgray;\n    border-width: 3px;\n    border-radius: 10px;\n    margin: 20px 0;\n    background: #a90329; /* Old browsers */\n    background: -moz-linear-gradient(top, #a90329 0%, #8f0222 74%, #6d0019 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #a90329 0%,#8f0222 74%,#6d0019 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #a90329 0%,#8f0222 74%,#6d0019 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=0 ); /* IE6-9 */\n}\n.player:hover {\n    background: #930324; /* Old browsers */\n    background: -moz-linear-gradient(top, #930324 0%, #7e021f 29%, #600016 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #930324 0%,#7e021f 29%,#600016 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #930324 0%,#7e021f 29%,#600016 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#930324', endColorstr='#600016',GradientType=0 ); /* IE6-9 */\n}\n.player-foto-place {\n    height: 50px;\n    width: 50px;\n    position: absolute;\n    top: 22px;\n    left: 12%;\n    z-index: 0;\n}\n.player-foto {\n    border-style: solid;\n    border-color: white;\n    border-width: 3px;\n    border-bottom-width: 15px;\n    height: 90px;\n    transform: rotate(-18deg);\n}\n.text {\n    display: block;\n    text-align: center;\n    transform: translateY(50%);\n}\n.player-screw {\n    display: block;\n    height: 30px;\n    width: auto;\n    margin: 0px auto;\n    z-index: 10;\n}\n.screw-up {\n    position: absolute;\n    top: 8px;\n}\n.screw-down {\n    position: absolute;\n    bottom: 12px;\n}\n.screw-right {\n    position: absolute;\n    right: 12px;\n}\n.screw-left {\n    position: absolute;\n    left: 12px;\n}\n", ""]);
-
-	// exports
-
-
-/***/ },
-/* 65 */
-/***/ function(module, exports) {
-
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-
-	module.exports = {
-	    data() {
-	        return {
-
-	        }
-	    },
-	    props: ['player']
-	}
-
-
-/***/ },
-/* 66 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
-	  return _c('div', {
-	    staticClass: "row player"
-	  }, [_c('div', {
-	    staticClass: "col-xs-2",
-	    staticStyle: {
-	      "height": "130px"
-	    }
-	  }, [_c('img', {
-	    staticClass: "player-screw screw-up screw-left",
-	    attrs: {
-	      "src": '/MI2/proyectofinal/Assets/img/Screw-Transparent.png'
-	    }
-	  }), _vm._v(" "), _c('img', {
-	    staticClass: "player-screw screw-down screw-left",
-	    attrs: {
-	      "src": '/MI2/proyectofinal/Assets/img/Screw-Transparent.png'
-	    }
-	  })]), _vm._v(" "), _c('div', {
-	    staticClass: "col-xs-8"
-	  }, [_c('h1', {
-	    staticClass: "col-xs-12 text"
-	  }, [_vm._v(_vm._s(_vm.player.puntos) + " km")]), _vm._v(" "), _c('h4', {
-	    staticClass: "col-xs-12 text"
-	  }, [_vm._v(_vm._s(_vm.player.usuario))])]), _vm._v(" "), _c('div', {
-	    staticClass: "col-xs-2",
-	    staticStyle: {
-	      "height": "130px"
-	    }
-	  }, [_c('img', {
-	    staticClass: "player-screw screw-up screw-right",
-	    attrs: {
-	      "src": '/MI2/proyectofinal/Assets/img/Screw-Transparent.png'
-	    }
-	  }), _vm._v(" "), _c('img', {
-	    staticClass: "player-screw screw-down screw-right",
-	    attrs: {
-	      "src": '/MI2/proyectofinal/Assets/img/Screw-Transparent.png'
-	    }
-	  })]), _vm._v(" "), _c('div', {
-	    staticClass: "player-foto-place"
-	  }, [_c('img', {
-	    staticClass: "player-foto",
-	    attrs: {
-	      "src": _vm.player.urlFoto
-	    }
-	  })])])
-	},staticRenderFns: []}
-	module.exports.render._withStripped = true
-	if (false) {
-	  module.hot.accept()
-	  if (module.hot.data) {
-	     require("vue-hot-reload-api").rerender("data-v-8a4f712a", module.exports)
-	  }
-	}
-
-/***/ },
-/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -34031,18 +29747,4717 @@
 
 
 /***/ },
-/* 68 */
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(28);
+	    __webpack_require__(29);
+
+	    Kings.LoadManager = {
+	        loadBundle: function(name, callback) {
+	            var self = this;
+	            this.successCount = 0;
+	            this.errorCount = 0;
+	            this.downloadQueue = [];
+
+	            $.getJSON("./AssetConfig.json", function(json) {
+	                var bundle = {};
+
+	                var getAssetName = function(path) {
+	                    var filename = path.replace(/^.*[\\\/]/, '');
+	                    return filename.replace(/\.[^/.]+$/, "");
+	                };
+
+	                for (var i = 0; i < json.bundles.length; i++) {
+	                    if(json.bundles[i].name == name) {
+	                        self.downloadQueue = json.bundles[i].contents;
+	                    }
+	                }
+
+	                for (var i = 0; i < self.downloadQueue.length; i++) {
+	                    (function() {
+	                        var path = json.assetRoot + self.downloadQueue[i];
+	                        var type = self.getFileExtension(path);
+	                        switch (type) {
+	                            case 'png':
+	                            case 'jpg': {
+	                                var texture = gl.createTexture();
+	                                texture.image = new Image();
+	                                texture.image.addEventListener("load", function() {
+	                                    self.successCount++;
+	                                    bundle[getAssetName(path)] = texture;
+	                                    console.log('loaded texture: ' + getAssetName(path));
+	                                    if (self.isDone()) {
+	                                        Kings.AssetBundles.push({
+	                                            name: name,
+	                                            content: bundle
+	                                        });
+	                                        callback();
+	                                    }
+	                                }, false);
+	                                texture.image.addEventListener("error", function() {
+	                                    self.errorCount++;
+	                                    console.log('error texture: ' + getAssetName(path));
+	                                    if (self.isDone()) {
+	                                        Kings.AssetBundles.push({
+	                                            name: name,
+	                                            content: bundle
+	                                        });
+	                                        callback();
+	                                    }
+	                                }, false);
+	                                texture.image.src = path;
+	                                break;
+	                            }
+	                            case 'obj': {
+	                                var mtlpath = path.substring(0, path.lastIndexOf('/') + 1);
+	                                var completePath = mtlpath + getAssetName(path);
+	                                completePath += '.mtl';
+	                                var startDate = new Date();
+	                                self.readTextFile(completePath, function(data) {
+	                                    Kings.ObjLoader.loadMtl(data, mtlpath, function(materials) {
+	                                        self.readTextFile(path, function(data) {
+	                                            Kings.ObjLoader.loadObj(data, materials, getAssetName(path), function(model) {
+	                                                bundle[getAssetName(path)] = model;
+	                                                self.successCount++;
+	                                                var endDate   = new Date();
+	                                                var seconds = (endDate.getTime() - startDate.getTime()) / 1000;
+	                                                console.log('loaded model: ' + getAssetName(path) + ' in ' + seconds + 's');
+	                                                if (self.isDone()) {
+	                                                    Kings.AssetBundles.push({
+	                                                        name: name,
+	                                                        content: bundle
+	                                                    });
+	                                                    callback();
+	                                                }
+	                                            });
+	                                        });
+	                                    });
+	                                });
+	                                break;
+	                            }
+	                            case 'wav':
+	                            case 'mp3': {
+	                                var audio = new Audio(path);
+	                                bundle[getAssetName(path)] = audio;
+	                                console.log('loaded audio: ' + getAssetName(path));
+	                                self.successCount++;
+	                                if (self.isDone()) {
+	                                    Kings.AssetBundles.push({
+	                                        name: name,
+	                                        content: bundle
+	                                    });
+	                                    callback();
+	                                }
+	                                break;
+	                            }
+	                        }
+	                    }());
+	                }
+	            });
+	        },
+
+	        readTextFile: function(file, callback) {
+	            var self = this;
+	            var rawFile = new XMLHttpRequest();
+	            rawFile.open("GET", file, false);
+	            rawFile.onreadystatechange = function () {
+	                if(rawFile.readyState === 4) {
+	                    if(rawFile.status === 200 || rawFile.status == 0) {
+	                        callback(rawFile.responseText);
+	                    }
+	                }
+	            }
+	            rawFile.send(null);
+	        },
+
+	        getFileExtension: function(filename) {
+	            return filename.substr(filename.lastIndexOf('.')+1);
+	        },
+
+	        isDone: function() {
+	            return (this.downloadQueue.length == this.successCount + this.errorCount);
+	        },
+
+	        getProgress: function() {
+	            return (this.successCount + this.errorCount) / this.downloadQueue.length;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 28 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(29);
+	    __webpack_require__(30);
+	    __webpack_require__(11);
+
+	    Kings.ObjLoader = {
+	        loadMtl: function(input, path, callback) {
+	            var lines = input.split(/\r?\n/);
+	            var materials = [];
+	            var onQueue = 0;
+	            var done = 0;
+	            for (var i = 0; i < lines.length; i++) {
+	                if(lines[i].charAt(0) != '#'){
+	                    var data = lines[i].split(' ');
+	                    switch (data[0]) {
+	                        case 'map_Kd': {
+	                            (function(){
+	                                var num = onQueue;
+	                                Kings.Texture.loadTexture(path + data[1], function(texture) {
+	                                    materials[num].texture = texture;
+	                                    done++;
+	                                    if (done == onQueue) {
+	                                        callback(materials);
+	                                    }
+	                                });
+	                            }());
+	                            onQueue++;
+	                            break;
+	                        }
+	                        case 'newmtl': {
+	                            (function(){
+	                                materials.push({
+	                                    name: data[1]
+	                                });
+	                            }());
+	                            break;
+	                        }
+	                    }
+	                }
+	            }
+	        },
+
+	        loadObj: function(input, materials, mainMesh, callback) {
+	            var lines = input.split(/\r?\n/);
+	            var step = 'start';
+	            var groups = [];
+	            groups.push({
+	                faces: [],
+	                texture: null
+	            });
+	            var vertex = [];
+	            var normals = [];
+	            var textureCoords = [];
+	            for (var i = 0; i < lines.length; i++) {
+	                var data = lines[i].split(' ');
+	                (function(){
+	                    switch (data[0]) {
+	                        case 'usemtl': {
+	                            for (var j = 0; j < materials.length; j++) {
+	                                if (materials[j].name == data[1]) {
+	                                    groups[groups.length - 1].texture = materials[j].texture;
+	                                }
+	                            }
+	                            break;
+	                        }
+	                        case 'o': {
+	                            if (step != 'start') {
+	                                groups.push({
+	                                    faces: [],
+	                                    texture: null
+	                                });
+	                                step = 'start';
+	                            }
+	                            groups[groups.length - 1].name = data[1];
+	                            break;
+	                        }
+	                        case 'v': {
+	                            vertex.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
+	                            break;
+	                        }
+	                        case 'vt': {
+	                            textureCoords.push(parseFloat(data[1]), parseFloat(data[2]));
+	                            break;
+	                        }
+	                        case 'vn': {
+	                            normals.push(parseFloat(data[1]), parseFloat(data[2]), parseFloat(data[3]));
+	                            break;
+	                        }
+	                        case 'f': {
+	                            step = 'end';
+	                            var v = [];
+	                            var t = [];
+	                            var n = [];
+	                            for (var k = 1; k < data.length; k++) {
+	                                var indices = data[k].split('/');
+	                                v.push(parseFloat(indices[0]));
+	                                t.push(parseFloat(indices[1]));
+	                                n.push(parseFloat(indices[2]));
+	                            }
+	                            groups[groups.length - 1].faces.push(new Kings.Face({
+	                                vertex: v,
+	                                normal: n,
+	                                textureCoord: t
+	                            }));
+	                            break;
+	                        }
+	                    }
+	                }());
+	            }
+	            for (var i = 0; i < groups.length; i++) {
+	                var v = [];
+	                var t = [];
+	                var n = [];
+	                for (var j = 0; j < groups[i].faces.length; j++) {
+	                    v.push(
+	                        vertex[((groups[i].faces[j].vertex[0] - 1) * 3) + 0],
+	                        vertex[((groups[i].faces[j].vertex[0] - 1) * 3) + 1],
+	                        vertex[((groups[i].faces[j].vertex[0] - 1) * 3) + 2],
+
+	                        vertex[((groups[i].faces[j].vertex[1] - 1) * 3) + 0],
+	                        vertex[((groups[i].faces[j].vertex[1] - 1) * 3) + 1],
+	                        vertex[((groups[i].faces[j].vertex[1] - 1) * 3) + 2],
+
+	                        vertex[((groups[i].faces[j].vertex[2] - 1) * 3) + 0],
+	                        vertex[((groups[i].faces[j].vertex[2] - 1) * 3) + 1],
+	                        vertex[((groups[i].faces[j].vertex[2] - 1) * 3) + 2]
+	                    );
+	                    n.push(
+	                        normals[((groups[i].faces[j].normal[0] - 1) * 3) + 0],
+	                        normals[((groups[i].faces[j].normal[0] - 1) * 3) + 1],
+	                        normals[((groups[i].faces[j].normal[0] - 1) * 3) + 2],
+
+	                        normals[((groups[i].faces[j].normal[1] - 1) * 3) + 0],
+	                        normals[((groups[i].faces[j].normal[1] - 1) * 3) + 1],
+	                        normals[((groups[i].faces[j].normal[1] - 1) * 3) + 2],
+
+	                        normals[((groups[i].faces[j].normal[2] - 1) * 3) + 0],
+	                        normals[((groups[i].faces[j].normal[2] - 1) * 3) + 1],
+	                        normals[((groups[i].faces[j].normal[2] - 1) * 3) + 2]
+	                    );
+	                    t.push(
+	                        textureCoords[((groups[i].faces[j].textureCoord[0] - 1) * 2) + 0],
+	                        textureCoords[((groups[i].faces[j].textureCoord[0] - 1) * 2) + 1],
+
+	                        textureCoords[((groups[i].faces[j].textureCoord[1] - 1) * 2) + 0],
+	                        textureCoords[((groups[i].faces[j].textureCoord[1] - 1) * 2) + 1],
+
+	                        textureCoords[((groups[i].faces[j].textureCoord[2] - 1) * 2) + 0],
+	                        textureCoords[((groups[i].faces[j].textureCoord[2] - 1) * 2) + 1]
+	                    );
+	                }
+	                groups[i].vertex = v;
+	                groups[i].normals = n;
+	                groups[i].textureCoords = t;
+	            }
+	            if (mainMesh != null) {
+	                var index = 0;
+	                for (var i = 0; i < groups.length; i++) {
+	                    if (groups[i].name == mainMesh) {
+	                        index = i;
+	                    }
+	                }
+	                if (index != 0) {
+	                    var g = [];
+	                    for (var i = 0; i < groups.length; i++) {
+	                        if (i != index) {
+	                            g.push(new Kings.Model({
+	                                vertices: groups[i].vertex,
+	                                textureCoords: groups[i].textureCoords,
+	                                vertexNormals: groups[i].normals,
+	                                texture: groups[i].texture,
+	                                name: groups[i].name,
+	                            }));
+	                        }
+	                    }
+	                    var model = new Kings.Model({
+	                        vertices: groups[index].vertex,
+	                        textureCoords: groups[index].textureCoords,
+	                        vertexNormals: groups[index].normals,
+	                        texture: groups[index].texture,
+	                        name: groups[index].name,
+	                        groups: g
+	                    });
+	                    callback(model);
+	                } else {
+	                    var g = [];
+	                    for (var i = 1; i < groups.length; i++) {
+	                        g.push(new Kings.Model({
+	                            vertices: groups[i].vertex,
+	                            textureCoords: groups[i].textureCoords,
+	                            vertexNormals: groups[i].normals,
+	                            texture: groups[i].texture,
+	                            name: groups[i].name,
+	                        }));
+	                    }
+	                    var model = new Kings.Model({
+	                        vertices: groups[0].vertex,
+	                        textureCoords: groups[0].textureCoords,
+	                        vertexNormals: groups[0].normals,
+	                        texture: groups[0].texture,
+	                        name: groups[0].name,
+	                        groups: g
+	                    });
+	                    callback(model);
+	                }
+	            } else {
+	                var g = [];
+	                for (var i = 1; i < groups.length; i++) {
+	                    g.push(new Kings.Model({
+	                        vertices: groups[i].vertex,
+	                        textureCoords: groups[i].textureCoords,
+	                        vertexNormals: groups[i].normals,
+	                        texture: groups[i].texture,
+	                        name: groups[i].name,
+	                    }));
+	                }
+	                var model = new Kings.Model({
+	                    vertices: groups[0].vertex,
+	                    textureCoords: groups[0].textureCoords,
+	                    vertexNormals: groups[0].normals,
+	                    texture: groups[0].texture,
+	                    name: groups[0].name,
+	                    groups: g
+	                });
+	                callback(model);
+	            }
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Model = function(parameters) {
+	        this.name = parameters.name || '';
+	        this.groups = parameters.groups || [];
+	        this.texture = parameters.texture || null;
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.offset = parameters.offset || { x: 0, y: 0, z: 0 };
+	        if (this.texture != null) {
+	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.textureCoordAttribute = Kings.textureShader.getAttributeLocation('aTextureCoord');
+	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	            Kings.Texture.handleTexture(this.texture);
+	        } else {
+	            this.vertexPositionAttribute = Kings.colorShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.vertexColorAttribute = Kings.colorShader.getAttributeLocation('aVertexColor');
+	            gl.enableVertexAttribArray(this.vertexColorAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	        }
+	        this.initBuffers(parameters.textureCoords, parameters.colors, parameters.vertices, parameters.vertexNormals);
+	    };
+
+	    Kings.Model.prototype = {
+	        constructor: Kings.Model,
+
+	        initBuffers: function(textureCoords, colors, vertices, vertexNormals) {
+	            if (this.texture != null) {
+	                this.planeTextureCoordBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	                this.planeTextureCoordBuffer.itemSize = 2;
+	                this.planeTextureCoordBuffer.numItems = textureCoords.length / 2;
+
+	            } else {
+	                this.planeVertexColorBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+	                this.planeVertexColorBuffer.itemSize = 4;
+	                this.planeVertexColorBuffer.numItems = colors.length / 4;
+	            }
+
+	            this.planeVertexPositionBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	            this.planeVertexPositionBuffer.itemSize = 3;
+	            this.planeVertexPositionBuffer.numItems = vertices.length / 3;
+
+	            this.planeVertexNormalBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	            this.planeVertexNormalBuffer.itemSize = 3;
+	            this.planeVertexNormalBuffer.numItems = vertexNormals.length / 3;
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvTranslate(this.offset);
+	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+	            Kings.GL.mvTranslate({ x: -this.offset.x, y: -this.offset.y, z: -this.offset.z} );
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexPositionBuffer);
+	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.planeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexNormalBuffer);
+	            gl.vertexAttribPointer(this.vertexNormalAttribute, this.planeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            if (this.texture != null) {
+	                gl.useProgram(Kings.textureShader.getProgram());
+	                gl.activeTexture(gl.TEXTURE0);
+	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	                gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
+
+	                Kings.GL.setLightUniforms(Kings.textureShader);
+
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeTextureCoordBuffer);
+	                gl.vertexAttribPointer(this.textureCoordAttribute, this.planeTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                Kings.GL.setMatrixUniforms(Kings.textureShader);
+	            } else {
+	                gl.useProgram(Kings.colorShader.getProgram());
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.planeVertexColorBuffer);
+	                gl.vertexAttribPointer(this.vertexColorAttribute, this.planeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                Kings.GL.setLightUniforms(Kings.colorShader);
+	                Kings.GL.setMatrixUniforms(Kings.colorShader);
+	            }
+
+	            gl.drawArrays(gl.TRIANGLES, 0, this.planeVertexPositionBuffer.numItems);
+
+	            for (var i = 0; i < this.groups.length; i++) {
+	                this.groups[i].draw();
+	            }
+
+	            Kings.GL.mvPopMatrix();
+	        },
+
+	        update: function() {
+	            for (var i = 0; i < this.groups.length; i++) {
+	                this.groups[i].update();
+	            }
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Face = function(parameters) {
+	        this.vertex = parameters.vertex;
+	        this.normal = parameters.normal;
+	        this.textureCoord = parameters.textureCoord;
+	    };
+
+	    Kings.Face.prototype = {
+	        constructor: Kings.Face,
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 31 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Keyboard = function(mode) {
+	        var self = this;
+	        this.pressedKeys = {};
+	        this.keys = {
+	            BACKSPACE: 8,
+	            TAB:       9,
+	            RETURN:   13,
+	            ESC:      27,
+	            SPACE:    32,
+	            PAGEUP:   33,
+	            PAGEDOWN: 34,
+	            END:      35,
+	            HOME:     36,
+	            LEFT:     37,
+	            UP:       38,
+	            RIGHT:    39,
+	            DOWN:     40,
+	            INSERT:   45,
+	            DELETE:   46,
+	            ZERO:     48, ONE: 49, TWO: 50, THREE: 51, FOUR: 52, FIVE: 53, SIX: 54, SEVEN: 55, EIGHT: 56, NINE: 57,
+	            A:        65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
+	            TILDA:    192
+	        };
+	        this.stake = [];
+	        document.addEventListener( 'keydown', function(evt) { self.onKeyDown(evt) }, false );
+	        document.addEventListener( 'keyup', function(evt) { self.onKeyUp(evt) }, false );
+	    };
+
+	    Kings.Keyboard.prototype = {
+	        constructor: Kings.Keyboard,
+
+	        isDown: function(keyCode) {
+	            return this.pressedKeys[keyCode];
+	        },
+
+	        onKeyDown: function(event) {
+	            this.pressedKeys[event.keyCode] = true;
+	            this.stake.unshift(event.keyCode);
+	            if (this.stake.length > 10) {
+	                this.stake.pop();
+	            }
+	        },
+
+	        onKeyUp: function(event) {
+	            delete this.pressedKeys[event.keyCode];
+	            this.stake.unshift(this.getLastKeyPressed());
+	        },
+
+	        getLastKeyPressed: function() {
+	            for (var i = 0; i < this.stake.length; i++) {
+	                if (this.pressedKeys[this.stake[i]]) {
+	                    return this.stake[i];
+	                }
+	            }
+	            return null;
+	        },
+
+	        firstKeyPressed: function(key1, key2) {
+	            for (var i = 0; i < this.stake.length; i++) {
+	                if (this.stake[i] == key1) {
+	                    if (this.pressedKeys[this.stake[i]]) {
+	                        return this.stake[i];
+	                    }
+	                } else if (this.stake[i] == key2) {
+	                    if (this.pressedKeys[this.stake[i]]) {
+	                        return this.stake[i];
+	                    }
+	                }
+	            }
+	            return null;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 32 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(33);
+	    __webpack_require__(34);
+	    __webpack_require__(35);
+	    __webpack_require__(36);
+
+	    Kings.Road = function(parameters) {
+	        Kings.GameObject.call(this, parameters);
+	        this.gameUpdate = function() { parameters.update() };
+	        this.difficulty = 4;
+	        this.playerIndexLocation = 0;
+	        this.sections = [];
+	        this.numberOfSections = parameters.numberOfSections || 4;
+	        this.sectionSize = parameters.sectionSize || 4;
+	        for (var i = 0; i < this.numberOfSections; i++) {
+	            if(i>1) {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                }));
+	            } else {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                }));
+	            }
+	        }
+	        this.terrainLeft = new Kings.Terrain({
+	            position: { x: 16, y: this.position.y, z: 0},
+	            rotation: { x: 90, y: 0, z: 0},
+	            texture: Kings.AssetBundles[0].content.ground2,
+	            width: 20.0,
+	            height: 80.0,
+	            cols: 10.0,
+	            rows: 10.0,
+	            maxHeight: 10,
+	            staticEdge: 'bottom'
+	        });
+	        this.terrainRight = new Kings.Terrain({
+	            position: { x: -16, y: this.position.y, z: 0},
+	            rotation: { x: 90, y: 0, z: 0},
+	            texture: Kings.AssetBundles[0].content.ground2,
+	            width: 20.0,
+	            height: 80.0,
+	            cols: 10.0,
+	            rows: 10.0,
+	            maxHeight: 10,
+	            staticEdge: 'top'
+	        });
+	        this.combinations = [ //0 = nada, 1 = barreera/gasolina, 2 = barril, 3 = gasolina
+	            [2,2,0,0,0],
+	            [0,0,0,2,2],
+	            [2,2,2,0,0],
+	            [0,0,2,2,2],
+	            [2,2,2,0,0],
+	            [0,0,2,2,2],
+	            [2,2,1,2,2],
+	            [2,2,2,2,1],
+	            [1,2,2,2,2],
+	            [0,0,1,2,2],
+	            [2,2,1,0,0],
+	            [0,0,3,0,0],
+	            [0,0,0,0,3],
+	            [3,0,0,0,0],
+	            [2,0,2,0,2],
+	        ];
+	        this.string = [
+	            [
+	                [2,0,2,0,2],
+	                [0,2,0,2,0],
+	                [2,0,2,0,2],
+	                [0,2,0,2,0],
+	                [2,0,2,0,2],
+	                [0,2,0,2,0],
+	            ],
+	            [
+	                [2,2,2,0,2],
+	                [0,0,2,2,2],
+	                [2,2,2,0,2],
+	                [0,0,2,2,2],
+	                [2,2,2,0,2],
+	                [0,0,2,2,2],
+	            ],
+	            [
+	                [3,0,0,0,0],
+	                [0,3,0,0,0],
+	                [0,0,3,0,0],
+	                [0,0,0,3,0],
+	                [0,0,0,0,3],
+	                [0,0,0,3,0],
+	                [0,0,3,0,0],
+	            ],
+	            [
+	                [2,2,2,2,0],
+	                [2,2,2,0,0],
+	                [2,2,0,0,2],
+	                [2,0,0,2,2],
+	                [0,0,2,2,2],
+	                [0,2,2,2,2],
+	            ],
+	            [
+	                [0,2,2,2,2],
+	                [0,0,2,2,2],
+	                [2,0,0,2,2],
+	                [2,2,0,0,2],
+	                [2,2,2,0,0],
+	                [2,2,2,2,0],
+	            ],
+	        ];
+	        this.currentString = -1;
+	        this.stringPosition = 0;
+	        this.pastCombination = 0;
+	        this.emptySectionsPassed = 0;
+	    };
+
+	    Kings.Road.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Road.prototype.update = function(v) {
+	        this.gameUpdate();
+	        this.terrainRight.update();
+	        this.terrainLeft.update();
+	        this.sections[this.playerIndexLocation].active = true;
+	        if(this.playerIndexLocation > 1) {
+	            var section = new Kings.RoadSection({
+	                id: this.sections[this.numberOfSections - 1].id + 1,
+	                position: { x: 0, y: this.position.y, z: (this.sections[this.numberOfSections - 1].id + 1) * (this.sectionSize) },
+	                sectionSize: this.sectionSize,
+	                texture: this.texture,
+	            });
+	            var elements = [];
+	            if (
+	                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0  && this.currentString == -1 && this.emptySectionsPassed > 1) ||
+	                (this.sections[this.numberOfSections - 1].id % 4 == 0 && this.currentString != -1 && this.emptySectionsPassed > 1)
+	            ) {
+	                this.emptySectionsPassed = 0;
+	                var probability = Math.random();
+	                var elementType;
+	                if (probability > 0.9 && this.currentString == -1) {
+	                    this.currentString = Math.floor(Math.random() * this.string.length);
+	                    this.stringPosition = 0;
+	                } else {
+	                    elementType = Math.floor(Math.random() * this.combinations.length);
+	                    if (elementType == this.pastCombination) {
+	                        if (elementType < this.combinations.length - 1) {
+	                            elementType++;
+	                        } else if(elementType > 0) {
+	                            elementType--;
+	                        }
+	                    }
+	                    this.pastCombination = elementType;
+	                }
+	                if (this.currentString != -1) {
+	                    for (var i = 0; i < this.string[this.currentString][this.stringPosition].length; i++) {
+	                        var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
+	                        switch (this.string[this.currentString][this.stringPosition][i]) {
+	                            case 0: {
+	                                //nada
+	                                break;
+	                            }
+	                            case 1: {
+	                                elements.push(new Kings.Barrier({
+	                                    position: { x: x, y: -2, z: section.position.z },
+	                                }));
+	                                elements.push(new Kings.Gasoline({
+	                                    position: { x: x, y: 0, z: section.position.z },
+	                                }));
+	                                // elements.push(new Kings.Cone({
+	                                //     position: { x: x, y: -2, z: section.position.z }
+	                                // }));
+	                                break;
+	                            }
+	                            case 2: {
+	                                elements.push(new Kings.OilDrum({
+	                                    position: { x: x, y: -2, z: section.position.z }
+	                                }));
+	                                break;
+	                            }
+	                            case 3: {
+	                                elements.push(new Kings.Gasoline({
+	                                    position: { x: x, y: -1.7, z: section.position.z }
+	                                }));
+	                                break;
+	                            }
+	                            default: {
+	                                break;
+	                            }
+	                        }
+	                    }
+	                    this.stringPosition++;
+	                    if (this.stringPosition == this.string[this.currentString][this.stringPosition].length) {
+	                        this.currentString = -1;
+	                    }
+	                } else {
+	                    for (var i = 0; i < this.combinations[elementType].length; i++) {
+	                        var x = i * (this.sectionSize / 5) - (this.sectionSize / 2.5);
+	                        switch (this.combinations[elementType][i]) {
+	                            case 0: {
+	                                //nada
+	                                break;
+	                            }
+	                            case 1: {
+	                                elements.push(new Kings.Barrier({
+	                                    position: { x: x, y: -2, z: section.position.z },
+	                                }));
+	                                var r = Math.random() * 100;
+	                                if (r > 80) {
+	                                    elements.push(new Kings.Time({
+	                                        position: { x: x, y: 0, z: section.position.z },
+	                                    }));
+	                                } else {
+	                                    elements.push(new Kings.Gasoline({
+	                                        position: { x: x, y: 0, z: section.position.z },
+	                                    }));
+	                                }
+	                                // elements.push(new Kings.Cone({
+	                                //     position: { x: x, y: -2, z: section.position.z }
+	                                // }));
+	                                break;
+	                            }
+	                            case 2: {
+	                                elements.push(new Kings.OilDrum({
+	                                    position: { x: x, y: -2, z: section.position.z }
+	                                }));
+	                                break;
+	                            }
+	                            case 3: {
+	                                elements.push(new Kings.Gasoline({
+	                                    position: { x: x, y: -1.7, z: section.position.z }
+	                                }));
+	                                break;
+	                            }
+	                            default: {
+	                                break;
+	                            }
+	                        }
+	                    }
+	                }
+	            } else {
+	                this.emptySectionsPassed++;
+	            }
+	            section.objects = elements;
+	            this.sections.push(section);
+	            this.sections.splice(0,1);
+	        }
+	        for (var i = 0; i < this.sections.length; i++) {
+	            this.sections[i].update();
+	        }
+	    };
+
+	    Kings.Road.prototype.draw = function() {
+	        this.terrainRight.draw();
+	        this.terrainLeft.draw();
+	        for (var i = this.sections.length - 1; i >= 0 ; i--) {
+	            this.sections[i].draw();
+	        }
+	    };
+
+	    Kings.Road.prototype.locatePlayer = function(v) {
+	        for (var i = 0; i < this.sections.length; i++) {
+	            if(
+	                v.z > (this.sections[i].position.z - this.sectionSize) &&
+	                v.z < (this.sections[i].position.z + this.sectionSize)
+	            ) {
+	                this.playerIndexLocation = i;
+	            }
+	        }
+	    },
+
+	    Kings.Road.prototype.insideRoad = function(position) {
+	        if((position.x > -this.sectionSize && position.x < this.sectionSize)) {
+	            return true;
+	        }
+	        return false;
+	    },
+
+	    Kings.Road.prototype.restart = function() {
+	        this.sections = [];
+	        for (var i = 0; i < this.numberOfSections; i++) {
+	            if(i>1) {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                }));
+	            } else {
+	                this.sections.push(new Kings.RoadSection({
+	                    id: i,
+	                    position: { x: 0, y: this.position.y, z: i * (this.sectionSize) },
+	                    sectionSize: this.sectionSize,
+	                    texture: this.texture
+	                }));
+	            }
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.RoadSection = function(parameters) {
+	        this.id = parameters.id;
+	        this.active = false;
+	        parameters.rotation = { x: 90, y: 0, z: 0};
+	        parameters.shape = new Kings.Plane({
+	            height: parameters.sectionSize,
+	            width: parameters.sectionSize,
+	            texture: parameters.texture
+	        });
+	        Kings.GameObject.call(this, parameters);
+	        this.objects = parameters.element || [];
+	    };
+
+	    Kings.RoadSection.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.RoadSection.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	        for (var i = 0; i < this.objects.length; i++) {
+	            this.objects[i].update();
+	            if (this.active) {
+	                this.objects[i].body.checkCollisionWithBody(Kings.game.player.body);
+	                this.orderDepth(Kings.game.camera);
+	            }
+	        }
+	    };
+
+	    Kings.RoadSection.prototype.draw = function() {
+	        Kings.GameObject.prototype.draw.call(this);
+	        for (var i = 0; i < this.objects.length; i++) {
+	            this.objects[i].draw();
+	        }
+	    };
+
+	    Kings.RoadSection.prototype.orderDepth = function(camera) {
+	        for (var i = 0; i < this.objects.length; i++) {
+	            var vec = new Kings.Vector({
+	                x: camera.position.x - this.objects[i].position.x,
+	                y: camera.position.y - this.objects[i].position.y,
+	                z: camera.position.z - this.objects[i].position.z
+	            });
+	            this.objects[i].distance = vec.magnitude();
+	        }
+	        this.objects.sort(function(a,b) {
+	            return (b.distance - a.distance);
+	        });
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 34 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Barrier = function(parameters) {
+	        parameters.shape = Kings.AssetBundles[0].content.barriere
+	        parameters.rotation = { x: 0, y: -180, z: 0 };
+	        Kings.GameObject.call(this, parameters);
+	        var self = this;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 2, y: 1, z: 0.5 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    Kings.AssetBundles[0].content.crash.currentTime = 0;
+	                    Kings.AssetBundles[0].content.crash.play();
+	                    Kings.game.player.drainTank(30);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	        this.hovering = true;
+	        this.content = 5;
+	    };
+
+	    Kings.Barrier.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Barrier.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 35 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Cone = function(parameters) {
+	        parameters.shape = Kings.AssetBundles[0].content.cone
+	        Kings.GameObject.call(this, parameters);
+	        var self = this;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 0.5, y: 0.7, z: 0.5 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    Kings.game.player.drainTank(30);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	        this.hovering = true;
+	        this.content = 5;
+	    };
+
+	    Kings.Cone.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Cone.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 36 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.OilDrum = function(parameters) {
+	        parameters.shape = Kings.AssetBundles[0].content.oildrum
+	        parameters.rotation = { x: 0, y: 180, z: 0 };
+	        Kings.GameObject.call(this, parameters);
+	        var self = this;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 1.3, y: 2, z: 1.3 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    self.explosion = new Kings.ParticleExplosion({
+	                        particleNumber: 20,
+	                        lifeSpan: 50,
+	                        size: 2,
+	                        position: { x: self.position.x, y: self.position.y, z: self.position.z },
+	                        gravity: { x: 0, y: 0.005, z: 0 }
+	                    });
+	                    self.fire = new Kings.ParticleFire({
+	                        particleNumber: 20,
+	                        lifeSpan: 20,
+	                        size: 2,
+	                        position: new Kings.Vector({
+	                            x: self.position.x,
+	                            y: self.position.y + 1,
+	                            z: self.position.z
+	                        }),
+	                    });
+	                    Kings.AssetBundles[0].content.explosion.currentTime = 0;
+	                    Kings.AssetBundles[0].content.explosion.play();
+	                    Kings.game.player.drainTank(30);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	        this.hovering = true;
+	        this.content = 5;
+	    };
+
+	    Kings.OilDrum.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.OilDrum.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	        if (this.explosion != undefined) {
+	            this.explosion.update();
+	            this.fire.update();
+	        }
+	    };
+
+	    Kings.OilDrum.prototype.draw = function() {
+	        if (this.explosion != undefined) {
+	            this.explosion.draw(Kings.game.camera);
+	            this.fire.draw(Kings.game.camera);
+	        } else {
+	            Kings.GameObject.prototype.draw.call(this);
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 37 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Gasoline = function(parameters) {
+	        var self = this;
+	        parameters.shape = Kings.AssetBundles[0].content.Gas
+	        Kings.GameObject.call(this, parameters);
+	        this.hovering = true;
+	        this.hoverAltitude = 0;
+	        this.content = 5;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 0.5, y: 0.7, z: 0.5 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    Kings.AssetBundles[0].content.bubbling.currentTime = 0;
+	                    Kings.AssetBundles[0].content.bubbling.play();
+	                    Kings.game.player.fillTank(self.content);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	    };
+
+	    Kings.Gasoline.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Gasoline.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	        this.rotation.y += 0.5;
+	        if (this.hovering) {
+	            if (this.hoverAltitude < 0.2) {
+	                this.hoverAltitude += 0.01;
+	                this.position.y += 0.01;
+	            } else {
+	                this.hovering = false;
+	            }
+	        } else {
+	            if (this.hoverAltitude > -0.2) {
+	                this.hoverAltitude -= 0.01;
+	                this.position.y -= 0.01;
+	            } else {
+	                this.hovering = true;
+	            }
+	        }
+	    };
+
+	    Kings.Gasoline.prototype.draw = function() {
+	        if (this.active) {
+	            Kings.GameObject.prototype.draw.call(this);
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 38 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Time = function(parameters) {
+	        var self = this;
+	        parameters.shape = new Kings.Cube({
+	            texture: Kings.AssetBundles[0].content.watch,
+	            size: 1
+	        });
+	        Kings.GameObject.call(this, parameters);
+	        this.hovering = true;
+	        this.hoverAltitude = 0;
+	        this.content = 20;
+	        this.active = true;
+	        this.body = new Kings.RigidBody({
+	            position: this.position,
+	            rotation: this.rotation,
+	            size: { x: 0.5, y: 0.7, z: 0.5 },
+	            onCollision: function() {
+	                if (self.active) {
+	                    Kings.AssetBundles[0].content.time.currentTime = 0;
+	                    Kings.AssetBundles[0].content.time.play();
+	                    Kings.game.player.fillTime(self.content);
+	                    self.active = false;
+	                }
+	            }
+	        });
+	    };
+
+	    Kings.Time.prototype = Object.create(Kings.GameObject.prototype);
+
+	    Kings.Time.prototype.update = function() {
+	        Kings.GameObject.prototype.update.call(this);
+	        this.rotation.y += 0.5;
+	        if (this.hovering) {
+	            if (this.hoverAltitude < 0.2) {
+	                this.hoverAltitude += 0.01;
+	                this.position.y += 0.01;
+	            } else {
+	                this.hovering = false;
+	            }
+	        } else {
+	            if (this.hoverAltitude > -0.2) {
+	                this.hoverAltitude -= 0.01;
+	                this.position.y -= 0.01;
+	            } else {
+	                this.hovering = true;
+	            }
+	        }
+	    };
+
+	    Kings.Time.prototype.draw = function() {
+	        if (this.active) {
+	            Kings.GameObject.prototype.draw.call(this);
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 39 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(11);
+	    __webpack_require__(40);
+	    __webpack_require__(17);
+	    __webpack_require__(14);
+
+	    Kings.Terrain = function(parameters) {
+	        Kings.Grid.call(this, parameters);
+	        this.staticEdge = parameters.staticEdge || '';
+	        this.maxHeight = parameters.maxHeight || 5;
+	        this.zValues = [];
+	        this.zPosition = 0;
+	        this.pase = 0.05 || parameters.pase;
+	    };
+
+	    Kings.Terrain.prototype = Object.create(Kings.Grid.prototype);
+
+	    Kings.Terrain.prototype.constructor = Kings.Terrain;
+
+	    Kings.Terrain.prototype.update = function() {
+	        var yoff = 0;
+	        for (var y = 0; y < this.rows+1; y++) {
+	            this.zValues[y] = [];
+	            var xoff = this.zPosition;
+	            for (var x = 0; x < this.cols+1; x++) {
+	                if (this.staticEdge != '') {
+	                    switch (this.staticEdge) {
+	                        case 'right': {
+	                            var softness = 1 - Kings.Processing.map(x, 0, this.cols, 0, 1);
+	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+	                            break;
+	                        }
+	                        case 'left': {
+	                            var softness = Kings.Processing.map(x, 0, this.cols + 1, 0, 1);
+	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+	                            break;
+	                        }
+	                        case 'top': {
+	                            var softness = 1 - Kings.Processing.map(y, 0, this.rows, 0, 1);
+	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+	                            break;
+	                        }
+	                        case 'bottom': {
+	                            var softness = Kings.Processing.map(y, 0, this.rows + 1, 0, 1);
+	                            this.zValues[y][x] = -Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight) * softness;
+	                            break;
+	                        }
+	                    }
+	                } else {
+	                    this.zValues[y][x] = Kings.Processing.map(Kings.PerlinNoise.noise( xoff, yoff, .8 ), 0, 1, 0, this.maxHeight);
+	                }
+	                xoff += 0.35;
+	            }
+	            yoff += 0.35;
+	        }
+	        this.zPosition += this.pase;//0.05;
+
+	        var stepx = this.width / this.cols;
+	        var stepy = this.height / this.rows;
+
+	        this.gridTextureCoordBuffer = gl.createBuffer();
+	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridTextureCoordBuffer);
+	        var textureCoords = [];
+	        for (var y = 0; y < this.rows; y++) {
+	            for (var x = 0; x < this.cols; x++) {
+	                textureCoords = textureCoords.concat([
+	                    0.0, 0.0 + this.zPosition,
+	                    1.0, 0.0 + this.zPosition,
+	                    0.0, 1.0 + this.zPosition,
+
+	                    1.0, 0.0 + this.zPosition,
+	                    1.0, 1.0 + this.zPosition,
+	                    0.0, 1.0 + this.zPosition,
+	                ]);
+	            }
+	        }
+	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	        this.gridTextureCoordBuffer.itemSize = 2;
+	        this.gridTextureCoordBuffer.numItems = 6 * (this.cols * this.rows);
+
+	        this.gridVertexPositionBuffer = gl.createBuffer();
+	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexPositionBuffer);
+	        var vertices = [];
+	        for (var y = 0; y < this.rows; y++) {
+	            for (var x = 0; x < this.cols; x++) {
+	                vertices = vertices.concat([
+	                    (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + 0), 0 + this.zValues[x][y],
+	                    (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + 0), 0 + this.zValues[x+1][y],
+	                    (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0 + this.zValues[x][y+1],
+
+	                    (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + 0), 0 + this.zValues[x+1][y],
+	                    (0 - (this.width / 2)) + ((x * stepx) + stepx), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0 + this.zValues[x+1][y+1],
+	                    (0 - (this.width / 2)) + ((x * stepx) + 0), (0 - (this.height / 2)) + ((y * stepy) + stepy), 0 + this.zValues[x][y+1],
+	                ]);
+	            }
+	        }
+	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	        this.gridVertexPositionBuffer.itemSize = 3;
+	        this.gridVertexPositionBuffer.numItems = 6 * (this.cols * this.rows);
+
+	        this.gridVertexNormalBuffer = gl.createBuffer();
+	        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridVertexNormalBuffer);
+	        var vertexNormals = [];
+	        for (var y = 0; y < this.rows; y++) {
+	            for (var x = 0; x < this.cols; x++) {
+	                var offset = (((x * y) + x) * 6 * 3);
+	                var normal1 = Kings.Processing.calculateNormal(
+	                    [vertices[offset], vertices[offset+1], vertices[offset+2]],
+	                    [vertices[offset+3], vertices[offset+4], vertices[offset+5]],
+	                    [vertices[offset+6], vertices[offset+7], vertices[offset+8]]
+	                );
+	                var normal2 = Kings.Processing.calculateNormal(
+	                    [vertices[offset+9], vertices[offset+10], vertices[offset+11]],
+	                    [vertices[offset+12], vertices[offset+13], vertices[offset+14]],
+	                    [vertices[offset+15], vertices[offset+16], vertices[offset+17]]
+	                )
+	                vertexNormals = vertexNormals.concat([
+	                    normal1[0], normal1[1], normal1[2],
+	                    normal1[0], normal1[1], normal1[2],
+	                    normal1[0], normal1[1], normal1[2],
+
+	                    normal2[0], normal2[1], normal2[2],
+	                    normal2[0], normal2[1], normal2[2],
+	                    normal2[0], normal2[1], normal2[2],
+	                ]);
+	            }
+	        }
+	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	        this.gridVertexNormalBuffer.itemSize = 3;
+	        this.gridVertexNormalBuffer.numItems = 6 * (this.cols * this.rows);
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 40 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.PerlinNoise = {
+	        noise: function(x, y, z) {
+	            var p = new Array(512)
+	            var permutation = [ 151,160,137,91,90,15,
+	                131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
+	                190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
+	                88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
+	                77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
+	                102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
+	                135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
+	                5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
+	                223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
+	                129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
+	                251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
+	                49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
+	                138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
+	            ];
+	            for (var i=0; i < 256 ; i++)
+	            p[256+i] = p[i] = permutation[i];
+
+	            var X = Math.floor(x) & 255,
+	            Y = Math.floor(y) & 255,
+	            Z = Math.floor(z) & 255;
+	            x -= Math.floor(x);
+	            y -= Math.floor(y);
+	            z -= Math.floor(z);
+	            var    u = this.fade(x),
+	            v = this.fade(y),
+	            w = this.fade(z);
+	            var A = p[X  ]+Y, AA = p[A]+Z, AB = p[A+1]+Z,
+	            B = p[X+1]+Y, BA = p[B]+Z, BB = p[B+1]+Z;
+
+	            return this.scale(this.lerp(w, this.lerp(v, this.lerp(u, this.grad(p[AA  ], x  , y  , z   ), 
+	            this.grad(p[BA  ], x-1, y  , z   )),
+	            this.lerp(u, this.grad(p[AB  ], x  , y-1, z   ),
+	            this.grad(p[BB  ], x-1, y-1, z   ))),
+	            this.lerp(v, this.lerp(u, this.grad(p[AA+1], x  , y  , z-1 ),
+	            this.grad(p[BA+1], x-1, y  , z-1 )),
+	            this.lerp(u, this.grad(p[AB+1], x  , y-1, z-1 ),
+	            this.grad(p[BB+1], x-1, y-1, z-1 )))));
+	        },
+
+	        fade: function(t) {
+	            return t * t * t * (t * (t * 6 - 15) + 10);
+	        },
+
+	        lerp: function( t, a, b) {
+	            return a + t * (b - a);
+	        },
+
+	        grad: function(hash, x, y, z) {
+	            var h = hash & 15;
+	            var u = h<8 ? x : y,
+	            v = h<4 ? y : h==12||h==14 ? x : z;
+	            return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
+	        },
+
+	        scale: function(n) {
+	            return (1 + n)/2;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 41 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.RigidBody = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0};
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0};
+	        this.size = parameters.size || { x: 0, y: 0, z: 0};
+	        this.callback = parameters.onCollision;
+	    };
+
+	    Kings.RigidBody.prototype = {
+	        constructor: Kings.RigidBody,
+
+	        checkCollisionWithBody: function(body) {
+	            if (
+	                this.position.z - (this.size.z / 2) <= body.position.z + (body.size.z / 2) &&
+	                this.position.z + (this.size.z / 2) >= body.position.z - (body.size.z / 2)
+	            ) {
+	                if (
+	                    this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
+	                    this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
+	                ) {
+	                    if (
+	                        this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&
+	                        this.position.y + (this.size.y / 2) >= body.position.y - (body.size.y / 2)
+	                    ) {
+	                        if (this.callback !== undefined) {
+	                            this.callback();
+	                        }
+	                        return true;
+	                    }
+	                }
+	            }
+	            return false;
+	        },
+
+	        checkCollisionWithLine: function(line, segments) {
+	            var m = line.end.y - line.start.y / line.end.x - line.start.x;
+	            var b = line.end.y - (m * line.end.x);
+	            var lenght = line.end.y - line.start.y;
+	            var step = lenght / segments;
+	            for (var i = 0; i < lenght; i+=step) {
+	                if (line.start.z > this.position.z - (this.size.z / 2) && line.start.z < this.position.z + (this.size.z / 2)) {
+	                    var x = (i == 0 && b == 0) ? 0 : (line.start.y + i - b) / m;
+	                    if (x > this.position.x - (this.size.x / 2) && x < this.position.x + (this.size.x / 2)) {
+	                        var y = i;
+	                        if (line.start.y + y >= this.position.y && line.start.y + y < this.position.y + this.size.y) {
+	                            return true;
+	                        }
+	                    }
+	                }
+	            }
+	            return false;
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 42 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.HUI = function(parameters) {
+	        this.elements = [];
+	    };
+
+	    Kings.HUI.prototype = {
+	        constructor: Kings.HUI,
+
+	        addElement: function(element) {
+	            if (element != null) {
+	                this.elements.push(element);
+	            }
+	        },
+
+	        update: function() {
+	            for (var i = 0; i < this.elements.length; i++) {
+	                this.elements[i].update();
+	            }
+	        },
+
+	        draw: function() {
+	            var ratio = gl.canvas.width / gl.canvas.height;
+	            glMatrix.mat4.identity(Kings.pMatrix);
+	            glMatrix.mat4.ortho(Kings.pMatrix, -10.0 - ratio, 10.0 + ratio, -10.0 + ratio, 10.0  - ratio, 0.1, 100.0);
+
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.lookAt(
+	                glMatrix.vec3.fromValues(0,0,1),
+	                glMatrix.vec3.fromValues(0,0,0),
+	                glMatrix.vec3.fromValues(0, 1, 0)
+	            );
+
+	            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	            gl.enable(gl.BLEND);
+	            gl.disable(gl.DEPTH_TEST);
+	            for (var i = 0; i < this.elements.length; i++) {
+	                this.elements[i].draw();
+	            }
+	            gl.disable(gl.BLEND);
+	            gl.enable(gl.DEPTH_TEST);
+	            Kings.GL.mvPopMatrix();
+	            glMatrix.mat4.perspective(Kings.pMatrix, 45, ratio, 0.01, 200.0);
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.FuelMeter = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.meter = new Kings.Plane({
+	            width: 3,
+	            height: 3,
+	            texture: Kings.AssetBundles[0].content.fuelMeter
+	        });
+	        this.neddle = new Kings.Plane({
+	            width: 3,
+	            height: 3,
+	            texture: Kings.AssetBundles[0].content.meterNeedle
+	        });
+	        this.level = 100;
+	        this.shader = new Kings.Shader({
+	            gl: gl,
+	            vertexShaderSource: [
+	                'attribute vec3 aVertexPosition;',
+	                'attribute vec2 aTextureCoord;',
+	                'uniform mat4 uMVMatrix;',
+	                'uniform mat4 uPMatrix;',
+	                'varying vec2 vTextureCoord;',
+	                'void main(void) {',
+	                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	                   'vTextureCoord = aTextureCoord;',
+	                '}'
+	            ].join("\n"),
+	            fragmentShaderSource: [
+	                'precision mediump float;',
+	                'varying vec2 vTextureCoord;',
+	                'uniform sampler2D uSampler;',
+	                'void main(void) {',
+	                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
+	                '}'
+	            ].join("\n")
+	        });
+	    };
+
+	    Kings.FuelMeter.prototype = {
+	        constructor: Kings.FuelMeter,
+
+	        setLevel: function(l) {
+	            if (l >= 0 && l <= 100) {
+	                this.level = l;
+	            }
+	        },
+
+	        update: function() {
+	            this.neddle.rotation.z = -Kings.Processing.map(this.level, 0, 100, 0, 270);
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            this.meter.draw(this.shader);
+	            this.neddle.draw(this.shader);
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    Kings.SlowTimeMeter = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.meter = new Kings.Plane({
+	            width: 12,
+	            height: 3,
+	            texture: Kings.AssetBundles[0].content.lifeBar
+	        });
+	        this.bar = new Kings.Plane({
+	            width: 8.25,
+	            height: 0.5,
+	            texture: Kings.AssetBundles[0].content.bar,
+	        });
+	        this.level = 100;
+	        this.shader = new Kings.Shader({
+	            gl: gl,
+	            vertexShaderSource: [
+	                'attribute vec3 aVertexPosition;',
+	                'attribute vec2 aTextureCoord;',
+	                'uniform mat4 uMVMatrix;',
+	                'uniform mat4 uPMatrix;',
+	                'varying vec2 vTextureCoord;',
+	                'void main(void) {',
+	                   'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	                   'vTextureCoord = aTextureCoord;',
+	                '}'
+	            ].join("\n"),
+	            fragmentShaderSource: [
+	                'precision mediump float;',
+	                'varying vec2 vTextureCoord;',
+	                'uniform sampler2D uSampler;',
+	                'void main(void) {',
+	                    'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                    'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
+	                '}'
+	            ].join("\n")
+	        });
+	    };
+
+	    Kings.SlowTimeMeter.prototype = {
+	        constructor: Kings.SlowTimeMeter,
+
+	        setLevel: function(l) {
+	            if (l >= 0 && l <= 100) {
+	                this.level = l;
+	            }
+	        },
+
+	        update: function() {
+	            this.offset = Kings.Processing.map(this.level, 0, 100, -7, 1.25);
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate({ x: this.offset, y: 0, z: 0 });
+	            this.bar.draw(this.shader);
+	            Kings.GL.mvPopMatrix();
+	            this.meter.draw(this.shader);
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 45 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
+	    var Kings = window.Kings || {};
+
+	    Kings.Score = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.score = 0;
+	        $('#CanvasTemporal').remove();
+	        var textCanvas = document.createElement('canvas');
+	        textCanvas.id     = "CanvasTemporal";
+	        textCanvas.width  = gl.canvas.width;
+	        textCanvas.height = gl.canvas.height;
+	        textCanvas.style.zIndex   = 1;
+	        textCanvas.style.position = "relative";
+	        textCanvas.style.top = "-100%";
+	        textCanvas.style.left = "0";
+	        Kings.canvas.after(textCanvas);
+	        this.context2D = textCanvas.getContext('2d');
+	    };
+
+	    Kings.Score.prototype = {
+	        constructor: Kings.Score,
+
+	        update: function() {
+
+	        },
+
+	        draw: function() {
+	            this.resize();
+	            this.context2D.clearRect(0, 0, this.context2D.canvas.width, this.context2D.canvas.height);
+	            this.context2D.font = "60px digital";
+	            this.context2D.fillStyle = 'green';
+	            this.context2D.fillText('Km: ' + this.score, this.context2D.canvas.width - 200, 60);
+	            store.commit('setScore', this.score);
+	        },
+
+	        resize: function() {
+	            $('#CanvasTemporal').remove();
+	            var textCanvas = document.createElement('canvas');
+	            textCanvas.id     = "CanvasTemporal";
+	            textCanvas.width  = gl.canvas.width;
+	            textCanvas.height = gl.canvas.height;
+	            textCanvas.style.zIndex   = 1;
+	            textCanvas.style.position = "relative";
+	            textCanvas.style.top = "-100%";
+	            textCanvas.style.left = "0";
+	            Kings.canvas.after(textCanvas);
+	            this.context2D = textCanvas.getContext('2d');
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var grayscale = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision mediump float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'float average = (textureColor.r + textureColor.g + textureColor.b) / 3.0;',
+	                'gl_FragColor = vec4(average, average, average, textureColor.a);',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return grayscale;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var speedBlur = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision mediump float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'vec2 dir = vec2(vTextureCoord.s - 0.5, vTextureCoord.t - 0.5);',
+	                'vec2 textCoorDir = normalize(dir) / 10.0;',
+	                'for(int i = 0; i < 10; i++) {',
+	                    'vec2 newpos = vec2(vTextureCoord.s - textCoorDir.x, vTextureCoord.t - textCoorDir.y);',
+	                    'if((newpos.x <= 1.0 || newpos.x >= 0.0) && (newpos.y <= 1.0 || newpos.y >= 0.0)) {',
+	                        'vec4 blured = texture2D(uSampler, vec2(newpos.x, newpos.y));',
+	                        'textureColor = mix(textureColor, blured, max(1.0 - (length(dir) * 2.0), 0.2));',
+	                    '}',
+	                    'textCoorDir = textCoorDir * min((length(dir) * 2.0), 0.8);',
+	                '}',
+	                'gl_FragColor = textureColor;',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return speedBlur;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 48 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var hdr = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision highp float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'float exposure = 0.5;',
+	                'const float gamma = 2.2;',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'vec3 hdrColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)).rgb;',
+	                'vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);',
+	                'vec3 correction = pow(mapped, vec3(1.0 / gamma));',
+	                'gl_FragColor = vec4(correction, textureColor.a);',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return hdr;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 49 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var crt = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            '#ifdef GL_ES',
+	            '#define LOWP lowp',
+	                'precision mediump float;',
+	            '#else',
+	                '#define LOWP',
+	            '#endif',
+	            '#define CRT_CASE_BORDR 0.0125',
+	            '#define SCAN_LINE_MULT 1250.0',
+	            'float CRT_CURVE_AMNTx = 0.0; // curve amount on x',
+	            'float CRT_CURVE_AMNTy = 0.0; // curve amount on y',
+	            'varying LOWP vec4 v_color;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main() {',
+	            	'vec2 tc = vec2(vTextureCoord.x, vTextureCoord.y);',
+	            	'float dx = abs(0.5-tc.x);',
+	            	'float dy = abs(0.5-tc.y);',
+	            	'dx *= dx;',
+	            	'dy *= dy;',
+	            	'tc.x -= 0.5;',
+	            	'tc.x *= 1.0 + (dy * CRT_CURVE_AMNTx);',
+	            	'tc.x += 0.5;',
+	            	'tc.y -= 0.5;',
+	            	'tc.y *= 1.0 + (dx * CRT_CURVE_AMNTy);',
+	            	'tc.y += 0.5;',
+	            	'vec4 cta = texture2D(uSampler, vec2(tc.x, tc.y));',
+	            	'cta.rgb += sin(tc.y * SCAN_LINE_MULT) * 0.02;',
+	            	'if(tc.y > 1.0 || tc.x < 0.0 || tc.x > 1.0 || tc.y < 0.0)',
+	            		'cta = vec4(1.0);',
+	            	'gl_FragColor = cta;',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return crt;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 50 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    var basic = new Kings.Shader({
+	        gl: gl,
+	        vertexShaderSource: [
+	            'attribute vec3 aVertexPosition;',
+	            'attribute vec2 aTextureCoord;',
+	            'uniform mat4 uMVMatrix;',
+	            'uniform mat4 uPMatrix;',
+	            'varying vec2 vTextureCoord;',
+	            'void main(void) {',
+	               'gl_Position = uPMatrix * (uMVMatrix * vec4(aVertexPosition, 1.0));',
+	               'vTextureCoord = aTextureCoord;',
+	            '}'
+	        ].join("\n"),
+	        fragmentShaderSource: [
+	            'precision mediump float;',
+	            'varying vec2 vTextureCoord;',
+	            'uniform sampler2D uSampler;',
+	            'void main(void) {',
+	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+	                'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
+	                // 'if(gl_FragColor.a < 0.5)',
+	                //     'discard;',
+	            '}'
+	        ].join("\n")
+	    });
+
+	    return basic;
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
 	/* styles */
-	__webpack_require__(69)
+	__webpack_require__(52)
 
-	var Component = __webpack_require__(59)(
+	var Component = __webpack_require__(61)(
 	  /* script */
-	  __webpack_require__(71),
+	  __webpack_require__(62),
 	  /* template */
+	  __webpack_require__(63),
+	  /* scopeId */
+	  null,
+	  /* cssModules */
+	  null
+	)
+	Component.options.__file = "C:\\xampp\\htdocs\\MI2\\proyectofinal\\js\\views\\leaderboard\\leaderboard.vue"
+	if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+	if (Component.options.functional) {console.error("[vue-loader] leaderboard.vue: functional components are not supported with templates, they should use render functions.")}
+
+	/* hot reload */
+	if (false) {(function () {
+	  var hotAPI = require("vue-hot-reload-api")
+	  hotAPI.install(require("vue"), false)
+	  if (!hotAPI.compatible) return
+	  module.hot.accept()
+	  if (!module.hot.data) {
+	    hotAPI.createRecord("data-v-11393060", Component.options)
+	  } else {
+	    hotAPI.reload("data-v-11393060", Component.options)
+	  }
+	})()}
+
+	module.exports = Component.exports
+
+
+/***/ },
+/* 52 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(53);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	if(content.locals) module.exports = content.locals;
+	// add the styles to the DOM
+	var update = __webpack_require__(59)("3651ec54", content, false);
+	// Hot Module Replacement
+	if(false) {
+	 // When the styles change, update the <style> tags
+	 if(!content.locals) {
+	   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-11393060!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./leaderboard.vue", function() {
+	     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-11393060!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./leaderboard.vue");
+	     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+	     update(newContent);
+	   });
+	 }
+	 // When the module is disposed, remove the <style> tags
+	 module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 53 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(54)(undefined);
+	// imports
+
+
+	// module
+	exports.push([module.id, "\n.leaderboard {\n    background: #45484d; /* Old browsers */\n    background: -moz-linear-gradient(top, #45484d 0%, #000000 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #45484d 0%,#000000 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #45484d 0%,#000000 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#45484d', endColorstr='#000000',GradientType=0 ); /* IE6-9 */\n    padding: 15px 20px;\n    width: 80vw;\n    height: 500px;\n    overflow-y: scroll;\n    margin: 50px auto;\n    /*border-style: solid;\n    border-color: rgb(150,0,0);*/\n}\n", ""]);
+
+	// exports
+
+
+/***/ },
+/* 54 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(Buffer) {/*
+		MIT License http://www.opensource.org/licenses/mit-license.php
+		Author Tobias Koppers @sokra
+	*/
+	// css base code, injected by the css-loader
+	module.exports = function(useSourceMap) {
+		var list = [];
+
+		// return the list of modules as css string
+		list.toString = function toString() {
+			return this.map(function (item) {
+				var content = cssWithMappingToString(item, useSourceMap);
+				if(item[2]) {
+					return "@media " + item[2] + "{" + content + "}";
+				} else {
+					return content;
+				}
+			}).join("");
+		};
+
+		// import a list of modules into the list
+		list.i = function(modules, mediaQuery) {
+			if(typeof modules === "string")
+				modules = [[null, modules, ""]];
+			var alreadyImportedModules = {};
+			for(var i = 0; i < this.length; i++) {
+				var id = this[i][0];
+				if(typeof id === "number")
+					alreadyImportedModules[id] = true;
+			}
+			for(i = 0; i < modules.length; i++) {
+				var item = modules[i];
+				// skip already imported module
+				// this implementation is not 100% perfect for weird media query combinations
+				//  when a module is imported multiple times with different media queries.
+				//  I hope this will never occur (Hey this way we have smaller bundles)
+				if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+					if(mediaQuery && !item[2]) {
+						item[2] = mediaQuery;
+					} else if(mediaQuery) {
+						item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+					}
+					list.push(item);
+				}
+			}
+		};
+		return list;
+	};
+
+	function cssWithMappingToString(item, useSourceMap) {
+		var content = item[1] || '';
+		var cssMapping = item[3];
+		if (!cssMapping) {
+			return content;
+		}
+
+		if (useSourceMap) {
+			var sourceMapping = toComment(cssMapping);
+			var sourceURLs = cssMapping.sources.map(function (source) {
+				return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
+			});
+
+			return [content].concat(sourceURLs).concat([sourceMapping]).join('\n');
+		}
+
+		return [content].join('\n');
+	}
+
+	// Adapted from convert-source-map (MIT)
+	function toComment(sourceMap) {
+	  var base64 = new Buffer(JSON.stringify(sourceMap)).toString('base64');
+	  var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
+
+	  return '/*# ' + data + ' */';
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(55).Buffer))
+
+/***/ },
+/* 55 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/*!
+	 * The buffer module from node.js, for the browser.
+	 *
+	 * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+	 * @license  MIT
+	 */
+	/* eslint-disable no-proto */
+
+	'use strict'
+
+	var base64 = __webpack_require__(56)
+	var ieee754 = __webpack_require__(57)
+	var isArray = __webpack_require__(58)
+
+	exports.Buffer = Buffer
+	exports.SlowBuffer = SlowBuffer
+	exports.INSPECT_MAX_BYTES = 50
+
+	/**
+	 * If `Buffer.TYPED_ARRAY_SUPPORT`:
+	 *   === true    Use Uint8Array implementation (fastest)
+	 *   === false   Use Object implementation (most compatible, even IE6)
+	 *
+	 * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+	 * Opera 11.6+, iOS 4.2+.
+	 *
+	 * Due to various browser bugs, sometimes the Object implementation will be used even
+	 * when the browser supports typed arrays.
+	 *
+	 * Note:
+	 *
+	 *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
+	 *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+	 *
+	 *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+	 *
+	 *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+	 *     incorrect length in some situations.
+
+	 * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
+	 * get the Object implementation, which is slower but behaves correctly.
+	 */
+	Buffer.TYPED_ARRAY_SUPPORT = global.TYPED_ARRAY_SUPPORT !== undefined
+	  ? global.TYPED_ARRAY_SUPPORT
+	  : typedArraySupport()
+
+	/*
+	 * Export kMaxLength after typed array support is determined.
+	 */
+	exports.kMaxLength = kMaxLength()
+
+	function typedArraySupport () {
+	  try {
+	    var arr = new Uint8Array(1)
+	    arr.__proto__ = {__proto__: Uint8Array.prototype, foo: function () { return 42 }}
+	    return arr.foo() === 42 && // typed array instances can be augmented
+	        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+	        arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
+	  } catch (e) {
+	    return false
+	  }
+	}
+
+	function kMaxLength () {
+	  return Buffer.TYPED_ARRAY_SUPPORT
+	    ? 0x7fffffff
+	    : 0x3fffffff
+	}
+
+	function createBuffer (that, length) {
+	  if (kMaxLength() < length) {
+	    throw new RangeError('Invalid typed array length')
+	  }
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    // Return an augmented `Uint8Array` instance, for best performance
+	    that = new Uint8Array(length)
+	    that.__proto__ = Buffer.prototype
+	  } else {
+	    // Fallback: Return an object instance of the Buffer class
+	    if (that === null) {
+	      that = new Buffer(length)
+	    }
+	    that.length = length
+	  }
+
+	  return that
+	}
+
+	/**
+	 * The Buffer constructor returns instances of `Uint8Array` that have their
+	 * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+	 * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+	 * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+	 * returns a single octet.
+	 *
+	 * The `Uint8Array` prototype remains unmodified.
+	 */
+
+	function Buffer (arg, encodingOrOffset, length) {
+	  if (!Buffer.TYPED_ARRAY_SUPPORT && !(this instanceof Buffer)) {
+	    return new Buffer(arg, encodingOrOffset, length)
+	  }
+
+	  // Common case.
+	  if (typeof arg === 'number') {
+	    if (typeof encodingOrOffset === 'string') {
+	      throw new Error(
+	        'If encoding is specified then the first argument must be a string'
+	      )
+	    }
+	    return allocUnsafe(this, arg)
+	  }
+	  return from(this, arg, encodingOrOffset, length)
+	}
+
+	Buffer.poolSize = 8192 // not used by this implementation
+
+	// TODO: Legacy, not needed anymore. Remove in next major version.
+	Buffer._augment = function (arr) {
+	  arr.__proto__ = Buffer.prototype
+	  return arr
+	}
+
+	function from (that, value, encodingOrOffset, length) {
+	  if (typeof value === 'number') {
+	    throw new TypeError('"value" argument must not be a number')
+	  }
+
+	  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+	    return fromArrayBuffer(that, value, encodingOrOffset, length)
+	  }
+
+	  if (typeof value === 'string') {
+	    return fromString(that, value, encodingOrOffset)
+	  }
+
+	  return fromObject(that, value)
+	}
+
+	/**
+	 * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+	 * if value is a number.
+	 * Buffer.from(str[, encoding])
+	 * Buffer.from(array)
+	 * Buffer.from(buffer)
+	 * Buffer.from(arrayBuffer[, byteOffset[, length]])
+	 **/
+	Buffer.from = function (value, encodingOrOffset, length) {
+	  return from(null, value, encodingOrOffset, length)
+	}
+
+	if (Buffer.TYPED_ARRAY_SUPPORT) {
+	  Buffer.prototype.__proto__ = Uint8Array.prototype
+	  Buffer.__proto__ = Uint8Array
+	  if (typeof Symbol !== 'undefined' && Symbol.species &&
+	      Buffer[Symbol.species] === Buffer) {
+	    // Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
+	    Object.defineProperty(Buffer, Symbol.species, {
+	      value: null,
+	      configurable: true
+	    })
+	  }
+	}
+
+	function assertSize (size) {
+	  if (typeof size !== 'number') {
+	    throw new TypeError('"size" argument must be a number')
+	  } else if (size < 0) {
+	    throw new RangeError('"size" argument must not be negative')
+	  }
+	}
+
+	function alloc (that, size, fill, encoding) {
+	  assertSize(size)
+	  if (size <= 0) {
+	    return createBuffer(that, size)
+	  }
+	  if (fill !== undefined) {
+	    // Only pay attention to encoding if it's a string. This
+	    // prevents accidentally sending in a number that would
+	    // be interpretted as a start offset.
+	    return typeof encoding === 'string'
+	      ? createBuffer(that, size).fill(fill, encoding)
+	      : createBuffer(that, size).fill(fill)
+	  }
+	  return createBuffer(that, size)
+	}
+
+	/**
+	 * Creates a new filled Buffer instance.
+	 * alloc(size[, fill[, encoding]])
+	 **/
+	Buffer.alloc = function (size, fill, encoding) {
+	  return alloc(null, size, fill, encoding)
+	}
+
+	function allocUnsafe (that, size) {
+	  assertSize(size)
+	  that = createBuffer(that, size < 0 ? 0 : checked(size) | 0)
+	  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+	    for (var i = 0; i < size; ++i) {
+	      that[i] = 0
+	    }
+	  }
+	  return that
+	}
+
+	/**
+	 * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+	 * */
+	Buffer.allocUnsafe = function (size) {
+	  return allocUnsafe(null, size)
+	}
+	/**
+	 * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+	 */
+	Buffer.allocUnsafeSlow = function (size) {
+	  return allocUnsafe(null, size)
+	}
+
+	function fromString (that, string, encoding) {
+	  if (typeof encoding !== 'string' || encoding === '') {
+	    encoding = 'utf8'
+	  }
+
+	  if (!Buffer.isEncoding(encoding)) {
+	    throw new TypeError('"encoding" must be a valid string encoding')
+	  }
+
+	  var length = byteLength(string, encoding) | 0
+	  that = createBuffer(that, length)
+
+	  var actual = that.write(string, encoding)
+
+	  if (actual !== length) {
+	    // Writing a hex string, for example, that contains invalid characters will
+	    // cause everything after the first invalid character to be ignored. (e.g.
+	    // 'abxxcd' will be treated as 'ab')
+	    that = that.slice(0, actual)
+	  }
+
+	  return that
+	}
+
+	function fromArrayLike (that, array) {
+	  var length = array.length < 0 ? 0 : checked(array.length) | 0
+	  that = createBuffer(that, length)
+	  for (var i = 0; i < length; i += 1) {
+	    that[i] = array[i] & 255
+	  }
+	  return that
+	}
+
+	function fromArrayBuffer (that, array, byteOffset, length) {
+	  array.byteLength // this throws if `array` is not a valid ArrayBuffer
+
+	  if (byteOffset < 0 || array.byteLength < byteOffset) {
+	    throw new RangeError('\'offset\' is out of bounds')
+	  }
+
+	  if (array.byteLength < byteOffset + (length || 0)) {
+	    throw new RangeError('\'length\' is out of bounds')
+	  }
+
+	  if (byteOffset === undefined && length === undefined) {
+	    array = new Uint8Array(array)
+	  } else if (length === undefined) {
+	    array = new Uint8Array(array, byteOffset)
+	  } else {
+	    array = new Uint8Array(array, byteOffset, length)
+	  }
+
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    // Return an augmented `Uint8Array` instance, for best performance
+	    that = array
+	    that.__proto__ = Buffer.prototype
+	  } else {
+	    // Fallback: Return an object instance of the Buffer class
+	    that = fromArrayLike(that, array)
+	  }
+	  return that
+	}
+
+	function fromObject (that, obj) {
+	  if (Buffer.isBuffer(obj)) {
+	    var len = checked(obj.length) | 0
+	    that = createBuffer(that, len)
+
+	    if (that.length === 0) {
+	      return that
+	    }
+
+	    obj.copy(that, 0, 0, len)
+	    return that
+	  }
+
+	  if (obj) {
+	    if ((typeof ArrayBuffer !== 'undefined' &&
+	        obj.buffer instanceof ArrayBuffer) || 'length' in obj) {
+	      if (typeof obj.length !== 'number' || isnan(obj.length)) {
+	        return createBuffer(that, 0)
+	      }
+	      return fromArrayLike(that, obj)
+	    }
+
+	    if (obj.type === 'Buffer' && isArray(obj.data)) {
+	      return fromArrayLike(that, obj.data)
+	    }
+	  }
+
+	  throw new TypeError('First argument must be a string, Buffer, ArrayBuffer, Array, or array-like object.')
+	}
+
+	function checked (length) {
+	  // Note: cannot use `length < kMaxLength()` here because that fails when
+	  // length is NaN (which is otherwise coerced to zero.)
+	  if (length >= kMaxLength()) {
+	    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+	                         'size: 0x' + kMaxLength().toString(16) + ' bytes')
+	  }
+	  return length | 0
+	}
+
+	function SlowBuffer (length) {
+	  if (+length != length) { // eslint-disable-line eqeqeq
+	    length = 0
+	  }
+	  return Buffer.alloc(+length)
+	}
+
+	Buffer.isBuffer = function isBuffer (b) {
+	  return !!(b != null && b._isBuffer)
+	}
+
+	Buffer.compare = function compare (a, b) {
+	  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+	    throw new TypeError('Arguments must be Buffers')
+	  }
+
+	  if (a === b) return 0
+
+	  var x = a.length
+	  var y = b.length
+
+	  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+	    if (a[i] !== b[i]) {
+	      x = a[i]
+	      y = b[i]
+	      break
+	    }
+	  }
+
+	  if (x < y) return -1
+	  if (y < x) return 1
+	  return 0
+	}
+
+	Buffer.isEncoding = function isEncoding (encoding) {
+	  switch (String(encoding).toLowerCase()) {
+	    case 'hex':
+	    case 'utf8':
+	    case 'utf-8':
+	    case 'ascii':
+	    case 'latin1':
+	    case 'binary':
+	    case 'base64':
+	    case 'ucs2':
+	    case 'ucs-2':
+	    case 'utf16le':
+	    case 'utf-16le':
+	      return true
+	    default:
+	      return false
+	  }
+	}
+
+	Buffer.concat = function concat (list, length) {
+	  if (!isArray(list)) {
+	    throw new TypeError('"list" argument must be an Array of Buffers')
+	  }
+
+	  if (list.length === 0) {
+	    return Buffer.alloc(0)
+	  }
+
+	  var i
+	  if (length === undefined) {
+	    length = 0
+	    for (i = 0; i < list.length; ++i) {
+	      length += list[i].length
+	    }
+	  }
+
+	  var buffer = Buffer.allocUnsafe(length)
+	  var pos = 0
+	  for (i = 0; i < list.length; ++i) {
+	    var buf = list[i]
+	    if (!Buffer.isBuffer(buf)) {
+	      throw new TypeError('"list" argument must be an Array of Buffers')
+	    }
+	    buf.copy(buffer, pos)
+	    pos += buf.length
+	  }
+	  return buffer
+	}
+
+	function byteLength (string, encoding) {
+	  if (Buffer.isBuffer(string)) {
+	    return string.length
+	  }
+	  if (typeof ArrayBuffer !== 'undefined' && typeof ArrayBuffer.isView === 'function' &&
+	      (ArrayBuffer.isView(string) || string instanceof ArrayBuffer)) {
+	    return string.byteLength
+	  }
+	  if (typeof string !== 'string') {
+	    string = '' + string
+	  }
+
+	  var len = string.length
+	  if (len === 0) return 0
+
+	  // Use a for loop to avoid recursion
+	  var loweredCase = false
+	  for (;;) {
+	    switch (encoding) {
+	      case 'ascii':
+	      case 'latin1':
+	      case 'binary':
+	        return len
+	      case 'utf8':
+	      case 'utf-8':
+	      case undefined:
+	        return utf8ToBytes(string).length
+	      case 'ucs2':
+	      case 'ucs-2':
+	      case 'utf16le':
+	      case 'utf-16le':
+	        return len * 2
+	      case 'hex':
+	        return len >>> 1
+	      case 'base64':
+	        return base64ToBytes(string).length
+	      default:
+	        if (loweredCase) return utf8ToBytes(string).length // assume utf8
+	        encoding = ('' + encoding).toLowerCase()
+	        loweredCase = true
+	    }
+	  }
+	}
+	Buffer.byteLength = byteLength
+
+	function slowToString (encoding, start, end) {
+	  var loweredCase = false
+
+	  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+	  // property of a typed array.
+
+	  // This behaves neither like String nor Uint8Array in that we set start/end
+	  // to their upper/lower bounds if the value passed is out of range.
+	  // undefined is handled specially as per ECMA-262 6th Edition,
+	  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+	  if (start === undefined || start < 0) {
+	    start = 0
+	  }
+	  // Return early if start > this.length. Done here to prevent potential uint32
+	  // coercion fail below.
+	  if (start > this.length) {
+	    return ''
+	  }
+
+	  if (end === undefined || end > this.length) {
+	    end = this.length
+	  }
+
+	  if (end <= 0) {
+	    return ''
+	  }
+
+	  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
+	  end >>>= 0
+	  start >>>= 0
+
+	  if (end <= start) {
+	    return ''
+	  }
+
+	  if (!encoding) encoding = 'utf8'
+
+	  while (true) {
+	    switch (encoding) {
+	      case 'hex':
+	        return hexSlice(this, start, end)
+
+	      case 'utf8':
+	      case 'utf-8':
+	        return utf8Slice(this, start, end)
+
+	      case 'ascii':
+	        return asciiSlice(this, start, end)
+
+	      case 'latin1':
+	      case 'binary':
+	        return latin1Slice(this, start, end)
+
+	      case 'base64':
+	        return base64Slice(this, start, end)
+
+	      case 'ucs2':
+	      case 'ucs-2':
+	      case 'utf16le':
+	      case 'utf-16le':
+	        return utf16leSlice(this, start, end)
+
+	      default:
+	        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+	        encoding = (encoding + '').toLowerCase()
+	        loweredCase = true
+	    }
+	  }
+	}
+
+	// The property is used by `Buffer.isBuffer` and `is-buffer` (in Safari 5-7) to detect
+	// Buffer instances.
+	Buffer.prototype._isBuffer = true
+
+	function swap (b, n, m) {
+	  var i = b[n]
+	  b[n] = b[m]
+	  b[m] = i
+	}
+
+	Buffer.prototype.swap16 = function swap16 () {
+	  var len = this.length
+	  if (len % 2 !== 0) {
+	    throw new RangeError('Buffer size must be a multiple of 16-bits')
+	  }
+	  for (var i = 0; i < len; i += 2) {
+	    swap(this, i, i + 1)
+	  }
+	  return this
+	}
+
+	Buffer.prototype.swap32 = function swap32 () {
+	  var len = this.length
+	  if (len % 4 !== 0) {
+	    throw new RangeError('Buffer size must be a multiple of 32-bits')
+	  }
+	  for (var i = 0; i < len; i += 4) {
+	    swap(this, i, i + 3)
+	    swap(this, i + 1, i + 2)
+	  }
+	  return this
+	}
+
+	Buffer.prototype.swap64 = function swap64 () {
+	  var len = this.length
+	  if (len % 8 !== 0) {
+	    throw new RangeError('Buffer size must be a multiple of 64-bits')
+	  }
+	  for (var i = 0; i < len; i += 8) {
+	    swap(this, i, i + 7)
+	    swap(this, i + 1, i + 6)
+	    swap(this, i + 2, i + 5)
+	    swap(this, i + 3, i + 4)
+	  }
+	  return this
+	}
+
+	Buffer.prototype.toString = function toString () {
+	  var length = this.length | 0
+	  if (length === 0) return ''
+	  if (arguments.length === 0) return utf8Slice(this, 0, length)
+	  return slowToString.apply(this, arguments)
+	}
+
+	Buffer.prototype.equals = function equals (b) {
+	  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+	  if (this === b) return true
+	  return Buffer.compare(this, b) === 0
+	}
+
+	Buffer.prototype.inspect = function inspect () {
+	  var str = ''
+	  var max = exports.INSPECT_MAX_BYTES
+	  if (this.length > 0) {
+	    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
+	    if (this.length > max) str += ' ... '
+	  }
+	  return '<Buffer ' + str + '>'
+	}
+
+	Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+	  if (!Buffer.isBuffer(target)) {
+	    throw new TypeError('Argument must be a Buffer')
+	  }
+
+	  if (start === undefined) {
+	    start = 0
+	  }
+	  if (end === undefined) {
+	    end = target ? target.length : 0
+	  }
+	  if (thisStart === undefined) {
+	    thisStart = 0
+	  }
+	  if (thisEnd === undefined) {
+	    thisEnd = this.length
+	  }
+
+	  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+	    throw new RangeError('out of range index')
+	  }
+
+	  if (thisStart >= thisEnd && start >= end) {
+	    return 0
+	  }
+	  if (thisStart >= thisEnd) {
+	    return -1
+	  }
+	  if (start >= end) {
+	    return 1
+	  }
+
+	  start >>>= 0
+	  end >>>= 0
+	  thisStart >>>= 0
+	  thisEnd >>>= 0
+
+	  if (this === target) return 0
+
+	  var x = thisEnd - thisStart
+	  var y = end - start
+	  var len = Math.min(x, y)
+
+	  var thisCopy = this.slice(thisStart, thisEnd)
+	  var targetCopy = target.slice(start, end)
+
+	  for (var i = 0; i < len; ++i) {
+	    if (thisCopy[i] !== targetCopy[i]) {
+	      x = thisCopy[i]
+	      y = targetCopy[i]
+	      break
+	    }
+	  }
+
+	  if (x < y) return -1
+	  if (y < x) return 1
+	  return 0
+	}
+
+	// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+	// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+	//
+	// Arguments:
+	// - buffer - a Buffer to search
+	// - val - a string, Buffer, or number
+	// - byteOffset - an index into `buffer`; will be clamped to an int32
+	// - encoding - an optional encoding, relevant is val is a string
+	// - dir - true for indexOf, false for lastIndexOf
+	function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+	  // Empty buffer means no match
+	  if (buffer.length === 0) return -1
+
+	  // Normalize byteOffset
+	  if (typeof byteOffset === 'string') {
+	    encoding = byteOffset
+	    byteOffset = 0
+	  } else if (byteOffset > 0x7fffffff) {
+	    byteOffset = 0x7fffffff
+	  } else if (byteOffset < -0x80000000) {
+	    byteOffset = -0x80000000
+	  }
+	  byteOffset = +byteOffset  // Coerce to Number.
+	  if (isNaN(byteOffset)) {
+	    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+	    byteOffset = dir ? 0 : (buffer.length - 1)
+	  }
+
+	  // Normalize byteOffset: negative offsets start from the end of the buffer
+	  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
+	  if (byteOffset >= buffer.length) {
+	    if (dir) return -1
+	    else byteOffset = buffer.length - 1
+	  } else if (byteOffset < 0) {
+	    if (dir) byteOffset = 0
+	    else return -1
+	  }
+
+	  // Normalize val
+	  if (typeof val === 'string') {
+	    val = Buffer.from(val, encoding)
+	  }
+
+	  // Finally, search either indexOf (if dir is true) or lastIndexOf
+	  if (Buffer.isBuffer(val)) {
+	    // Special case: looking for empty string/buffer always fails
+	    if (val.length === 0) {
+	      return -1
+	    }
+	    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+	  } else if (typeof val === 'number') {
+	    val = val & 0xFF // Search for a byte value [0-255]
+	    if (Buffer.TYPED_ARRAY_SUPPORT &&
+	        typeof Uint8Array.prototype.indexOf === 'function') {
+	      if (dir) {
+	        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+	      } else {
+	        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+	      }
+	    }
+	    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
+	  }
+
+	  throw new TypeError('val must be string, number or Buffer')
+	}
+
+	function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+	  var indexSize = 1
+	  var arrLength = arr.length
+	  var valLength = val.length
+
+	  if (encoding !== undefined) {
+	    encoding = String(encoding).toLowerCase()
+	    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+	        encoding === 'utf16le' || encoding === 'utf-16le') {
+	      if (arr.length < 2 || val.length < 2) {
+	        return -1
+	      }
+	      indexSize = 2
+	      arrLength /= 2
+	      valLength /= 2
+	      byteOffset /= 2
+	    }
+	  }
+
+	  function read (buf, i) {
+	    if (indexSize === 1) {
+	      return buf[i]
+	    } else {
+	      return buf.readUInt16BE(i * indexSize)
+	    }
+	  }
+
+	  var i
+	  if (dir) {
+	    var foundIndex = -1
+	    for (i = byteOffset; i < arrLength; i++) {
+	      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+	        if (foundIndex === -1) foundIndex = i
+	        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+	      } else {
+	        if (foundIndex !== -1) i -= i - foundIndex
+	        foundIndex = -1
+	      }
+	    }
+	  } else {
+	    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
+	    for (i = byteOffset; i >= 0; i--) {
+	      var found = true
+	      for (var j = 0; j < valLength; j++) {
+	        if (read(arr, i + j) !== read(val, j)) {
+	          found = false
+	          break
+	        }
+	      }
+	      if (found) return i
+	    }
+	  }
+
+	  return -1
+	}
+
+	Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+	  return this.indexOf(val, byteOffset, encoding) !== -1
+	}
+
+	Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+	  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+	}
+
+	Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+	  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+	}
+
+	function hexWrite (buf, string, offset, length) {
+	  offset = Number(offset) || 0
+	  var remaining = buf.length - offset
+	  if (!length) {
+	    length = remaining
+	  } else {
+	    length = Number(length)
+	    if (length > remaining) {
+	      length = remaining
+	    }
+	  }
+
+	  // must be an even number of digits
+	  var strLen = string.length
+	  if (strLen % 2 !== 0) throw new TypeError('Invalid hex string')
+
+	  if (length > strLen / 2) {
+	    length = strLen / 2
+	  }
+	  for (var i = 0; i < length; ++i) {
+	    var parsed = parseInt(string.substr(i * 2, 2), 16)
+	    if (isNaN(parsed)) return i
+	    buf[offset + i] = parsed
+	  }
+	  return i
+	}
+
+	function utf8Write (buf, string, offset, length) {
+	  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+	}
+
+	function asciiWrite (buf, string, offset, length) {
+	  return blitBuffer(asciiToBytes(string), buf, offset, length)
+	}
+
+	function latin1Write (buf, string, offset, length) {
+	  return asciiWrite(buf, string, offset, length)
+	}
+
+	function base64Write (buf, string, offset, length) {
+	  return blitBuffer(base64ToBytes(string), buf, offset, length)
+	}
+
+	function ucs2Write (buf, string, offset, length) {
+	  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+	}
+
+	Buffer.prototype.write = function write (string, offset, length, encoding) {
+	  // Buffer#write(string)
+	  if (offset === undefined) {
+	    encoding = 'utf8'
+	    length = this.length
+	    offset = 0
+	  // Buffer#write(string, encoding)
+	  } else if (length === undefined && typeof offset === 'string') {
+	    encoding = offset
+	    length = this.length
+	    offset = 0
+	  // Buffer#write(string, offset[, length][, encoding])
+	  } else if (isFinite(offset)) {
+	    offset = offset | 0
+	    if (isFinite(length)) {
+	      length = length | 0
+	      if (encoding === undefined) encoding = 'utf8'
+	    } else {
+	      encoding = length
+	      length = undefined
+	    }
+	  // legacy write(string, encoding, offset, length) - remove in v0.13
+	  } else {
+	    throw new Error(
+	      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+	    )
+	  }
+
+	  var remaining = this.length - offset
+	  if (length === undefined || length > remaining) length = remaining
+
+	  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+	    throw new RangeError('Attempt to write outside buffer bounds')
+	  }
+
+	  if (!encoding) encoding = 'utf8'
+
+	  var loweredCase = false
+	  for (;;) {
+	    switch (encoding) {
+	      case 'hex':
+	        return hexWrite(this, string, offset, length)
+
+	      case 'utf8':
+	      case 'utf-8':
+	        return utf8Write(this, string, offset, length)
+
+	      case 'ascii':
+	        return asciiWrite(this, string, offset, length)
+
+	      case 'latin1':
+	      case 'binary':
+	        return latin1Write(this, string, offset, length)
+
+	      case 'base64':
+	        // Warning: maxLength not taken into account in base64Write
+	        return base64Write(this, string, offset, length)
+
+	      case 'ucs2':
+	      case 'ucs-2':
+	      case 'utf16le':
+	      case 'utf-16le':
+	        return ucs2Write(this, string, offset, length)
+
+	      default:
+	        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+	        encoding = ('' + encoding).toLowerCase()
+	        loweredCase = true
+	    }
+	  }
+	}
+
+	Buffer.prototype.toJSON = function toJSON () {
+	  return {
+	    type: 'Buffer',
+	    data: Array.prototype.slice.call(this._arr || this, 0)
+	  }
+	}
+
+	function base64Slice (buf, start, end) {
+	  if (start === 0 && end === buf.length) {
+	    return base64.fromByteArray(buf)
+	  } else {
+	    return base64.fromByteArray(buf.slice(start, end))
+	  }
+	}
+
+	function utf8Slice (buf, start, end) {
+	  end = Math.min(buf.length, end)
+	  var res = []
+
+	  var i = start
+	  while (i < end) {
+	    var firstByte = buf[i]
+	    var codePoint = null
+	    var bytesPerSequence = (firstByte > 0xEF) ? 4
+	      : (firstByte > 0xDF) ? 3
+	      : (firstByte > 0xBF) ? 2
+	      : 1
+
+	    if (i + bytesPerSequence <= end) {
+	      var secondByte, thirdByte, fourthByte, tempCodePoint
+
+	      switch (bytesPerSequence) {
+	        case 1:
+	          if (firstByte < 0x80) {
+	            codePoint = firstByte
+	          }
+	          break
+	        case 2:
+	          secondByte = buf[i + 1]
+	          if ((secondByte & 0xC0) === 0x80) {
+	            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+	            if (tempCodePoint > 0x7F) {
+	              codePoint = tempCodePoint
+	            }
+	          }
+	          break
+	        case 3:
+	          secondByte = buf[i + 1]
+	          thirdByte = buf[i + 2]
+	          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+	            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+	            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+	              codePoint = tempCodePoint
+	            }
+	          }
+	          break
+	        case 4:
+	          secondByte = buf[i + 1]
+	          thirdByte = buf[i + 2]
+	          fourthByte = buf[i + 3]
+	          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+	            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+	            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+	              codePoint = tempCodePoint
+	            }
+	          }
+	      }
+	    }
+
+	    if (codePoint === null) {
+	      // we did not generate a valid codePoint so insert a
+	      // replacement char (U+FFFD) and advance only 1 byte
+	      codePoint = 0xFFFD
+	      bytesPerSequence = 1
+	    } else if (codePoint > 0xFFFF) {
+	      // encode to utf16 (surrogate pair dance)
+	      codePoint -= 0x10000
+	      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+	      codePoint = 0xDC00 | codePoint & 0x3FF
+	    }
+
+	    res.push(codePoint)
+	    i += bytesPerSequence
+	  }
+
+	  return decodeCodePointsArray(res)
+	}
+
+	// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+	// the lowest limit is Chrome, with 0x10000 args.
+	// We go 1 magnitude less, for safety
+	var MAX_ARGUMENTS_LENGTH = 0x1000
+
+	function decodeCodePointsArray (codePoints) {
+	  var len = codePoints.length
+	  if (len <= MAX_ARGUMENTS_LENGTH) {
+	    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+	  }
+
+	  // Decode in chunks to avoid "call stack size exceeded".
+	  var res = ''
+	  var i = 0
+	  while (i < len) {
+	    res += String.fromCharCode.apply(
+	      String,
+	      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+	    )
+	  }
+	  return res
+	}
+
+	function asciiSlice (buf, start, end) {
+	  var ret = ''
+	  end = Math.min(buf.length, end)
+
+	  for (var i = start; i < end; ++i) {
+	    ret += String.fromCharCode(buf[i] & 0x7F)
+	  }
+	  return ret
+	}
+
+	function latin1Slice (buf, start, end) {
+	  var ret = ''
+	  end = Math.min(buf.length, end)
+
+	  for (var i = start; i < end; ++i) {
+	    ret += String.fromCharCode(buf[i])
+	  }
+	  return ret
+	}
+
+	function hexSlice (buf, start, end) {
+	  var len = buf.length
+
+	  if (!start || start < 0) start = 0
+	  if (!end || end < 0 || end > len) end = len
+
+	  var out = ''
+	  for (var i = start; i < end; ++i) {
+	    out += toHex(buf[i])
+	  }
+	  return out
+	}
+
+	function utf16leSlice (buf, start, end) {
+	  var bytes = buf.slice(start, end)
+	  var res = ''
+	  for (var i = 0; i < bytes.length; i += 2) {
+	    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256)
+	  }
+	  return res
+	}
+
+	Buffer.prototype.slice = function slice (start, end) {
+	  var len = this.length
+	  start = ~~start
+	  end = end === undefined ? len : ~~end
+
+	  if (start < 0) {
+	    start += len
+	    if (start < 0) start = 0
+	  } else if (start > len) {
+	    start = len
+	  }
+
+	  if (end < 0) {
+	    end += len
+	    if (end < 0) end = 0
+	  } else if (end > len) {
+	    end = len
+	  }
+
+	  if (end < start) end = start
+
+	  var newBuf
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    newBuf = this.subarray(start, end)
+	    newBuf.__proto__ = Buffer.prototype
+	  } else {
+	    var sliceLen = end - start
+	    newBuf = new Buffer(sliceLen, undefined)
+	    for (var i = 0; i < sliceLen; ++i) {
+	      newBuf[i] = this[i + start]
+	    }
+	  }
+
+	  return newBuf
+	}
+
+	/*
+	 * Need to make sure that buffer isn't trying to write out of bounds.
+	 */
+	function checkOffset (offset, ext, length) {
+	  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+	  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+	}
+
+	Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+	  offset = offset | 0
+	  byteLength = byteLength | 0
+	  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+	  var val = this[offset]
+	  var mul = 1
+	  var i = 0
+	  while (++i < byteLength && (mul *= 0x100)) {
+	    val += this[offset + i] * mul
+	  }
+
+	  return val
+	}
+
+	Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+	  offset = offset | 0
+	  byteLength = byteLength | 0
+	  if (!noAssert) {
+	    checkOffset(offset, byteLength, this.length)
+	  }
+
+	  var val = this[offset + --byteLength]
+	  var mul = 1
+	  while (byteLength > 0 && (mul *= 0x100)) {
+	    val += this[offset + --byteLength] * mul
+	  }
+
+	  return val
+	}
+
+	Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 1, this.length)
+	  return this[offset]
+	}
+
+	Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 2, this.length)
+	  return this[offset] | (this[offset + 1] << 8)
+	}
+
+	Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 2, this.length)
+	  return (this[offset] << 8) | this[offset + 1]
+	}
+
+	Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 4, this.length)
+
+	  return ((this[offset]) |
+	      (this[offset + 1] << 8) |
+	      (this[offset + 2] << 16)) +
+	      (this[offset + 3] * 0x1000000)
+	}
+
+	Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 4, this.length)
+
+	  return (this[offset] * 0x1000000) +
+	    ((this[offset + 1] << 16) |
+	    (this[offset + 2] << 8) |
+	    this[offset + 3])
+	}
+
+	Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+	  offset = offset | 0
+	  byteLength = byteLength | 0
+	  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+	  var val = this[offset]
+	  var mul = 1
+	  var i = 0
+	  while (++i < byteLength && (mul *= 0x100)) {
+	    val += this[offset + i] * mul
+	  }
+	  mul *= 0x80
+
+	  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+	  return val
+	}
+
+	Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+	  offset = offset | 0
+	  byteLength = byteLength | 0
+	  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+	  var i = byteLength
+	  var mul = 1
+	  var val = this[offset + --i]
+	  while (i > 0 && (mul *= 0x100)) {
+	    val += this[offset + --i] * mul
+	  }
+	  mul *= 0x80
+
+	  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+	  return val
+	}
+
+	Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 1, this.length)
+	  if (!(this[offset] & 0x80)) return (this[offset])
+	  return ((0xff - this[offset] + 1) * -1)
+	}
+
+	Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 2, this.length)
+	  var val = this[offset] | (this[offset + 1] << 8)
+	  return (val & 0x8000) ? val | 0xFFFF0000 : val
+	}
+
+	Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 2, this.length)
+	  var val = this[offset + 1] | (this[offset] << 8)
+	  return (val & 0x8000) ? val | 0xFFFF0000 : val
+	}
+
+	Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 4, this.length)
+
+	  return (this[offset]) |
+	    (this[offset + 1] << 8) |
+	    (this[offset + 2] << 16) |
+	    (this[offset + 3] << 24)
+	}
+
+	Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 4, this.length)
+
+	  return (this[offset] << 24) |
+	    (this[offset + 1] << 16) |
+	    (this[offset + 2] << 8) |
+	    (this[offset + 3])
+	}
+
+	Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 4, this.length)
+	  return ieee754.read(this, offset, true, 23, 4)
+	}
+
+	Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 4, this.length)
+	  return ieee754.read(this, offset, false, 23, 4)
+	}
+
+	Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 8, this.length)
+	  return ieee754.read(this, offset, true, 52, 8)
+	}
+
+	Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+	  if (!noAssert) checkOffset(offset, 8, this.length)
+	  return ieee754.read(this, offset, false, 52, 8)
+	}
+
+	function checkInt (buf, value, offset, ext, max, min) {
+	  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+	  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+	  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+	}
+
+	Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  byteLength = byteLength | 0
+	  if (!noAssert) {
+	    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+	    checkInt(this, value, offset, byteLength, maxBytes, 0)
+	  }
+
+	  var mul = 1
+	  var i = 0
+	  this[offset] = value & 0xFF
+	  while (++i < byteLength && (mul *= 0x100)) {
+	    this[offset + i] = (value / mul) & 0xFF
+	  }
+
+	  return offset + byteLength
+	}
+
+	Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  byteLength = byteLength | 0
+	  if (!noAssert) {
+	    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+	    checkInt(this, value, offset, byteLength, maxBytes, 0)
+	  }
+
+	  var i = byteLength - 1
+	  var mul = 1
+	  this[offset + i] = value & 0xFF
+	  while (--i >= 0 && (mul *= 0x100)) {
+	    this[offset + i] = (value / mul) & 0xFF
+	  }
+
+	  return offset + byteLength
+	}
+
+	Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+	  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+	  this[offset] = (value & 0xff)
+	  return offset + 1
+	}
+
+	function objectWriteUInt16 (buf, value, offset, littleEndian) {
+	  if (value < 0) value = 0xffff + value + 1
+	  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; ++i) {
+	    buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
+	      (littleEndian ? i : 1 - i) * 8
+	  }
+	}
+
+	Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    this[offset] = (value & 0xff)
+	    this[offset + 1] = (value >>> 8)
+	  } else {
+	    objectWriteUInt16(this, value, offset, true)
+	  }
+	  return offset + 2
+	}
+
+	Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    this[offset] = (value >>> 8)
+	    this[offset + 1] = (value & 0xff)
+	  } else {
+	    objectWriteUInt16(this, value, offset, false)
+	  }
+	  return offset + 2
+	}
+
+	function objectWriteUInt32 (buf, value, offset, littleEndian) {
+	  if (value < 0) value = 0xffffffff + value + 1
+	  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; ++i) {
+	    buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
+	  }
+	}
+
+	Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    this[offset + 3] = (value >>> 24)
+	    this[offset + 2] = (value >>> 16)
+	    this[offset + 1] = (value >>> 8)
+	    this[offset] = (value & 0xff)
+	  } else {
+	    objectWriteUInt32(this, value, offset, true)
+	  }
+	  return offset + 4
+	}
+
+	Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    this[offset] = (value >>> 24)
+	    this[offset + 1] = (value >>> 16)
+	    this[offset + 2] = (value >>> 8)
+	    this[offset + 3] = (value & 0xff)
+	  } else {
+	    objectWriteUInt32(this, value, offset, false)
+	  }
+	  return offset + 4
+	}
+
+	Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) {
+	    var limit = Math.pow(2, 8 * byteLength - 1)
+
+	    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+	  }
+
+	  var i = 0
+	  var mul = 1
+	  var sub = 0
+	  this[offset] = value & 0xFF
+	  while (++i < byteLength && (mul *= 0x100)) {
+	    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+	      sub = 1
+	    }
+	    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+	  }
+
+	  return offset + byteLength
+	}
+
+	Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) {
+	    var limit = Math.pow(2, 8 * byteLength - 1)
+
+	    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+	  }
+
+	  var i = byteLength - 1
+	  var mul = 1
+	  var sub = 0
+	  this[offset + i] = value & 0xFF
+	  while (--i >= 0 && (mul *= 0x100)) {
+	    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+	      sub = 1
+	    }
+	    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+	  }
+
+	  return offset + byteLength
+	}
+
+	Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+	  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+	  if (value < 0) value = 0xff + value + 1
+	  this[offset] = (value & 0xff)
+	  return offset + 1
+	}
+
+	Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    this[offset] = (value & 0xff)
+	    this[offset + 1] = (value >>> 8)
+	  } else {
+	    objectWriteUInt16(this, value, offset, true)
+	  }
+	  return offset + 2
+	}
+
+	Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    this[offset] = (value >>> 8)
+	    this[offset + 1] = (value & 0xff)
+	  } else {
+	    objectWriteUInt16(this, value, offset, false)
+	  }
+	  return offset + 2
+	}
+
+	Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    this[offset] = (value & 0xff)
+	    this[offset + 1] = (value >>> 8)
+	    this[offset + 2] = (value >>> 16)
+	    this[offset + 3] = (value >>> 24)
+	  } else {
+	    objectWriteUInt32(this, value, offset, true)
+	  }
+	  return offset + 4
+	}
+
+	Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+	  value = +value
+	  offset = offset | 0
+	  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+	  if (value < 0) value = 0xffffffff + value + 1
+	  if (Buffer.TYPED_ARRAY_SUPPORT) {
+	    this[offset] = (value >>> 24)
+	    this[offset + 1] = (value >>> 16)
+	    this[offset + 2] = (value >>> 8)
+	    this[offset + 3] = (value & 0xff)
+	  } else {
+	    objectWriteUInt32(this, value, offset, false)
+	  }
+	  return offset + 4
+	}
+
+	function checkIEEE754 (buf, value, offset, ext, max, min) {
+	  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+	  if (offset < 0) throw new RangeError('Index out of range')
+	}
+
+	function writeFloat (buf, value, offset, littleEndian, noAssert) {
+	  if (!noAssert) {
+	    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+	  }
+	  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+	  return offset + 4
+	}
+
+	Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+	  return writeFloat(this, value, offset, true, noAssert)
+	}
+
+	Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+	  return writeFloat(this, value, offset, false, noAssert)
+	}
+
+	function writeDouble (buf, value, offset, littleEndian, noAssert) {
+	  if (!noAssert) {
+	    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+	  }
+	  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+	  return offset + 8
+	}
+
+	Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+	  return writeDouble(this, value, offset, true, noAssert)
+	}
+
+	Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+	  return writeDouble(this, value, offset, false, noAssert)
+	}
+
+	// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+	Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+	  if (!start) start = 0
+	  if (!end && end !== 0) end = this.length
+	  if (targetStart >= target.length) targetStart = target.length
+	  if (!targetStart) targetStart = 0
+	  if (end > 0 && end < start) end = start
+
+	  // Copy 0 bytes; we're done
+	  if (end === start) return 0
+	  if (target.length === 0 || this.length === 0) return 0
+
+	  // Fatal error conditions
+	  if (targetStart < 0) {
+	    throw new RangeError('targetStart out of bounds')
+	  }
+	  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
+	  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+	  // Are we oob?
+	  if (end > this.length) end = this.length
+	  if (target.length - targetStart < end - start) {
+	    end = target.length - targetStart + start
+	  }
+
+	  var len = end - start
+	  var i
+
+	  if (this === target && start < targetStart && targetStart < end) {
+	    // descending copy from end
+	    for (i = len - 1; i >= 0; --i) {
+	      target[i + targetStart] = this[i + start]
+	    }
+	  } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
+	    // ascending copy from start
+	    for (i = 0; i < len; ++i) {
+	      target[i + targetStart] = this[i + start]
+	    }
+	  } else {
+	    Uint8Array.prototype.set.call(
+	      target,
+	      this.subarray(start, start + len),
+	      targetStart
+	    )
+	  }
+
+	  return len
+	}
+
+	// Usage:
+	//    buffer.fill(number[, offset[, end]])
+	//    buffer.fill(buffer[, offset[, end]])
+	//    buffer.fill(string[, offset[, end]][, encoding])
+	Buffer.prototype.fill = function fill (val, start, end, encoding) {
+	  // Handle string cases:
+	  if (typeof val === 'string') {
+	    if (typeof start === 'string') {
+	      encoding = start
+	      start = 0
+	      end = this.length
+	    } else if (typeof end === 'string') {
+	      encoding = end
+	      end = this.length
+	    }
+	    if (val.length === 1) {
+	      var code = val.charCodeAt(0)
+	      if (code < 256) {
+	        val = code
+	      }
+	    }
+	    if (encoding !== undefined && typeof encoding !== 'string') {
+	      throw new TypeError('encoding must be a string')
+	    }
+	    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+	      throw new TypeError('Unknown encoding: ' + encoding)
+	    }
+	  } else if (typeof val === 'number') {
+	    val = val & 255
+	  }
+
+	  // Invalid ranges are not set to a default, so can range check early.
+	  if (start < 0 || this.length < start || this.length < end) {
+	    throw new RangeError('Out of range index')
+	  }
+
+	  if (end <= start) {
+	    return this
+	  }
+
+	  start = start >>> 0
+	  end = end === undefined ? this.length : end >>> 0
+
+	  if (!val) val = 0
+
+	  var i
+	  if (typeof val === 'number') {
+	    for (i = start; i < end; ++i) {
+	      this[i] = val
+	    }
+	  } else {
+	    var bytes = Buffer.isBuffer(val)
+	      ? val
+	      : utf8ToBytes(new Buffer(val, encoding).toString())
+	    var len = bytes.length
+	    for (i = 0; i < end - start; ++i) {
+	      this[i + start] = bytes[i % len]
+	    }
+	  }
+
+	  return this
+	}
+
+	// HELPER FUNCTIONS
+	// ================
+
+	var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g
+
+	function base64clean (str) {
+	  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+	  str = stringtrim(str).replace(INVALID_BASE64_RE, '')
+	  // Node converts strings with length < 2 to ''
+	  if (str.length < 2) return ''
+	  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+	  while (str.length % 4 !== 0) {
+	    str = str + '='
+	  }
+	  return str
+	}
+
+	function stringtrim (str) {
+	  if (str.trim) return str.trim()
+	  return str.replace(/^\s+|\s+$/g, '')
+	}
+
+	function toHex (n) {
+	  if (n < 16) return '0' + n.toString(16)
+	  return n.toString(16)
+	}
+
+	function utf8ToBytes (string, units) {
+	  units = units || Infinity
+	  var codePoint
+	  var length = string.length
+	  var leadSurrogate = null
+	  var bytes = []
+
+	  for (var i = 0; i < length; ++i) {
+	    codePoint = string.charCodeAt(i)
+
+	    // is surrogate component
+	    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+	      // last char was a lead
+	      if (!leadSurrogate) {
+	        // no lead yet
+	        if (codePoint > 0xDBFF) {
+	          // unexpected trail
+	          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+	          continue
+	        } else if (i + 1 === length) {
+	          // unpaired lead
+	          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+	          continue
+	        }
+
+	        // valid lead
+	        leadSurrogate = codePoint
+
+	        continue
+	      }
+
+	      // 2 leads in a row
+	      if (codePoint < 0xDC00) {
+	        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+	        leadSurrogate = codePoint
+	        continue
+	      }
+
+	      // valid surrogate pair
+	      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+	    } else if (leadSurrogate) {
+	      // valid bmp char, but last char was a lead
+	      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+	    }
+
+	    leadSurrogate = null
+
+	    // encode utf8
+	    if (codePoint < 0x80) {
+	      if ((units -= 1) < 0) break
+	      bytes.push(codePoint)
+	    } else if (codePoint < 0x800) {
+	      if ((units -= 2) < 0) break
+	      bytes.push(
+	        codePoint >> 0x6 | 0xC0,
+	        codePoint & 0x3F | 0x80
+	      )
+	    } else if (codePoint < 0x10000) {
+	      if ((units -= 3) < 0) break
+	      bytes.push(
+	        codePoint >> 0xC | 0xE0,
+	        codePoint >> 0x6 & 0x3F | 0x80,
+	        codePoint & 0x3F | 0x80
+	      )
+	    } else if (codePoint < 0x110000) {
+	      if ((units -= 4) < 0) break
+	      bytes.push(
+	        codePoint >> 0x12 | 0xF0,
+	        codePoint >> 0xC & 0x3F | 0x80,
+	        codePoint >> 0x6 & 0x3F | 0x80,
+	        codePoint & 0x3F | 0x80
+	      )
+	    } else {
+	      throw new Error('Invalid code point')
+	    }
+	  }
+
+	  return bytes
+	}
+
+	function asciiToBytes (str) {
+	  var byteArray = []
+	  for (var i = 0; i < str.length; ++i) {
+	    // Node's code seems to be doing this and not & 0x7F..
+	    byteArray.push(str.charCodeAt(i) & 0xFF)
+	  }
+	  return byteArray
+	}
+
+	function utf16leToBytes (str, units) {
+	  var c, hi, lo
+	  var byteArray = []
+	  for (var i = 0; i < str.length; ++i) {
+	    if ((units -= 2) < 0) break
+
+	    c = str.charCodeAt(i)
+	    hi = c >> 8
+	    lo = c % 256
+	    byteArray.push(lo)
+	    byteArray.push(hi)
+	  }
+
+	  return byteArray
+	}
+
+	function base64ToBytes (str) {
+	  return base64.toByteArray(base64clean(str))
+	}
+
+	function blitBuffer (src, dst, offset, length) {
+	  for (var i = 0; i < length; ++i) {
+	    if ((i + offset >= dst.length) || (i >= src.length)) break
+	    dst[i + offset] = src[i]
+	  }
+	  return i
+	}
+
+	function isnan (val) {
+	  return val !== val // eslint-disable-line no-self-compare
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 56 */
+/***/ function(module, exports) {
+
+	'use strict'
+
+	exports.byteLength = byteLength
+	exports.toByteArray = toByteArray
+	exports.fromByteArray = fromByteArray
+
+	var lookup = []
+	var revLookup = []
+	var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+
+	var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+	for (var i = 0, len = code.length; i < len; ++i) {
+	  lookup[i] = code[i]
+	  revLookup[code.charCodeAt(i)] = i
+	}
+
+	revLookup['-'.charCodeAt(0)] = 62
+	revLookup['_'.charCodeAt(0)] = 63
+
+	function placeHoldersCount (b64) {
+	  var len = b64.length
+	  if (len % 4 > 0) {
+	    throw new Error('Invalid string. Length must be a multiple of 4')
+	  }
+
+	  // the number of equal signs (place holders)
+	  // if there are two placeholders, than the two characters before it
+	  // represent one byte
+	  // if there is only one, then the three characters before it represent 2 bytes
+	  // this is just a cheap hack to not do indexOf twice
+	  return b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
+	}
+
+	function byteLength (b64) {
+	  // base64 is 4/3 + up to two characters of the original data
+	  return b64.length * 3 / 4 - placeHoldersCount(b64)
+	}
+
+	function toByteArray (b64) {
+	  var i, j, l, tmp, placeHolders, arr
+	  var len = b64.length
+	  placeHolders = placeHoldersCount(b64)
+
+	  arr = new Arr(len * 3 / 4 - placeHolders)
+
+	  // if there are placeholders, only get up to the last complete 4 chars
+	  l = placeHolders > 0 ? len - 4 : len
+
+	  var L = 0
+
+	  for (i = 0, j = 0; i < l; i += 4, j += 3) {
+	    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
+	    arr[L++] = (tmp >> 16) & 0xFF
+	    arr[L++] = (tmp >> 8) & 0xFF
+	    arr[L++] = tmp & 0xFF
+	  }
+
+	  if (placeHolders === 2) {
+	    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
+	    arr[L++] = tmp & 0xFF
+	  } else if (placeHolders === 1) {
+	    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
+	    arr[L++] = (tmp >> 8) & 0xFF
+	    arr[L++] = tmp & 0xFF
+	  }
+
+	  return arr
+	}
+
+	function tripletToBase64 (num) {
+	  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
+	}
+
+	function encodeChunk (uint8, start, end) {
+	  var tmp
+	  var output = []
+	  for (var i = start; i < end; i += 3) {
+	    tmp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+	    output.push(tripletToBase64(tmp))
+	  }
+	  return output.join('')
+	}
+
+	function fromByteArray (uint8) {
+	  var tmp
+	  var len = uint8.length
+	  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+	  var output = ''
+	  var parts = []
+	  var maxChunkLength = 16383 // must be multiple of 3
+
+	  // go through the array every three bytes, we'll deal with trailing stuff later
+	  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+	    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+	  }
+
+	  // pad the end with zeros, but make sure to not forget the extra bytes
+	  if (extraBytes === 1) {
+	    tmp = uint8[len - 1]
+	    output += lookup[tmp >> 2]
+	    output += lookup[(tmp << 4) & 0x3F]
+	    output += '=='
+	  } else if (extraBytes === 2) {
+	    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
+	    output += lookup[tmp >> 10]
+	    output += lookup[(tmp >> 4) & 0x3F]
+	    output += lookup[(tmp << 2) & 0x3F]
+	    output += '='
+	  }
+
+	  parts.push(output)
+
+	  return parts.join('')
+	}
+
+
+/***/ },
+/* 57 */
+/***/ function(module, exports) {
+
+	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+	  var e, m
+	  var eLen = nBytes * 8 - mLen - 1
+	  var eMax = (1 << eLen) - 1
+	  var eBias = eMax >> 1
+	  var nBits = -7
+	  var i = isLE ? (nBytes - 1) : 0
+	  var d = isLE ? -1 : 1
+	  var s = buffer[offset + i]
+
+	  i += d
+
+	  e = s & ((1 << (-nBits)) - 1)
+	  s >>= (-nBits)
+	  nBits += eLen
+	  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+	  m = e & ((1 << (-nBits)) - 1)
+	  e >>= (-nBits)
+	  nBits += mLen
+	  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+	  if (e === 0) {
+	    e = 1 - eBias
+	  } else if (e === eMax) {
+	    return m ? NaN : ((s ? -1 : 1) * Infinity)
+	  } else {
+	    m = m + Math.pow(2, mLen)
+	    e = e - eBias
+	  }
+	  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+	}
+
+	exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+	  var e, m, c
+	  var eLen = nBytes * 8 - mLen - 1
+	  var eMax = (1 << eLen) - 1
+	  var eBias = eMax >> 1
+	  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
+	  var i = isLE ? 0 : (nBytes - 1)
+	  var d = isLE ? 1 : -1
+	  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
+
+	  value = Math.abs(value)
+
+	  if (isNaN(value) || value === Infinity) {
+	    m = isNaN(value) ? 1 : 0
+	    e = eMax
+	  } else {
+	    e = Math.floor(Math.log(value) / Math.LN2)
+	    if (value * (c = Math.pow(2, -e)) < 1) {
+	      e--
+	      c *= 2
+	    }
+	    if (e + eBias >= 1) {
+	      value += rt / c
+	    } else {
+	      value += rt * Math.pow(2, 1 - eBias)
+	    }
+	    if (value * c >= 2) {
+	      e++
+	      c /= 2
+	    }
+
+	    if (e + eBias >= eMax) {
+	      m = 0
+	      e = eMax
+	    } else if (e + eBias >= 1) {
+	      m = (value * c - 1) * Math.pow(2, mLen)
+	      e = e + eBias
+	    } else {
+	      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+	      e = 0
+	    }
+	  }
+
+	  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+	  e = (e << mLen) | m
+	  eLen += mLen
+	  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+	  buffer[offset + i - d] |= s * 128
+	}
+
+
+/***/ },
+/* 58 */
+/***/ function(module, exports) {
+
+	var toString = {}.toString;
+
+	module.exports = Array.isArray || function (arr) {
+	  return toString.call(arr) == '[object Array]';
+	};
+
+
+/***/ },
+/* 59 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*
+	  MIT License http://www.opensource.org/licenses/mit-license.php
+	  Author Tobias Koppers @sokra
+	  Modified by Evan You @yyx990803
+	*/
+
+	var hasDocument = typeof document !== 'undefined'
+
+	if (false) {
+	  if (!hasDocument) {
+	    throw new Error(
+	    'vue-style-loader cannot be used in a non-browser environment. ' +
+	    "Use { target: 'node' } in your Webpack config to indicate a server-rendering environment."
+	  ) }
+	}
+
+	var listToStyles = __webpack_require__(60)
+
+	/*
+	type StyleObject = {
+	  id: number;
+	  parts: Array<StyleObjectPart>
+	}
+
+	type StyleObjectPart = {
+	  css: string;
+	  media: string;
+	  sourceMap: ?string
+	}
+	*/
+
+	var stylesInDom = {/*
+	  [id: number]: {
+	    id: number,
+	    refs: number,
+	    parts: Array<(obj?: StyleObjectPart) => void>
+	  }
+	*/}
+
+	var head = hasDocument && (document.head || document.getElementsByTagName('head')[0])
+	var singletonElement = null
+	var singletonCounter = 0
+	var isProduction = false
+	var noop = function () {}
+
+	// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+	// tags it will allow on a page
+	var isOldIE = typeof navigator !== 'undefined' && /msie [6-9]\b/.test(navigator.userAgent.toLowerCase())
+
+	module.exports = function (parentId, list, _isProduction) {
+	  isProduction = _isProduction
+
+	  var styles = listToStyles(parentId, list)
+	  addStylesToDom(styles)
+
+	  return function update (newList) {
+	    var mayRemove = []
+	    for (var i = 0; i < styles.length; i++) {
+	      var item = styles[i]
+	      var domStyle = stylesInDom[item.id]
+	      domStyle.refs--
+	      mayRemove.push(domStyle)
+	    }
+	    if (newList) {
+	      styles = listToStyles(parentId, newList)
+	      addStylesToDom(styles)
+	    } else {
+	      styles = []
+	    }
+	    for (var i = 0; i < mayRemove.length; i++) {
+	      var domStyle = mayRemove[i]
+	      if (domStyle.refs === 0) {
+	        for (var j = 0; j < domStyle.parts.length; j++) {
+	          domStyle.parts[j]()
+	        }
+	        delete stylesInDom[domStyle.id]
+	      }
+	    }
+	  }
+	}
+
+	function addStylesToDom (styles /* Array<StyleObject> */) {
+	  for (var i = 0; i < styles.length; i++) {
+	    var item = styles[i]
+	    var domStyle = stylesInDom[item.id]
+	    if (domStyle) {
+	      domStyle.refs++
+	      for (var j = 0; j < domStyle.parts.length; j++) {
+	        domStyle.parts[j](item.parts[j])
+	      }
+	      for (; j < item.parts.length; j++) {
+	        domStyle.parts.push(addStyle(item.parts[j]))
+	      }
+	      if (domStyle.parts.length > item.parts.length) {
+	        domStyle.parts.length = item.parts.length
+	      }
+	    } else {
+	      var parts = []
+	      for (var j = 0; j < item.parts.length; j++) {
+	        parts.push(addStyle(item.parts[j]))
+	      }
+	      stylesInDom[item.id] = { id: item.id, refs: 1, parts: parts }
+	    }
+	  }
+	}
+
+	function createStyleElement () {
+	  var styleElement = document.createElement('style')
+	  styleElement.type = 'text/css'
+	  head.appendChild(styleElement)
+	  return styleElement
+	}
+
+	function addStyle (obj /* StyleObjectPart */) {
+	  var update, remove
+	  var styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]')
+
+	  if (styleElement) {
+	    if (isProduction) {
+	      // has SSR styles and in production mode.
+	      // simply do nothing.
+	      return noop
+	    } else {
+	      // has SSR styles but in dev mode.
+	      // for some reason Chrome can't handle source map in server-rendered
+	      // style tags - source maps in <style> only works if the style tag is
+	      // created and inserted dynamically. So we remove the server rendered
+	      // styles and inject new ones.
+	      styleElement.parentNode.removeChild(styleElement)
+	    }
+	  }
+
+	  if (isOldIE) {
+	    // use singleton mode for IE9.
+	    var styleIndex = singletonCounter++
+	    styleElement = singletonElement || (singletonElement = createStyleElement())
+	    update = applyToSingletonTag.bind(null, styleElement, styleIndex, false)
+	    remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
+	  } else {
+	    // use multi-style-tag mode in all other cases
+	    styleElement = createStyleElement()
+	    update = applyToTag.bind(null, styleElement)
+	    remove = function () {
+	      styleElement.parentNode.removeChild(styleElement)
+	    }
+	  }
+
+	  update(obj)
+
+	  return function updateStyle (newObj /* StyleObjectPart */) {
+	    if (newObj) {
+	      if (newObj.css === obj.css &&
+	          newObj.media === obj.media &&
+	          newObj.sourceMap === obj.sourceMap) {
+	        return
+	      }
+	      update(obj = newObj)
+	    } else {
+	      remove()
+	    }
+	  }
+	}
+
+	var replaceText = (function () {
+	  var textStore = []
+
+	  return function (index, replacement) {
+	    textStore[index] = replacement
+	    return textStore.filter(Boolean).join('\n')
+	  }
+	})()
+
+	function applyToSingletonTag (styleElement, index, remove, obj) {
+	  var css = remove ? '' : obj.css
+
+	  if (styleElement.styleSheet) {
+	    styleElement.styleSheet.cssText = replaceText(index, css)
+	  } else {
+	    var cssNode = document.createTextNode(css)
+	    var childNodes = styleElement.childNodes
+	    if (childNodes[index]) styleElement.removeChild(childNodes[index])
+	    if (childNodes.length) {
+	      styleElement.insertBefore(cssNode, childNodes[index])
+	    } else {
+	      styleElement.appendChild(cssNode)
+	    }
+	  }
+	}
+
+	function applyToTag (styleElement, obj) {
+	  var css = obj.css
+	  var media = obj.media
+	  var sourceMap = obj.sourceMap
+
+	  if (media) {
+	    styleElement.setAttribute('media', media)
+	  }
+
+	  if (sourceMap) {
+	    // https://developer.chrome.com/devtools/docs/javascript-debugging
+	    // this makes source maps inside style tags work properly in Chrome
+	    css += '\n/*# sourceURL=' + sourceMap.sources[0] + ' */'
+	    // http://stackoverflow.com/a/26603875
+	    css += '\n/*# sourceMappingURL=data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + ' */'
+	  }
+
+	  if (styleElement.styleSheet) {
+	    styleElement.styleSheet.cssText = css
+	  } else {
+	    while (styleElement.firstChild) {
+	      styleElement.removeChild(styleElement.firstChild)
+	    }
+	    styleElement.appendChild(document.createTextNode(css))
+	  }
+	}
+
+
+/***/ },
+/* 60 */
+/***/ function(module, exports) {
+
+	/**
+	 * Translates the list format produced by css-loader into something
+	 * easier to manipulate.
+	 */
+	module.exports = function listToStyles (parentId, list) {
+	  var styles = []
+	  var newStyles = {}
+	  for (var i = 0; i < list.length; i++) {
+	    var item = list[i]
+	    var id = item[0]
+	    var css = item[1]
+	    var media = item[2]
+	    var sourceMap = item[3]
+	    var part = {
+	      id: parentId + ':' + i,
+	      css: css,
+	      media: media,
+	      sourceMap: sourceMap
+	    }
+	    if (!newStyles[id]) {
+	      styles.push(newStyles[id] = { id: id, parts: [part] })
+	    } else {
+	      newStyles[id].parts.push(part)
+	    }
+	  }
+	  return styles
+	}
+
+
+/***/ },
+/* 61 */
+/***/ function(module, exports) {
+
+	module.exports = function normalizeComponent (
+	  rawScriptExports,
+	  compiledTemplate,
+	  scopeId,
+	  cssModules
+	) {
+	  var esModule
+	  var scriptExports = rawScriptExports = rawScriptExports || {}
+
+	  // ES6 modules interop
+	  var type = typeof rawScriptExports.default
+	  if (type === 'object' || type === 'function') {
+	    esModule = rawScriptExports
+	    scriptExports = rawScriptExports.default
+	  }
+
+	  // Vue.extend constructor export interop
+	  var options = typeof scriptExports === 'function'
+	    ? scriptExports.options
+	    : scriptExports
+
+	  // render functions
+	  if (compiledTemplate) {
+	    options.render = compiledTemplate.render
+	    options.staticRenderFns = compiledTemplate.staticRenderFns
+	  }
+
+	  // scopedId
+	  if (scopeId) {
+	    options._scopeId = scopeId
+	  }
+
+	  // inject cssModules
+	  if (cssModules) {
+	    var computed = options.computed || (options.computed = {})
+	    Object.keys(cssModules).forEach(function (key) {
+	      var module = cssModules[key]
+	      computed[key] = function () { return module }
+	    })
+	  }
+
+	  return {
+	    esModule: esModule,
+	    exports: scriptExports,
+	    options: options
+	  }
+	}
+
+
+/***/ },
+/* 62 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function($) {//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+
+	var store = __webpack_require__(25);
+	module.exports = {
+	    data() {
+	        return {
+	            players: []
+	        };
+	    },
+	    computed: {
+	        update: function() {
+	            return store.state.update;
+	        }
+	    },
+	    watch: {
+	        update: function() {
+	            if (this.update) {
+	                store.commit('setUpdate', false);
+	                this.downloadInformation();
+	            }
+	        }
+	    },
+	    methods: {
+	        downloadInformation: function() {
+	            var self = this;
+	            $.post("./php/consulta.php",{},
+	            function(json, status){
+	                this.players = $.parseJSON(json);
+	            }.bind(this));
+	        },
+	    },
+	    mounted: function() {
+	        this.downloadInformation();
+	    },
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+
+/***/ },
+/* 63 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+	  return _c('div', {
+	    staticClass: "leaderboard content"
+	  }, _vm._l((_vm.players), function(player) {
+	    return _c('div', {
+	      staticClass: "col-md-6"
+	    }, [_c('player-plate', {
+	      attrs: {
+	        "player": player
+	      }
+	    })], 1)
+	  }))
+	},staticRenderFns: []}
+	module.exports.render._withStripped = true
+	if (false) {
+	  module.hot.accept()
+	  if (module.hot.data) {
+	     require("vue-hot-reload-api").rerender("data-v-11393060", module.exports)
+	  }
+	}
+
+/***/ },
+/* 64 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/* styles */
+	__webpack_require__(65)
+
+	var Component = __webpack_require__(61)(
+	  /* script */
+	  __webpack_require__(67),
+	  /* template */
+	  __webpack_require__(68),
+	  /* scopeId */
+	  null,
+	  /* cssModules */
+	  null
+	)
+	Component.options.__file = "C:\\xampp\\htdocs\\MI2\\proyectofinal\\js\\views\\leaderboard\\plate.vue"
+	if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+	if (Component.options.functional) {console.error("[vue-loader] plate.vue: functional components are not supported with templates, they should use render functions.")}
+
+	/* hot reload */
+	if (false) {(function () {
+	  var hotAPI = require("vue-hot-reload-api")
+	  hotAPI.install(require("vue"), false)
+	  if (!hotAPI.compatible) return
+	  module.hot.accept()
+	  if (!module.hot.data) {
+	    hotAPI.createRecord("data-v-b3bc21ae", Component.options)
+	  } else {
+	    hotAPI.reload("data-v-b3bc21ae", Component.options)
+	  }
+	})()}
+
+	module.exports = Component.exports
+
+
+/***/ },
+/* 65 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(66);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	if(content.locals) module.exports = content.locals;
+	// add the styles to the DOM
+	var update = __webpack_require__(59)("6409fcf5", content, false);
+	// Hot Module Replacement
+	if(false) {
+	 // When the styles change, update the <style> tags
+	 if(!content.locals) {
+	   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-b3bc21ae!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./plate.vue", function() {
+	     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-b3bc21ae!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./plate.vue");
+	     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+	     update(newContent);
+	   });
+	 }
+	 // When the module is disposed, remove the <style> tags
+	 module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 66 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(54)(undefined);
+	// imports
+
+
+	// module
+	exports.push([module.id, "\n.player {\n    height: 130px;\n    color: white;\n    border-style: solid;\n    border-color: dimgray;\n    border-width: 3px;\n    border-radius: 10px;\n    margin: 20px 0;\n    background: #a90329; /* Old browsers */\n    background: -moz-linear-gradient(top, #a90329 0%, #8f0222 74%, #6d0019 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #a90329 0%,#8f0222 74%,#6d0019 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #a90329 0%,#8f0222 74%,#6d0019 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=0 ); /* IE6-9 */\n}\n.player:hover {\n    background: #930324; /* Old browsers */\n    background: -moz-linear-gradient(top, #930324 0%, #7e021f 29%, #600016 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #930324 0%,#7e021f 29%,#600016 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #930324 0%,#7e021f 29%,#600016 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#930324', endColorstr='#600016',GradientType=0 ); /* IE6-9 */\n}\n.player-foto-place {\n    height: 50px;\n    width: 50px;\n    position: absolute;\n    top: 22px;\n    left: 12%;\n    z-index: 0;\n}\n.player-foto {\n    border-style: solid;\n    border-color: white;\n    border-width: 3px;\n    border-bottom-width: 15px;\n    height: 90px;\n    transform: rotate(-18deg);\n}\n.text {\n    display: block;\n    text-align: center;\n    transform: translateY(50%);\n}\n.player-screw {\n    display: block;\n    height: 30px;\n    width: auto;\n    margin: 0px auto;\n    z-index: 10;\n}\n.screw-up {\n    position: absolute;\n    top: 8px;\n}\n.screw-down {\n    position: absolute;\n    bottom: 12px;\n}\n.screw-right {\n    position: absolute;\n    right: 12px;\n}\n.screw-left {\n    position: absolute;\n    left: 12px;\n}\n", ""]);
+
+	// exports
+
+
+/***/ },
+/* 67 */
+/***/ function(module, exports) {
+
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+
+	module.exports = {
+	    data() {
+	        return {
+
+	        }
+	    },
+	    props: ['player']
+	}
+
+
+/***/ },
+/* 68 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+	  return _c('div', {
+	    staticClass: "row player"
+	  }, [_c('div', {
+	    staticClass: "col-xs-2",
+	    staticStyle: {
+	      "height": "130px"
+	    }
+	  }, [_c('img', {
+	    staticClass: "player-screw screw-up screw-left",
+	    attrs: {
+	      "src": 'Assets/img/Screw-Transparent.png'
+	    }
+	  }), _vm._v(" "), _c('img', {
+	    staticClass: "player-screw screw-down screw-left",
+	    attrs: {
+	      "src": 'Assets/img/Screw-Transparent.png'
+	    }
+	  })]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-8"
+	  }, [_c('h1', {
+	    staticClass: "col-xs-12 text"
+	  }, [_vm._v(_vm._s(_vm.player.puntos) + " km")]), _vm._v(" "), _c('h4', {
+	    staticClass: "col-xs-12 text"
+	  }, [_vm._v(_vm._s(_vm.player.usuario))])]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-2",
+	    staticStyle: {
+	      "height": "130px"
+	    }
+	  }, [_c('img', {
+	    staticClass: "player-screw screw-up screw-right",
+	    attrs: {
+	      "src": 'Assets/img/Screw-Transparent.png'
+	    }
+	  }), _vm._v(" "), _c('img', {
+	    staticClass: "player-screw screw-down screw-right",
+	    attrs: {
+	      "src": 'Assets/img/Screw-Transparent.png'
+	    }
+	  })]), _vm._v(" "), _c('div', {
+	    staticClass: "player-foto-place"
+	  }, [_c('img', {
+	    staticClass: "player-foto",
+	    attrs: {
+	      "src": _vm.player.urlFoto
+	    }
+	  })])])
+	},staticRenderFns: []}
+	module.exports.render._withStripped = true
+	if (false) {
+	  module.hot.accept()
+	  if (module.hot.data) {
+	     require("vue-hot-reload-api").rerender("data-v-b3bc21ae", module.exports)
+	  }
+	}
+
+/***/ },
+/* 69 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/* styles */
+	__webpack_require__(70)
+
+	var Component = __webpack_require__(61)(
+	  /* script */
 	  __webpack_require__(72),
+	  /* template */
+	  __webpack_require__(73),
 	  /* scopeId */
 	  null,
 	  /* cssModules */
@@ -34059,9 +34474,9 @@
 	  if (!hotAPI.compatible) return
 	  module.hot.accept()
 	  if (!module.hot.data) {
-	    hotAPI.createRecord("data-v-0e2fb738", Component.options)
+	    hotAPI.createRecord("data-v-ad810834", Component.options)
 	  } else {
-	    hotAPI.reload("data-v-0e2fb738", Component.options)
+	    hotAPI.reload("data-v-ad810834", Component.options)
 	  }
 	})()}
 
@@ -34069,23 +34484,23 @@
 
 
 /***/ },
-/* 69 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(70);
+	var content = __webpack_require__(71);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	if(content.locals) module.exports = content.locals;
 	// add the styles to the DOM
-	var update = __webpack_require__(57)("6ccd708e", content, false);
+	var update = __webpack_require__(59)("2861e5d7", content, false);
 	// Hot Module Replacement
 	if(false) {
 	 // When the styles change, update the <style> tags
 	 if(!content.locals) {
-	   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-0e2fb738!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./config.vue", function() {
-	     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-0e2fb738!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./config.vue");
+	   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ad810834!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./config.vue", function() {
+	     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-ad810834!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./config.vue");
 	     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 	     update(newContent);
 	   });
@@ -34095,23 +34510,85 @@
 	}
 
 /***/ },
-/* 70 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(52)(undefined);
+	exports = module.exports = __webpack_require__(54)(undefined);
 	// imports
 
 
 	// module
-	exports.push([module.id, "\n.slide-fade-enter-active {\n    transition: all .3s ease;\n}\n.slide-fade-leave-active {\n    transition: all .8s cubic-bezier(1.0, 0.5, 0.8, 1.0);\n}\n.slide-fade-enter, .slide-fade-leave-to {\n    transform: translateX(10px);\n    opacity: 0;\n}\n", ""]);
+	exports.push([module.id, "\n#configWindow {\n    border-style: solid;\n    border-width: 3px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%,-50%);\n    width: 60vw;\n    max-height: 500px;\n    overflow-y: scroll;\n    background: rgb(69,72,77); /* Old browsers */\n    background: -moz-linear-gradient(-45deg, rgba(69,72,77,1) 0%, rgba(0,0,0,1) 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(-45deg, rgba(69,72,77,1) 0%,rgba(0,0,0,1) 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(135deg, rgba(69,72,77,1) 0%,rgba(0,0,0,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#45484d', endColorstr='#000000',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */\n    z-index: 100;\n    padding: 25px 10px;\n    border-radius: 10px;\n    color: white;\n}\n.config-text {\n    font-family: digital;\n    font-size: 23px;\n    position: relative;\n    transform: translateY(-50%);\n    display: block;\n    top: 50%;\n}\n.config-row {\n    height: 50px;\n}\n.config-row > * {\n    height: 100%;\n    margin-bottom: 20px;\n}\n.config-content {\n    width: 80%;\n    margin: 0 auto;\n}\n.config-input {\n    text-align: center;\n    font-size: 30px;\n}\n.slide-fade-enter-active {\n    transition: all .3s ease;\n}\n.slide-fade-leave-active {\n    transition: all .8s cubic-bezier(1.0, 0.5, 0.8, 1.0);\n}\n.slide-fade-enter, .slide-fade-leave-to {\n    transform: translateX(10px);\n    opacity: 0;\n}\n", ""]);
 
 	// exports
 
 
 /***/ },
-/* 71 */
-/***/ function(module, exports) {
+/* 72 */
+/***/ function(module, exports, __webpack_require__) {
 
+	/* WEBPACK VAR INJECTION */(function($) {//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
 	//
 	//
 	//
@@ -34121,6 +34598,7 @@
 	//
 	//
 
+	var store = __webpack_require__(25);
 	module.exports = {
 	    data() {
 	        return {
@@ -34129,22 +34607,50 @@
 	            sfx: 100
 	        };
 	    },
-	    mounted: function() {
+	    watch: {
+	        masterVolume: function() {
+	            this.saveConfig();
+	        },
+	        music: function() {
+	            this.saveConfig();
+	        },
+	        sfx: function() {
+	            this.saveConfig();
+	        }
+	    },
+	    created: function() {
 	        this.loadConfig();
 	    },
 	    methods: {
 	        loadConfig: function() {
-
+	            var json = localStorage.getItem('configurationERMI');
+	            if (json != null) {
+	                var valores = JSON.parse(json);
+	                this.masterVolume = valores.masterVolume;
+	                this.music = valores.music;
+	                this.sfx = valores.sfx;
+	                this.saveConfig();
+	            }
 	        },
 	        saveConfig: function() {
-
+	            store.commit('setConfig', {
+	                masterVolume: this.masterVolume,
+	                music: this.music,
+	                sfx: this.sfx
+	            });
+	            $( document ).trigger( "volumeSet" );
+	            localStorage.setItem('configurationERMI', JSON.stringify(store.state.configuration));
+	        },
+	        close: function() {
+	            this.$emit('cerrar');
 	        }
 	    }
 	}
 
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ },
-/* 72 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -34152,13 +34658,322 @@
 	    attrs: {
 	      "name": "slide-fade"
 	    }
-	  }, [_c('div', {})])
+	  }, [_c('div', {
+	    attrs: {
+	      "id": "configWindow"
+	    }
+	  }, [_c('div', {
+	    staticClass: "config-content"
+	  }, [_c('div', {
+	    staticClass: "row config-row"
+	  }, [_c('div', {
+	    staticClass: "col-xs-12"
+	  }, [_c('p', {
+	    staticClass: "config-text",
+	    staticStyle: {
+	      "text-align": "center"
+	    }
+	  }, [_vm._v("Configuraciones")])])]), _vm._v(" "), _c('div', {
+	    staticClass: "row config-row"
+	  }, [_c('div', {
+	    staticClass: "col-xs-4"
+	  }, [_c('p', {
+	    staticClass: "config-text"
+	  }, [_vm._v("Volumen General")])]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-8"
+	  }, [_c('div', {
+	    staticClass: "col-xs-2 config-input config-text"
+	  }, [_c('span', {
+	    staticClass: "glyphicon glyphicon-volume-down"
+	  })]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-8 config-input"
+	  }, [_c('input', {
+	    directives: [{
+	      name: "model",
+	      rawName: "v-model",
+	      value: (_vm.masterVolume),
+	      expression: "masterVolume"
+	    }],
+	    attrs: {
+	      "type": "range",
+	      "id": "masterVolume",
+	      "value": "masterVolume"
+	    },
+	    domProps: {
+	      "value": (_vm.masterVolume)
+	    },
+	    on: {
+	      "__r": function($event) {
+	        _vm.masterVolume = $event.target.value
+	      }
+	    }
+	  })]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-2 config-input config-text"
+	  }, [_c('span', {
+	    staticClass: "glyphicon glyphicon-volume-up"
+	  })])])]), _vm._v(" "), _c('div', {
+	    staticClass: "row config-row"
+	  }, [_c('div', {
+	    staticClass: "col-xs-4"
+	  }, [_c('p', {
+	    staticClass: "config-text"
+	  }, [_vm._v("Musica")])]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-8"
+	  }, [_c('div', {
+	    staticClass: "col-xs-2 config-input config-text"
+	  }, [_c('span', {
+	    staticClass: "glyphicon glyphicon-volume-down"
+	  })]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-8 config-input"
+	  }, [_c('input', {
+	    directives: [{
+	      name: "model",
+	      rawName: "v-model",
+	      value: (_vm.music),
+	      expression: "music"
+	    }],
+	    attrs: {
+	      "type": "range",
+	      "id": "music",
+	      "value": "music"
+	    },
+	    domProps: {
+	      "value": (_vm.music)
+	    },
+	    on: {
+	      "__r": function($event) {
+	        _vm.music = $event.target.value
+	      }
+	    }
+	  })]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-2 config-input config-text"
+	  }, [_c('span', {
+	    staticClass: "glyphicon glyphicon-volume-up"
+	  })])])]), _vm._v(" "), _c('div', {
+	    staticClass: "row config-row"
+	  }, [_c('div', {
+	    staticClass: "col-xs-4"
+	  }, [_c('p', {
+	    staticClass: "config-text"
+	  }, [_vm._v("Efectos")])]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-8"
+	  }, [_c('div', {
+	    staticClass: "col-xs-2 config-input config-text"
+	  }, [_c('span', {
+	    staticClass: "glyphicon glyphicon-volume-down"
+	  })]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-8 config-input"
+	  }, [_c('input', {
+	    directives: [{
+	      name: "model",
+	      rawName: "v-model",
+	      value: (_vm.sfx),
+	      expression: "sfx"
+	    }],
+	    attrs: {
+	      "type": "range",
+	      "id": "sfx",
+	      "value": "sfx"
+	    },
+	    domProps: {
+	      "value": (_vm.sfx)
+	    },
+	    on: {
+	      "__r": function($event) {
+	        _vm.sfx = $event.target.value
+	      }
+	    }
+	  })]), _vm._v(" "), _c('div', {
+	    staticClass: "col-xs-2 config-input config-text"
+	  }, [_c('span', {
+	    staticClass: "glyphicon glyphicon-volume-up"
+	  })])])]), _vm._v(" "), _c('div', {
+	    staticClass: "row config-row"
+	  }, [_c('div', {
+	    staticClass: "col-xs-12"
+	  }, [_c('input', {
+	    staticClass: "btn btn-success btn-block",
+	    attrs: {
+	      "type": "button",
+	      "value": "Aceptar"
+	    },
+	    on: {
+	      "click": function($event) {
+	        _vm.close()
+	      }
+	    }
+	  })])])])])])
 	},staticRenderFns: []}
 	module.exports.render._withStripped = true
 	if (false) {
 	  module.hot.accept()
 	  if (module.hot.data) {
-	     require("vue-hot-reload-api").rerender("data-v-0e2fb738", module.exports)
+	     require("vue-hot-reload-api").rerender("data-v-ad810834", module.exports)
+	  }
+	}
+
+/***/ },
+/* 74 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/* styles */
+	__webpack_require__(75)
+
+	var Component = __webpack_require__(61)(
+	  /* script */
+	  __webpack_require__(77),
+	  /* template */
+	  __webpack_require__(78),
+	  /* scopeId */
+	  null,
+	  /* cssModules */
+	  null
+	)
+	Component.options.__file = "C:\\xampp\\htdocs\\MI2\\proyectofinal\\js\\views\\game\\loading.vue"
+	if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+	if (Component.options.functional) {console.error("[vue-loader] loading.vue: functional components are not supported with templates, they should use render functions.")}
+
+	/* hot reload */
+	if (false) {(function () {
+	  var hotAPI = require("vue-hot-reload-api")
+	  hotAPI.install(require("vue"), false)
+	  if (!hotAPI.compatible) return
+	  module.hot.accept()
+	  if (!module.hot.data) {
+	    hotAPI.createRecord("data-v-7b53d68a", Component.options)
+	  } else {
+	    hotAPI.reload("data-v-7b53d68a", Component.options)
+	  }
+	})()}
+
+	module.exports = Component.exports
+
+
+/***/ },
+/* 75 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(76);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	if(content.locals) module.exports = content.locals;
+	// add the styles to the DOM
+	var update = __webpack_require__(59)("0fa71f04", content, false);
+	// Hot Module Replacement
+	if(false) {
+	 // When the styles change, update the <style> tags
+	 if(!content.locals) {
+	   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-7b53d68a!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./loading.vue", function() {
+	     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-7b53d68a!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./loading.vue");
+	     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+	     update(newContent);
+	   });
+	 }
+	 // When the module is disposed, remove the <style> tags
+	 module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 76 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(54)(undefined);
+	// imports
+
+
+	// module
+	exports.push([module.id, "\n.loadingWindow, .loadingWindow .background {\n    width: 100%;\n    height: 100%;\n}\n#startButon {\n    width: 300px;\n    height: 100px;\n    font-size: 30px;\n    font-family: digital;\n    position: absolute;\n    bottom: 100px;\n    right: 200px;\n}\n", ""]);
+
+	// exports
+
+
+/***/ },
+/* 77 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function($) {//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+
+	var store = __webpack_require__(25);
+	module.exports = {
+	    data: function() {
+	        return {
+
+	        };
+	    },
+	    computed: {
+	        paused: function() {
+	            return store.state.gamePause;
+	        },
+	        ready: function() {
+	            $('#startButon').prop('disabled', false);
+	            return store.state.ready;
+	        },
+	        buttonText: function() {
+	            return (this.ready ? (this.paused ? 'Continuar' : 'Iniciar!') : 'Cargando...');
+	        }
+	    },
+	    methods: {
+	        start: function() {
+	            this.$emit('start');
+	        }
+	    },
+	    mounted: function() {
+	        if (!this.ready) {
+	            $('#startButon').prop('disabled', true);
+	        }
+	    }
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+
+/***/ },
+/* 78 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+	  return _c('div', {
+	    staticClass: "loadingWindow"
+	  }, [_c('img', {
+	    staticClass: "background",
+	    attrs: {
+	      "src": 'Assets/img/loading.jpg',
+	      "alt": "loading"
+	    }
+	  }), _vm._v(" "), _c('button', {
+	    staticClass: "btn btn-danger btn-lg",
+	    class: {
+	      disabled: !_vm.ready
+	    },
+	    attrs: {
+	      "id": "startButon"
+	    },
+	    on: {
+	      "click": function($event) {
+	        _vm.start()
+	      }
+	    }
+	  }, [_vm._v("\n        " + _vm._s(_vm.buttonText) + "\n    ")])])
+	},staticRenderFns: []}
+	module.exports.render._withStripped = true
+	if (false) {
+	  module.hot.accept()
+	  if (module.hot.data) {
+	     require("vue-hot-reload-api").rerender("data-v-7b53d68a", module.exports)
 	  }
 	}
 

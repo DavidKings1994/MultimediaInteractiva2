@@ -1,4 +1,4 @@
-define(['jquery', 'glMatrix'],  function($, glMatrix) {
+define(['jquery', 'glMatrix', './../../store/store'],  function($, glMatrix, store) {
     var Kings = window.Kings || {};
 
     Kings.Score = function(parameters) {
@@ -10,10 +10,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         textCanvas.width  = gl.canvas.width;
         textCanvas.height = gl.canvas.height;
         textCanvas.style.zIndex   = 1;
-        textCanvas.style.position = "absolute";
-        textCanvas.style.top = "0";
+        textCanvas.style.position = "relative";
+        textCanvas.style.top = "-100%";
         textCanvas.style.left = "0";
-        document.body.appendChild(textCanvas);
+        Kings.canvas.after(textCanvas);
         this.context2D = textCanvas.getContext('2d');
     };
 
@@ -27,9 +27,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         draw: function() {
             this.resize();
             this.context2D.clearRect(0, 0, this.context2D.canvas.width, this.context2D.canvas.height);
-            this.context2D.font = "40px digital";
+            this.context2D.font = "60px digital";
             this.context2D.fillStyle = 'green';
-            this.context2D.fillText('Km: ' + this.score, this.context2D.canvas.width - 100, 60);
+            this.context2D.fillText('Km: ' + this.score, this.context2D.canvas.width - 200, 60);
+            store.commit('setScore', this.score);
         },
 
         resize: function() {
@@ -39,10 +40,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             textCanvas.width  = gl.canvas.width;
             textCanvas.height = gl.canvas.height;
             textCanvas.style.zIndex   = 1;
-            textCanvas.style.position = "absolute";
-            textCanvas.style.top = "0";
+            textCanvas.style.position = "relative";
+            textCanvas.style.top = "-100%";
             textCanvas.style.left = "0";
-            document.body.appendChild(textCanvas);
+            Kings.canvas.after(textCanvas);
             this.context2D = textCanvas.getContext('2d');
         }
     };

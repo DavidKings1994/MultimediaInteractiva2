@@ -7,11 +7,25 @@
 </template>
 
 <script>
+    var store = require('./../../store/store.js');
     module.exports = {
         data() {
             return {
                 players: []
             };
+        },
+        computed: {
+            update: function() {
+                return store.state.update;
+            }
+        },
+        watch: {
+            update: function() {
+                if (this.update) {
+                    store.commit('setUpdate', false);
+                    this.downloadInformation();
+                }
+            }
         },
         methods: {
             downloadInformation: function() {
@@ -40,7 +54,7 @@
         height: 500px;
         overflow-y: scroll;
         margin: 50px auto;
-        border-style: solid;
-        border-color: rgb(150,0,0);
+        /*border-style: solid;
+        border-color: rgb(150,0,0);*/
     }
 </style>
