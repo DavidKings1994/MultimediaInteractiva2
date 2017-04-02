@@ -31787,7 +31787,7 @@
 
 
 	// module
-	exports.push([module.id, "\n.leaderboard {\n    background: #45484d; /* Old browsers */\n    background: -moz-linear-gradient(top, #45484d 0%, #000000 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #45484d 0%,#000000 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #45484d 0%,#000000 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#45484d', endColorstr='#000000',GradientType=0 ); /* IE6-9 */\n    padding: 15px 20px;\n    width: 80vw;\n    height: 500px;\n    overflow-y: scroll;\n    margin: 50px auto;\n}\n.leaderboard h1 {\n    text-align: center;\n    color: white;\n}\n.leaderboard .crown {\n    height: 50px;\n    width: auto;\n    vertical-align: bottom;\n}\n", ""]);
+	exports.push([module.id, "\n.leaderboard {\n    background: #45484d; /* Old browsers */\n    background: -moz-linear-gradient(top, #45484d 0%, #000000 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #45484d 0%,#000000 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #45484d 0%,#000000 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#45484d', endColorstr='#000000',GradientType=0 ); /* IE6-9 */\n    padding: 15px 20px;\n    height: 500px;\n    overflow-y: scroll;\n    margin: 50px 20px;\n}\n.leaderboard h1 {\n    text-align: center;\n    color: white;\n}\n.leaderboard .crown {\n    height: 50px;\n    width: auto;\n    vertical-align: bottom;\n}\n", ""]);
 
 	// exports
 
@@ -34213,6 +34213,8 @@
 	//
 	//
 	//
+	//
+	//
 
 	var store = __webpack_require__(25);
 	module.exports = {
@@ -34258,6 +34260,8 @@
 	  return _c('div', {
 	    staticClass: "leaderboard content"
 	  }, [_c('div', {
+	    staticClass: "row"
+	  }, [_c('div', {
 	    staticClass: "col-xs-12"
 	  }, [_c('h1', [_c('img', {
 	    staticClass: "crown",
@@ -34265,7 +34269,7 @@
 	      "src": 'Assets/img/crown.png',
 	      "alt": "corona"
 	    }
-	  }), _vm._v("Ranking")])]), _vm._v(" "), _vm._l((_vm.players), function(player) {
+	  }), _vm._v("Ranking")])])]), _vm._v(" "), _vm._l((_vm.players), function(player) {
 	    return _c('div', {
 	      staticClass: "col-md-6"
 	    }, [_c('player-plate', {
@@ -34356,7 +34360,7 @@
 
 
 	// module
-	exports.push([module.id, "\n.player {\n    height: 130px;\n    color: white;\n    border-style: solid;\n    border-color: dimgray;\n    border-width: 3px;\n    border-radius: 10px;\n    margin: 20px 0;\n    background: #a90329; /* Old browsers */\n    background: -moz-linear-gradient(top, #a90329 0%, #8f0222 74%, #6d0019 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #a90329 0%,#8f0222 74%,#6d0019 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #a90329 0%,#8f0222 74%,#6d0019 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=0 ); /* IE6-9 */\n}\n.player:hover {\n    background: #930324; /* Old browsers */\n    background: -moz-linear-gradient(top, #930324 0%, #7e021f 29%, #600016 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #930324 0%,#7e021f 29%,#600016 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #930324 0%,#7e021f 29%,#600016 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#930324', endColorstr='#600016',GradientType=0 ); /* IE6-9 */\n}\n.player-foto-place {\n    height: 50px;\n    width: 50px;\n    position: absolute;\n    top: 22px;\n    left: 12%;\n    z-index: 0;\n}\n.player-foto {\n    border-style: solid;\n    border-color: white;\n    border-width: 3px;\n    border-bottom-width: 15px;\n    height: 90px;\n    transform: rotate(-18deg);\n}\n.text {\n    display: block;\n    text-align: center;\n    transform: translateY(50%);\n}\n.player-screw {\n    display: block;\n    height: 30px;\n    width: auto;\n    margin: 0px auto;\n    z-index: 10;\n}\n.screw-up {\n    position: absolute;\n    top: 8px;\n}\n.screw-down {\n    position: absolute;\n    bottom: 12px;\n}\n.screw-right {\n    position: absolute;\n    right: 12px;\n}\n.screw-left {\n    position: absolute;\n    left: 12px;\n}\n", ""]);
+	exports.push([module.id, "\n.player {\n    height: 130px;\n    color: white;\n    border-style: solid;\n    border-color: dimgray;\n    border-width: 3px;\n    border-radius: 10px;\n    margin: 20px 0;\n    background: #a90329; /* Old browsers */\n    background: -moz-linear-gradient(top, #a90329 0%, #8f0222 74%, #6d0019 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #a90329 0%,#8f0222 74%,#6d0019 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #a90329 0%,#8f0222 74%,#6d0019 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=0 ); /* IE6-9 */\n}\n.player:hover {\n    background: #930324; /* Old browsers */\n    background: -moz-linear-gradient(top, #930324 0%, #7e021f 29%, #600016 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #930324 0%,#7e021f 29%,#600016 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #930324 0%,#7e021f 29%,#600016 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#930324', endColorstr='#600016',GradientType=0 ); /* IE6-9 */\n}\n.player-foto-place {\n    height: 50px;\n    width: 50px;\n    position: absolute;\n    top: 8%;\n    left: 60px;\n    z-index: 0;\n}\n.player-foto {\n    border-style: solid;\n    border-color: white;\n    border-width: 3px;\n    border-bottom-width: 15px;\n    height: 90px;\n    transform: rotate(-18deg);\n}\n.text {\n    display: block;\n    text-align: center;\n    transform: translateY(50%);\n}\n.player-screw {\n    display: block;\n    height: 30px;\n    width: auto;\n    margin: 0px auto;\n    z-index: 10;\n}\n.screw-up {\n    position: absolute;\n    top: 8px;\n}\n.screw-down {\n    position: absolute;\n    bottom: 12px;\n}\n.screw-right {\n    position: absolute;\n    right: 12px;\n}\n.screw-left {\n    position: absolute;\n    left: 12px;\n}\n", ""]);
 
 	// exports
 
@@ -34896,7 +34900,7 @@
 
 
 	// module
-	exports.push([module.id, "\n.loadingWindow, .loadingWindow .background {\n    width: 100%;\n    height: 100%;\n}\n#startButon {\n    width: 300px;\n    height: 100px;\n    font-size: 30px;\n    font-family: digital;\n    position: absolute;\n    bottom: 100px;\n    right: 200px;\n}\n", ""]);
+	exports.push([module.id, "\n.loadingWindow, .loadingWindow .background {\n    width: 100%;\n    height: 100%;\n}\n#startButon {\n    width: 300px;\n    height: 100px;\n    font-size: 30px;\n    font-family: digital;\n    position: absolute;\n    bottom: 10%;\n    right: 10%;\n}\n", ""]);
 
 	// exports
 

@@ -55,8 +55,8 @@
         height: 50px;
         width: 50px;
         position: absolute;
-        top: 22px;
-        left: 12%;
+        top: 8%;
+        left: 60px;
         z-index: 0;
     }
     .player-foto {

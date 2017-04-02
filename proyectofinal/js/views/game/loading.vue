@@ -55,7 +55,7 @@
         font-size: 30px;
         font-family: digital;
         position: absolute;
-        bottom: 100px;
-        right: 200px;
+        bottom: 10%;
+        right: 10%;
     }
 </style>

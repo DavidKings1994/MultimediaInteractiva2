@@ -3,6 +3,10 @@
     <head>
         <meta charset="utf-8">
         <title>Endless runner</title>
+        <meta name="viewport" content="initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,width=device-width,height=device-height,target-densitydpi=device-dpi,user-scalable=yes" />
+        <meta name="author" content="David Reyes">
+        <meta name="keywords" content="David,Reyes,programador,web,multimedia,interactiva,lmad,uanl,infinite,runner">
+        <meta name="description" content="proyecto final de la materia de multimedia y animacion digital de LMAD en FCFM">
         <meta property="og:url"           content="http://lmad.davidreyes.tk/proyectofinal/" />
         <meta property="og:type"          content="website" />
         <meta property="og:title"         content="Endless highway" />
@@ -109,11 +113,11 @@
     <body>
         <div id="App">
             <div class="container" id="mainContainer">
-                <div class="row" style="width: 85vw; margin: 0 auto;">
-                    <div class="col-xs-5">
+                <div class="row" style="margin: 0 auto;">
+                    <div class="col-xs-4">
                         <div class="fb-login-button" data-size="large" data-auto-logout-link="true"></div>
                     </div>
-                    <div class="col-xs-2">
+                    <div class="col-xs-4" style="text-align: center;">
                         <div class="fb-like" data-href="http://lmad.davidreyes.tk/proyectofinal" data-layout="button_count" data-action="like" data-size="large" data-show-faces="true"></div>
                         <div class="fb-share-button"
                             data-href="http://lmad.davidreyes.tk/proyectofinal/"
@@ -121,7 +125,7 @@
                             data-size="large">
                         </div>
                     </div>
-                    <div class="col-xs-1 col-xs-offset-4">
+                    <div class="col-xs-1 col-xs-offset-3">
                         <span
                             class="btnConfig glyphicon glyphicon-cog"
                             data-toggle="tooltip" title="Configuraciones"
@@ -130,13 +134,21 @@
                     </div>
                 </div>
                 <config v-if="showConfig" v-on:cerrar="showConfig = false"></config>
-                <div class="gameWindow">
-                    <template v-if='!gameStarted || gamePaused'>
-                        <loading v-on:start="startGame()"></loading>
-                    </template>
-                    <canvas id="gameWindow"></canvas>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="gameWindow">
+                            <template v-if='!gameStarted || gamePaused'>
+                                <loading v-on:start="startGame()"></loading>
+                            </template>
+                            <canvas id="gameWindow"></canvas>
+                        </div>
+                    </div>
                 </div>
-                <leaderboard></leaderboard>
+                <div class="row">
+                    <div class="col-md-12">
+                        <leaderboard></leaderboard>
+                    </div>
+                </div>
             </div>
         </div>
     </body>
