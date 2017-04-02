@@ -1,5 +1,8 @@
 <template>
     <div class="leaderboard content">
+        <div class="col-xs-12">
+            <h1><img class="crown" :src="'Assets/img/crown.png'" alt="corona">Ranking</h1>
+        </div>
         <div class="col-md-6" v-for="player in players">
             <player-plate :player="player"></player-plate>
         </div>
@@ -54,7 +57,14 @@
         height: 500px;
         overflow-y: scroll;
         margin: 50px auto;
-        /*border-style: solid;
-        border-color: rgb(150,0,0);*/
+    }
+    .leaderboard h1 {
+        text-align: center;
+        color: white;
+    }
+    .leaderboard .crown {
+        height: 50px;
+        width: auto;
+        vertical-align: bottom;
     }
 </style>

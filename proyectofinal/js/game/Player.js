@@ -114,6 +114,7 @@ define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store)
             this.motorSound.pause();
             Kings.AssetBundles[0].content.alert.pause();
             Kings.AssetBundles[0].content.alert.currentTime = 0;
+            this.explode();
         } else {
             if (this.fuel < 30) {
                 Kings.AssetBundles[0].content.alert.loop = true;
@@ -193,7 +194,6 @@ define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store)
                 this.blurId = null;
             }
             if (this.deathCam == null) {
-                this.explode();
                 this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.grayscale);
             }
             Kings.AssetBundles[0].content.ThroughTheFireandFlames.pause();

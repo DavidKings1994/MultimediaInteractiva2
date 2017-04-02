@@ -28629,6 +28629,7 @@
 	            this.motorSound.pause();
 	            Kings.AssetBundles[0].content.alert.pause();
 	            Kings.AssetBundles[0].content.alert.currentTime = 0;
+	            this.explode();
 	        } else {
 	            if (this.fuel < 30) {
 	                Kings.AssetBundles[0].content.alert.loop = true;
@@ -28708,7 +28709,6 @@
 	                this.blurId = null;
 	            }
 	            if (this.deathCam == null) {
-	                this.explode();
 	                this.deathCam = Kings.game.mainLayer.addEffect(Kings.game.shaders.grayscale);
 	            }
 	            Kings.AssetBundles[0].content.ThroughTheFireandFlames.pause();
@@ -31787,7 +31787,7 @@
 
 
 	// module
-	exports.push([module.id, "\n.leaderboard {\n    background: #45484d; /* Old browsers */\n    background: -moz-linear-gradient(top, #45484d 0%, #000000 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #45484d 0%,#000000 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #45484d 0%,#000000 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#45484d', endColorstr='#000000',GradientType=0 ); /* IE6-9 */\n    padding: 15px 20px;\n    width: 80vw;\n    height: 500px;\n    overflow-y: scroll;\n    margin: 50px auto;\n    /*border-style: solid;\n    border-color: rgb(150,0,0);*/\n}\n", ""]);
+	exports.push([module.id, "\n.leaderboard {\n    background: #45484d; /* Old browsers */\n    background: -moz-linear-gradient(top, #45484d 0%, #000000 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(top, #45484d 0%,#000000 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(to bottom, #45484d 0%,#000000 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#45484d', endColorstr='#000000',GradientType=0 ); /* IE6-9 */\n    padding: 15px 20px;\n    width: 80vw;\n    height: 500px;\n    overflow-y: scroll;\n    margin: 50px auto;\n}\n.leaderboard h1 {\n    text-align: center;\n    color: white;\n}\n.leaderboard .crown {\n    height: 50px;\n    width: auto;\n    vertical-align: bottom;\n}\n", ""]);
 
 	// exports
 
@@ -34210,6 +34210,9 @@
 	//
 	//
 	//
+	//
+	//
+	//
 
 	var store = __webpack_require__(25);
 	module.exports = {
@@ -34254,7 +34257,15 @@
 	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
 	  return _c('div', {
 	    staticClass: "leaderboard content"
-	  }, _vm._l((_vm.players), function(player) {
+	  }, [_c('div', {
+	    staticClass: "col-xs-12"
+	  }, [_c('h1', [_c('img', {
+	    staticClass: "crown",
+	    attrs: {
+	      "src": 'Assets/img/crown.png',
+	      "alt": "corona"
+	    }
+	  }), _vm._v("Ranking")])]), _vm._v(" "), _vm._l((_vm.players), function(player) {
 	    return _c('div', {
 	      staticClass: "col-md-6"
 	    }, [_c('player-plate', {
@@ -34262,7 +34273,7 @@
 	        "player": player
 	      }
 	    })], 1)
-	  }))
+	  })], 2)
 	},staticRenderFns: []}
 	module.exports.render._withStripped = true
 	if (false) {
