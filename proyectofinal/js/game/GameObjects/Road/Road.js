@@ -37,8 +37,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             texture: Kings.AssetBundles[0].content.ground2,
             width: 20.0,
             height: 80.0,
-            cols: 10.0,
-            rows: 10.0,
+            cols: 6.0,
+            rows: 6.0,
             maxHeight: 10,
             staticEdge: 'bottom'
         });
@@ -48,8 +48,8 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             texture: Kings.AssetBundles[0].content.ground2,
             width: 20.0,
             height: 80.0,
-            cols: 10.0,
-            rows: 10.0,
+            cols: 6.0,
+            rows: 6.0,
             maxHeight: 10,
             staticEdge: 'top'
         });
@@ -268,6 +268,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 v.z < (this.sections[i].position.z + this.sectionSize)
             ) {
                 this.playerIndexLocation = i;
+                break;
             }
         }
     },

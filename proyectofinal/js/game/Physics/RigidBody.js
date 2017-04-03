@@ -13,12 +13,12 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         checkCollisionWithBody: function(body) {
             if (
-                this.position.z - (this.size.z / 2) <= body.position.z + (body.size.z / 2) &&
-                this.position.z + (this.size.z / 2) >= body.position.z - (body.size.z / 2)
+                this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
+                this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
             ) {
                 if (
-                    this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
-                    this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
+                    this.position.z - (this.size.z / 2) <= body.position.z + (body.size.z / 2) &&
+                    this.position.z + (this.size.z / 2) >= body.position.z - (body.size.z / 2)
                 ) {
                     if (
                         this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&

@@ -5,7 +5,7 @@
 	class message
 	{
 		function get_message($id) {
-			$client = new nusoap_client('http://www.multimediainteractiva.ga/php/soap_server.php?wsdl',"wsdl");
+			$client = new nusoap_client('http://lmad.davidreyes.tk/proyectofinal/php/soap_server.php?wsdl',"wsdl");
 			$resul = $client->call('get_message', array('name'=>$id));
 			$err = $client->getError();
 			if ($err) {
@@ -20,7 +20,7 @@
 			}
 		}
 		function registro($nombre, $puntos, $idPuntuacion, $urlFoto) {
-			$client = new nusoap_client('http://www.multimediainteractiva.ga/php/soap_server.php?wsdl',"wsdl");
+			$client = new nusoap_client('http://lmad.davidreyes.tk/proyectofinal/php/soap_server.php?wsdl',"wsdl");
 			$resul = $client->call('registro', array('nombre'=>$nombre, 'puntos'=>$puntos, 'idPuntuacion'=>$idPuntuacion, 'urlFoto'=>$urlFoto));
 			$err = $client->getError();
 			if ($err) {
@@ -36,7 +36,7 @@
 		}
 		function leaderBoard()
 		{
-			$client = new nusoap_client('http://www.multimediainteractiva.ga/php/soap_server.php?wsdl',"wsdl");
+			$client = new nusoap_client('http://lmad.davidreyes.tk/proyectofinal/php/soap_server.php?wsdl',"wsdl");
 			$resul = $client->call('leaderBoard');
 			$err = $client->getError();
 			if ($err) {

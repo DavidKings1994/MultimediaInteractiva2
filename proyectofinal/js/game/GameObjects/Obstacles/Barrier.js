@@ -3,7 +3,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     Kings.Barrier = function(parameters) {
         parameters.shape = Kings.AssetBundles[0].content.barriere
-        parameters.rotation = { x: 0, y: -180, z: 0 };
+        parameters.rotation = { x: 0, y: 0, z: 0 };
         Kings.GameObject.call(this, parameters);
         var self = this;
         this.active = true;

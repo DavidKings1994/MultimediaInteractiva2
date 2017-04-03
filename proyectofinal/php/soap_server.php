@@ -6,7 +6,7 @@
 	require_once('./../vendor/deviservi/nusoap/lib/nusoap.php');
 
 	ini_set("soap.wsdl_cache_enabled", "0");
-	$URL = "http://www.multimediainteractiva.ga/php/soap_server.php";
+	$URL = "http://lmad.davidreyes.tk/proyectofinal//php/soap_server.php";
 	$namespace = $URL.'?wsdl';
 
 	function connect() {
@@ -20,7 +20,7 @@
 	$server->wsdl->schemaTargetNamespace = "urn:server";
 
 	$server->register('get_message',array("name" => "xsd:string"),array("return" => "xsd:string"),"urn:server","urn:server#get_message",'rpc','encoded','Just say hello');
-	$server->register('registro',array("nombre" => "xsd:string", "puntos" => "xsd:string", "idPuntuacion" => "xsd:string", "urlFoto" => "xsd:string"),array(),"urn:server","urn:server#registro",'rpc','encoded','registra puntuaciones');
+	$server->register('registro',array("nombre" => "xsd:string", "puntos" => "xsd:string", "idPuntuacion" => "xsd:string", "urlFoto" => "xsd:string"),array("return" => "xsd:string"),"urn:server","urn:server#registro",'rpc','encoded','registra puntuaciones');
 	$server->register('leaderBoard',array(),array("return" => "xsd:string"),"urn:server","urn:server#leaderBoard",'rpc','encoded','todos los datos');
 
 	function get_message($name) {
@@ -36,8 +36,13 @@
 		$query = mysqli_prepare($link, "CALL resgistrarPuntuacion(?,?,?,?);");
 		$query->bind_param('siss', $nombre, $puntos, $idPuntuacion, $urlFoto);
 		$query->execute();
-		if(!$query) {
-			echo "CALL failed: (" . $link->errno . ") " . $link->error;
+		$query->bind_result($resul);
+		if($query->fetch()) {
+			$r = array('resultado' => $resul);
+			return json_encode($r);
+		} else {
+			$error = array('resultado' => $query->error);
+			return json_encode($error);
 		}
 	}
 

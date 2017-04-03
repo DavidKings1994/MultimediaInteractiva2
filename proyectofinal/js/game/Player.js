@@ -71,26 +71,26 @@ define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store)
             case 0: {
                 this.camera.position.x = this.position.x;
                 this.camera.position.y = this.position.y + 2.5 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
-                this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
+                this.camera.position.z = this.position.z + 0.5 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
                 this.camera.aim = { x: 0, y: 0, z: 10 };
 
                 Kings.game.light.spot.position = [
                     this.camera.position.x - this.position.x,
                     this.camera.position.y - this.position.y,
-                    this.camera.position.z - this.position.z - 1
+                    this.camera.position.z - this.position.z
                 ];
                 break;
             }
             case 1: {
                 this.camera.position.x = 0;
                 this.camera.position.y = 2;
-                this.camera.position.z = this.position.z - 7;
+                this.camera.position.z = this.position.z - 8.5;
                 this.camera.aim = { x: 0, y: 0, z: 10 };
 
                 Kings.game.light.spot.position = [
                     this.camera.position.x + this.position.x,
                     this.camera.position.y + this.position.y,
-                    this.camera.position.z - this.position.z + 14
+                    this.camera.position.z - this.position.z + 15.5
                 ];
                 break;
             }
@@ -129,7 +129,7 @@ define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store)
         var backflip = false;
         if (this.live) {
             this.fuel -= 0.035;
-            this.position.z += this.velocity + (this.velocity * this.aceleration);
+            // this.position.z += this.velocity + (this.velocity * this.aceleration);
             if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
                 if (!this.buttonPressed) {
                     this.cameraMode++;
@@ -181,6 +181,7 @@ define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store)
                     this.onFloor = false;
                 }
             }
+            this.position.z += this.velocity + (this.velocity * this.aceleration);
         } else {
             var x = (10 * Math.sin(this.deathAngle * (Math.PI / 180.0))) + this.position.x;
             var z = (10 * Math.cos(this.deathAngle * (Math.PI / 180.0))) + this.position.z;
@@ -206,10 +207,11 @@ define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store)
             this.explode();
         }
 
-        var newy = Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) /2 : 0.3);
+        var fallspeed = Kings.Processing.map(this.velocity, 2, 5, 1.5, 2.5);
+        var newy = (Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) /2 : 0.3)) * fallspeed;
         if (this.jumping) {
             if (this.position.y < -0.1) {
-                this.position.y += Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) / 2 : 0.2);
+                this.position.y += (Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) / 2 : 0.2)) * fallspeed;
             } else {
                 this.jumping = false;
             }
@@ -250,6 +252,8 @@ define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store)
                 this.aceleration = 0;
             }
         }
+
+        this.shape.position.z = Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, -1.5, 0);
     };
 
     Kings.Player.prototype.explode = function() {
@@ -309,14 +313,14 @@ define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store)
     };
 
     Kings.Player.prototype.moveA = function() {
-        this.position.x += 0.3;
+        this.position.x += 0.4;
         if (this.position.x > 5) {
             this.position.x = 5;
         }
     };
 
     Kings.Player.prototype.moveD = function() {
-        this.position.x -= 0.3;
+        this.position.x -= 0.4;
         if (this.position.x < -5) {
             this.position.x = -5;
         }

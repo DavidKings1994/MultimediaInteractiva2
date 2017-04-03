@@ -4,6 +4,7 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
     Vue.component('player-plate', require('./views/leaderboard/plate.vue'));
     Vue.component('config', require('./views/configuration/config.vue'));
     Vue.component('loading', require('./views/game/loading.vue'));
+    Vue.component('newrecord', require('./views/game/record.vue'));
 
     $(document).ready(function() {
         window.addEventListener('keydown', function(e) {
@@ -26,7 +27,8 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
         new Vue({
             el: '#App',
             data: {
-                showConfig: false
+                showConfig: false,
+                showRecord: false
             },
             computed: {
                 score: function() {
@@ -68,8 +70,12 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
                         idPuntuacion: parameters.id.toString(),
                         urlFoto: parameters.url
                     },
-                    function(data, status){
+                    function(data, status) {
                         store.commit('setUpdate', true);
+                        var resul = $.parseJSON(data);
+                        if (resul.resultado == 1) {
+                            self.showRecord = true;
+                        }
                     });
                 },
                 checkLoginState: function() {
@@ -97,7 +103,9 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
                 },
                 statusChangeCallback: function(response) {
                     if (response.status === 'connected') {
-                        this.testAPI();
+                        if (this.score > 0) {
+                            this.testAPI();
+                        }
                     } else if (response.status === 'not_authorized') {
 
                     } else {

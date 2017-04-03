@@ -12,7 +12,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.body = new Kings.RigidBody({
             position: this.position,
             rotation: this.rotation,
-            size: { x: 0.5, y: 0.7, z: 0.5 },
+            size: { x: 1, y: 0.7, z: 1 },
             onCollision: function() {
                 if (self.active) {
                     Kings.AssetBundles[0].content.bubbling.currentTime = 0;

@@ -50,6 +50,7 @@
 	    Vue.component('player-plate', __webpack_require__(64));
 	    Vue.component('config', __webpack_require__(69));
 	    Vue.component('loading', __webpack_require__(74));
+	    Vue.component('newrecord', __webpack_require__(79));
 
 	    $(document).ready(function() {
 	        window.addEventListener('keydown', function(e) {
@@ -72,7 +73,8 @@
 	        new Vue({
 	            el: '#App',
 	            data: {
-	                showConfig: false
+	                showConfig: false,
+	                showRecord: false
 	            },
 	            computed: {
 	                score: function() {
@@ -114,8 +116,12 @@
 	                        idPuntuacion: parameters.id.toString(),
 	                        urlFoto: parameters.url
 	                    },
-	                    function(data, status){
+	                    function(data, status) {
 	                        store.commit('setUpdate', true);
+	                        var resul = $.parseJSON(data);
+	                        if (resul.resultado == 1) {
+	                            self.showRecord = true;
+	                        }
 	                    });
 	                },
 	                checkLoginState: function() {
@@ -143,7 +149,9 @@
 	                },
 	                statusChangeCallback: function(response) {
 	                    if (response.status === 'connected') {
-	                        this.testAPI();
+	                        if (this.score > 0) {
+	                            this.testAPI();
+	                        }
 	                    } else if (response.status === 'not_authorized') {
 
 	                    } else {
@@ -20091,7 +20099,7 @@
 	            $( document ).trigger( "gamePause" );
 
 	            Kings.game.player = new Kings.Player({
-	                velocity: 1,
+	                velocity: 2,
 	                position: { x: 0, y: -2, z: 0 },
 	                shape: Kings.AssetBundles[0].content.HarleyDavidson1,
 	                motorSound: Kings.AssetBundles[0].content.motorIddle,
@@ -20118,7 +20126,7 @@
 	                texture: Kings.AssetBundles[0].content.road,
 	                position: { x: 0, y: -2, z: 0},
 	                sectionSize: 12,
-	                numberOfSections: 10,
+	                numberOfSections: 8,
 	                update: function() {
 	                    road.locatePlayer(Kings.game.player.position);
 	                    if (Kings.game.player.live) {
@@ -20138,7 +20146,7 @@
 	                        if (Kings.game.player.velocity > 3) {
 	                            Kings.game.player.velocity = 3;
 	                        }
-	                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 3, 4, 9));
+	                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 2, 5, 4, 10));
 	                    }
 	                }
 	            });
@@ -28586,26 +28594,26 @@
 	            case 0: {
 	                this.camera.position.x = this.position.x;
 	                this.camera.position.y = this.position.y + 2.5 + Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 1);
-	                this.camera.position.z = this.position.z + 1 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
+	                this.camera.position.z = this.position.z + 0.5 - Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, 0, 2);
 	                this.camera.aim = { x: 0, y: 0, z: 10 };
 
 	                Kings.game.light.spot.position = [
 	                    this.camera.position.x - this.position.x,
 	                    this.camera.position.y - this.position.y,
-	                    this.camera.position.z - this.position.z - 1
+	                    this.camera.position.z - this.position.z
 	                ];
 	                break;
 	            }
 	            case 1: {
 	                this.camera.position.x = 0;
 	                this.camera.position.y = 2;
-	                this.camera.position.z = this.position.z - 7;
+	                this.camera.position.z = this.position.z - 8.5;
 	                this.camera.aim = { x: 0, y: 0, z: 10 };
 
 	                Kings.game.light.spot.position = [
 	                    this.camera.position.x + this.position.x,
 	                    this.camera.position.y + this.position.y,
-	                    this.camera.position.z - this.position.z + 14
+	                    this.camera.position.z - this.position.z + 15.5
 	                ];
 	                break;
 	            }
@@ -28644,7 +28652,7 @@
 	        var backflip = false;
 	        if (this.live) {
 	            this.fuel -= 0.035;
-	            this.position.z += this.velocity + (this.velocity * this.aceleration);
+	            // this.position.z += this.velocity + (this.velocity * this.aceleration);
 	            if (Kings.keyboard.isDown(Kings.keyboard.keys.C)) {
 	                if (!this.buttonPressed) {
 	                    this.cameraMode++;
@@ -28696,6 +28704,7 @@
 	                    this.onFloor = false;
 	                }
 	            }
+	            this.position.z += this.velocity + (this.velocity * this.aceleration);
 	        } else {
 	            var x = (10 * Math.sin(this.deathAngle * (Math.PI / 180.0))) + this.position.x;
 	            var z = (10 * Math.cos(this.deathAngle * (Math.PI / 180.0))) + this.position.z;
@@ -28721,10 +28730,11 @@
 	            this.explode();
 	        }
 
-	        var newy = Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) /2 : 0.3);
+	        var fallspeed = Kings.Processing.map(this.velocity, 2, 5, 1.5, 2.5);
+	        var newy = (Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) /2 : 0.3)) * fallspeed;
 	        if (this.jumping) {
 	            if (this.position.y < -0.1) {
-	                this.position.y += Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) / 2 : 0.2);
+	                this.position.y += (Math.abs(this.position.y) * ( backflip ? (1 + this.aceleration) / 2 : 0.2)) * fallspeed;
 	            } else {
 	                this.jumping = false;
 	            }
@@ -28765,6 +28775,8 @@
 	                this.aceleration = 0;
 	            }
 	        }
+
+	        this.shape.position.z = Kings.Processing.map(Math.abs(this.rotation.x), 0, 45, -1.5, 0);
 	    };
 
 	    Kings.Player.prototype.explode = function() {
@@ -28824,14 +28836,14 @@
 	    };
 
 	    Kings.Player.prototype.moveA = function() {
-	        this.position.x += 0.3;
+	        this.position.x += 0.4;
 	        if (this.position.x > 5) {
 	            this.position.x = 5;
 	        }
 	    };
 
 	    Kings.Player.prototype.moveD = function() {
-	        this.position.x -= 0.3;
+	        this.position.x -= 0.4;
 	        if (this.position.x < -5) {
 	            this.position.x = -5;
 	        }
@@ -30389,8 +30401,8 @@
 	            texture: Kings.AssetBundles[0].content.ground2,
 	            width: 20.0,
 	            height: 80.0,
-	            cols: 10.0,
-	            rows: 10.0,
+	            cols: 6.0,
+	            rows: 6.0,
 	            maxHeight: 10,
 	            staticEdge: 'bottom'
 	        });
@@ -30400,8 +30412,8 @@
 	            texture: Kings.AssetBundles[0].content.ground2,
 	            width: 20.0,
 	            height: 80.0,
-	            cols: 10.0,
-	            rows: 10.0,
+	            cols: 6.0,
+	            rows: 6.0,
 	            maxHeight: 10,
 	            staticEdge: 'top'
 	        });
@@ -30620,6 +30632,7 @@
 	                v.z < (this.sections[i].position.z + this.sectionSize)
 	            ) {
 	                this.playerIndexLocation = i;
+	                break;
 	            }
 	        }
 	    },
@@ -30719,7 +30732,7 @@
 
 	    Kings.Barrier = function(parameters) {
 	        parameters.shape = Kings.AssetBundles[0].content.barriere
-	        parameters.rotation = { x: 0, y: -180, z: 0 };
+	        parameters.rotation = { x: 0, y: 0, z: 0 };
 	        Kings.GameObject.call(this, parameters);
 	        var self = this;
 	        this.active = true;
@@ -30792,14 +30805,14 @@
 
 	    Kings.OilDrum = function(parameters) {
 	        parameters.shape = Kings.AssetBundles[0].content.oildrum
-	        parameters.rotation = { x: 0, y: 180, z: 0 };
+	        parameters.rotation = { x: 0, y: 0, z: 0 };
 	        Kings.GameObject.call(this, parameters);
 	        var self = this;
 	        this.active = true;
 	        this.body = new Kings.RigidBody({
 	            position: this.position,
 	            rotation: this.rotation,
-	            size: { x: 1.3, y: 2, z: 1.3 },
+	            size: { x: 2, y: 2, z: 1.3 },
 	            onCollision: function() {
 	                if (self.active) {
 	                    self.explosion = new Kings.ParticleExplosion({
@@ -30869,7 +30882,7 @@
 	        this.body = new Kings.RigidBody({
 	            position: this.position,
 	            rotation: this.rotation,
-	            size: { x: 0.5, y: 0.7, z: 0.5 },
+	            size: { x: 1, y: 0.7, z: 1 },
 	            onCollision: function() {
 	                if (self.active) {
 	                    Kings.AssetBundles[0].content.bubbling.currentTime = 0;
@@ -30932,7 +30945,7 @@
 	        this.body = new Kings.RigidBody({
 	            position: this.position,
 	            rotation: this.rotation,
-	            size: { x: 0.5, y: 0.7, z: 0.5 },
+	            size: { x: 1, y: 0.7, z: 1 },
 	            onCollision: function() {
 	                if (self.active) {
 	                    Kings.AssetBundles[0].content.time.currentTime = 0;
@@ -31204,12 +31217,12 @@
 
 	        checkCollisionWithBody: function(body) {
 	            if (
-	                this.position.z - (this.size.z / 2) <= body.position.z + (body.size.z / 2) &&
-	                this.position.z + (this.size.z / 2) >= body.position.z - (body.size.z / 2)
+	                this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
+	                this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
 	            ) {
 	                if (
-	                    this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
-	                    this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
+	                    this.position.z - (this.size.z / 2) <= body.position.z + (body.size.z / 2) &&
+	                    this.position.z + (this.size.z / 2) >= body.position.z - (body.size.z / 2)
 	                ) {
 	                    if (
 	                        this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&
@@ -34989,6 +35002,168 @@
 	  module.hot.accept()
 	  if (module.hot.data) {
 	     require("vue-hot-reload-api").rerender("data-v-7b53d68a", module.exports)
+	  }
+	}
+
+/***/ },
+/* 79 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/* styles */
+	__webpack_require__(80)
+
+	var Component = __webpack_require__(61)(
+	  /* script */
+	  __webpack_require__(82),
+	  /* template */
+	  __webpack_require__(83),
+	  /* scopeId */
+	  null,
+	  /* cssModules */
+	  null
+	)
+	Component.options.__file = "C:\\xampp\\htdocs\\MI2\\proyectofinal\\js\\views\\game\\record.vue"
+	if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+	if (Component.options.functional) {console.error("[vue-loader] record.vue: functional components are not supported with templates, they should use render functions.")}
+
+	/* hot reload */
+	if (false) {(function () {
+	  var hotAPI = require("vue-hot-reload-api")
+	  hotAPI.install(require("vue"), false)
+	  if (!hotAPI.compatible) return
+	  module.hot.accept()
+	  if (!module.hot.data) {
+	    hotAPI.createRecord("data-v-06df5ef3", Component.options)
+	  } else {
+	    hotAPI.reload("data-v-06df5ef3", Component.options)
+	  }
+	})()}
+
+	module.exports = Component.exports
+
+
+/***/ },
+/* 80 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(81);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	if(content.locals) module.exports = content.locals;
+	// add the styles to the DOM
+	var update = __webpack_require__(59)("b28c4ef0", content, false);
+	// Hot Module Replacement
+	if(false) {
+	 // When the styles change, update the <style> tags
+	 if(!content.locals) {
+	   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-06df5ef3!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./record.vue", function() {
+	     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-06df5ef3!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./record.vue");
+	     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+	     update(newContent);
+	   });
+	 }
+	 // When the module is disposed, remove the <style> tags
+	 module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 81 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(54)(undefined);
+	// imports
+
+
+	// module
+	exports.push([module.id, "\n#recordWindow {\n    display: inline-block;\n    width: 400px;\n    height: 150px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    z-index: 100;\n    background: rgb(169,3,41); /* Old browsers */\n    background: -moz-linear-gradient(-45deg, rgba(169,3,41,1) 0%, rgba(143,2,34,1) 44%, rgba(109,0,25,1) 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(-45deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(135deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */\n    border-radius: 5px;\n    border-style: solid;\n    border-color: white;\n    border-width: 2px;\n}\n#recordWindow h1 {\n    text-align: center;\n    color: white;\n}\n#recordWindow img {\n    height: 50px;\n    width: auto;\n    position: relative;\n    transform: rotate(-16deg);\n}\n.bounce-transition {\n    display: inline-block; /* otherwise scale animation won't work */\n}\n.bounce-enter {\n    animation: bounce-in 1s;\n}\n.bounce-leave {\n    animation: bounce-out 1s;\n}\n@keyframes bounce-in {\n0% {\n        transform: scale(0);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(1);\n}\n}\n@keyframes bounce-out {\n0% {\n        transform: scale(1);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(0);\n}\n}\n", ""]);
+
+	// exports
+
+
+/***/ },
+/* 82 */
+/***/ function(module, exports) {
+
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+
+	module.exports = {
+	    data: function() {
+	        return {
+	            secondaryAnimation: false
+	        };
+	    },
+	    methods: {
+	        enter: function() {
+	            var self = this;
+	            this.secondaryAnimation = true;
+	            var myVar = setInterval(function(){
+	                self.$emit('cerrar');
+	                clearInterval(myVar);
+	            }, 7000);
+	        }
+	    }
+	}
+
+
+/***/ },
+/* 83 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+	  return _c('transition', {
+	    attrs: {
+	      "name": "bounce",
+	      "enter-active-class": "bounce-enter",
+	      "leave-active-class": "bounce-leave"
+	    },
+	    on: {
+	      "enter": _vm.enter
+	    }
+	  }, [_c('div', {
+	    attrs: {
+	      "id": "recordWindow"
+	    }
+	  }, [_c('h1', [(_vm.secondaryAnimation) ? _c('transition', {
+	    attrs: {
+	      "name": "bounce",
+	      "enter-active-class": "bounce-enter",
+	      "leave-active-class": "bounce-leave"
+	    }
+	  }, [_c('img', {
+	    staticClass: "crown",
+	    attrs: {
+	      "src": 'Assets/img/crown.png',
+	      "alt": "corona"
+	    }
+	  })]) : _vm._e(), _vm._v("\n            Nuevo record personal!\n        ")], 1)])])
+	},staticRenderFns: []}
+	module.exports.render._withStripped = true
+	if (false) {
+	  module.hot.accept()
+	  if (module.hot.data) {
+	     require("vue-hot-reload-api").rerender("data-v-06df5ef3", module.exports)
 	  }
 	}
 

@@ -3,14 +3,14 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     Kings.OilDrum = function(parameters) {
         parameters.shape = Kings.AssetBundles[0].content.oildrum
-        parameters.rotation = { x: 0, y: 180, z: 0 };
+        parameters.rotation = { x: 0, y: 0, z: 0 };
         Kings.GameObject.call(this, parameters);
         var self = this;
         this.active = true;
         this.body = new Kings.RigidBody({
             position: this.position,
             rotation: this.rotation,
-            size: { x: 1.3, y: 2, z: 1.3 },
+            size: { x: 2, y: 2, z: 1.3 },
             onCollision: function() {
                 if (self.active) {
                     self.explosion = new Kings.ParticleExplosion({

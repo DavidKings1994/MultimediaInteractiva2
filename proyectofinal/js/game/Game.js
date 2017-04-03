@@ -121,7 +121,7 @@
             $( document ).trigger( "gamePause" );
 
             Kings.game.player = new Kings.Player({
-                velocity: 1,
+                velocity: 2,
                 position: { x: 0, y: -2, z: 0 },
                 shape: Kings.AssetBundles[0].content.HarleyDavidson1,
                 motorSound: Kings.AssetBundles[0].content.motorIddle,
@@ -148,7 +148,7 @@
                 texture: Kings.AssetBundles[0].content.road,
                 position: { x: 0, y: -2, z: 0},
                 sectionSize: 12,
-                numberOfSections: 10,
+                numberOfSections: 8,
                 update: function() {
                     road.locatePlayer(Kings.game.player.position);
                     if (Kings.game.player.live) {
@@ -168,7 +168,7 @@
                         if (Kings.game.player.velocity > 3) {
                             Kings.game.player.velocity = 3;
                         }
-                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 1, 3, 4, 9));
+                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 2, 5, 4, 10));
                     }
                 }
             });
