@@ -28809,7 +28809,7 @@
 	    Kings.Player.prototype.restart = function() {
 	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.currentTime = 0;
 	        Kings.AssetBundles[0].content.ThroughTheFireandFlames.play();
-	        this.velocity = 1;
+	        this.velocity = 2;
 	        if (this.deathCam != null) {
 	            Kings.game.mainLayer.removeEffect(this.deathCam);
 	            this.deathCam = null;
