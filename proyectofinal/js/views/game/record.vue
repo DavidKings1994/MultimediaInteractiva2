@@ -1,15 +1,13 @@
 <template>
     <transition name="bounce"
-        enter-active-class="bounce-enter"
-        leave-active-class="bounce-leave"
-        v-on:enter="enter">
+        v-on:enter="enter"
+        appear>
         <div id="recordWindow">
             <h1>
                 <transition
                     name="bounce"
-                    enter-active-class="bounce-enter"
-                    leave-active-class="bounce-leave"
-                    v-if="secondaryAnimation">
+                    v-if="secondaryAnimation"
+                    appear>
                     <img class="crown" :src="'Assets/img/crown.png'" alt="corona">
                 </transition>
                 Nuevo record personal!

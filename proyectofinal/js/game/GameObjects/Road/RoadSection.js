@@ -1,4 +1,4 @@
-define(['jquery', 'glMatrix'],  function($, glMatrix) {
+define(['jquery', 'glMatrix', './../../../store/store'],  function($, glMatrix, store) {
     var Kings = window.Kings || {};
 
     Kings.RoadSection = function(parameters) {
@@ -22,7 +22,9 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             this.objects[i].update();
             if (this.active) {
                 this.objects[i].body.checkCollisionWithBody(Kings.game.player.body);
-                this.orderDepth(Kings.game.camera);
+                if (store.state.gameOver) {
+                    this.orderDepth(Kings.game.camera);
+                }
             }
         }
     };

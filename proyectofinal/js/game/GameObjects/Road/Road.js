@@ -1,4 +1,4 @@
-define(['jquery', 'glMatrix'],  function($, glMatrix) {
+define(['jquery', 'glMatrix', './../../../store/store'],  function($, glMatrix, store) {
     var Kings = window.Kings || {};
 
     require('./RoadSection.js');
@@ -256,8 +256,20 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     Kings.Road.prototype.draw = function() {
         this.terrainRight.draw();
         this.terrainLeft.draw();
-        for (var i = this.sections.length - 1; i >= 0 ; i--) {
-            this.sections[i].draw();
+        if (store.state.gameOver) {
+            if (Kings.game.camera.position.z > Kings.game.player.position.z) {
+                for (var i = 0; i < this.sections.length; i++) {
+                    this.sections[i].draw();
+                }
+            } else {
+                for (var i = this.sections.length - 1; i >= 0 ; i--) {
+                    this.sections[i].draw();
+                }
+            }
+        } else {
+            for (var i = this.sections.length - 1; i >= 0 ; i--) {
+                this.sections[i].draw();
+            }
         }
     };
 

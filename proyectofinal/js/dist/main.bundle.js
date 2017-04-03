@@ -30362,7 +30362,7 @@
 /* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
 	    var Kings = window.Kings || {};
 
 	    __webpack_require__(33);
@@ -30620,8 +30620,20 @@
 	    Kings.Road.prototype.draw = function() {
 	        this.terrainRight.draw();
 	        this.terrainLeft.draw();
-	        for (var i = this.sections.length - 1; i >= 0 ; i--) {
-	            this.sections[i].draw();
+	        if (store.state.gameOver) {
+	            if (Kings.game.camera.position.z > Kings.game.player.position.z) {
+	                for (var i = 0; i < this.sections.length; i++) {
+	                    this.sections[i].draw();
+	                }
+	            } else {
+	                for (var i = this.sections.length - 1; i >= 0 ; i--) {
+	                    this.sections[i].draw();
+	                }
+	            }
+	        } else {
+	            for (var i = this.sections.length - 1; i >= 0 ; i--) {
+	                this.sections[i].draw();
+	            }
 	        }
 	    };
 
@@ -30671,7 +30683,7 @@
 /* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
 	    var Kings = window.Kings || {};
 
 	    Kings.RoadSection = function(parameters) {
@@ -30695,7 +30707,9 @@
 	            this.objects[i].update();
 	            if (this.active) {
 	                this.objects[i].body.checkCollisionWithBody(Kings.game.player.body);
-	                this.orderDepth(Kings.game.camera);
+	                if (store.state.gameOver) {
+	                    this.orderDepth(Kings.game.camera);
+	                }
 	            }
 	        }
 	    };
@@ -35105,8 +35119,6 @@
 	//
 	//
 	//
-	//
-	//
 
 	module.exports = {
 	    data: function() {
@@ -35135,8 +35147,7 @@
 	  return _c('transition', {
 	    attrs: {
 	      "name": "bounce",
-	      "enter-active-class": "bounce-enter",
-	      "leave-active-class": "bounce-leave"
+	      "appear": ""
 	    },
 	    on: {
 	      "enter": _vm.enter
@@ -35148,8 +35159,7 @@
 	  }, [_c('h1', [(_vm.secondaryAnimation) ? _c('transition', {
 	    attrs: {
 	      "name": "bounce",
-	      "enter-active-class": "bounce-enter",
-	      "leave-active-class": "bounce-leave"
+	      "appear": ""
 	    }
 	  }, [_c('img', {
 	    staticClass: "crown",
