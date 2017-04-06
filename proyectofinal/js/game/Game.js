@@ -122,7 +122,7 @@
 
             Kings.game.player = new Kings.Player({
                 velocity: 2,
-                position: { x: 0, y: -2, z: 0 },
+                position: new Kings.Vector({x: 0, y: -2, z: 0 }),
                 shape: Kings.AssetBundles[0].content.HarleyDavidson1,
                 motorSound: Kings.AssetBundles[0].content.motorIddle,
                 motorAccelSound: Kings.AssetBundles[0].content.motorAccel,
@@ -152,8 +152,8 @@
                 update: function() {
                     road.locatePlayer(Kings.game.player.position);
                     if (Kings.game.player.live) {
-                        road.terrainRight.pase = Kings.game.player.getVelocity() * 0.2;
-                        road.terrainLeft.pase = Kings.game.player.getVelocity() * 0.2;
+                        road.terrainRight.pase = Kings.game.player.getVelocity() * 0.05;
+                        road.terrainLeft.pase = Kings.game.player.getVelocity() * 0.05;
                         score.score = road.sections[road.playerIndexLocation].id;
                     } else {
                         road.terrainRight.pase = 0;

@@ -130,12 +130,10 @@
                         <span
                             class="btnConfig glyphicon glyphicon-cog"
                             data-toggle="tooltip" title="Configuraciones"
-                            v-on:click="showConfig = true">
+                            v-on:click="showConfig = !showConfig">
                         </span>
                     </div>
                 </div>
-                <config v-if="showConfig" v-on:cerrar="showConfig = false"></config>
-                <newrecord v-if="showRecord" v-on:cerrar="showRecord = false"></newrecord>
                 <div class="row">
                     <div class="col-md-12">
                         <div class="gameWindow">
@@ -152,6 +150,13 @@
                     </div>
                 </div>
             </div>
+            <div class="container" id="footer">
+                <div class="col-md-12">
+                    <img src="Assets\img\logo.png" alt="logo"><span>2017 David Reyes</span>
+                </div>
+            </div>
+            <newrecord v-if="showRecord" v-on:cerrar="showRecord = false"></newrecord>
+            <config v-if="showConfig" v-on:cerrar="showConfig = false"></config>
         </div>
     </body>
 </html>

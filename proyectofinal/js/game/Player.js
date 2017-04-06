@@ -1,4 +1,4 @@
-define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store) {
+define(['jquery', 'glMatrix', './../store/store', './Matemathic/Vector'],  function($, glMatrix, store) {
     var Kings = window.Kings || {};
 
     Kings.Player = function(parameters) {
@@ -182,6 +182,7 @@ define(['jquery', 'glMatrix', './../store/store'],  function($, glMatrix, store)
                 }
             }
             this.position.z += this.velocity + (this.velocity * this.aceleration);
+            this.body.setPosition(this.position);
         } else {
             var x = (10 * Math.sin(this.deathAngle * (Math.PI / 180.0))) + this.position.x;
             var z = (10 * Math.cos(this.deathAngle * (Math.PI / 180.0))) + this.position.z;

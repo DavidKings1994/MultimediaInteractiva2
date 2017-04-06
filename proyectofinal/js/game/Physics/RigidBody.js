@@ -1,8 +1,13 @@
-define(['jquery', 'glMatrix'],  function($, glMatrix) {
+define(['jquery', 'glMatrix', './../Matemathic/Vector'],  function($, glMatrix) {
     var Kings = window.Kings || {};
 
     Kings.RigidBody = function(parameters) {
-        this.position = parameters.position || { x: 0, y: 0, z: 0};
+        this.position = parameters.position || new Kings.Vector();
+        this.pastPosition = {
+            x: parameters.position.x,
+            y: parameters.position.y,
+            z: parameters.position.z
+        } || { x: 0, y: 0, z: 0 };
         this.rotation = parameters.rotation || { x: 0, y: 0, z: 0};
         this.size = parameters.size || { x: 0, y: 0, z: 0};
         this.callback = parameters.onCollision;
@@ -10,6 +15,41 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
     Kings.RigidBody.prototype = {
         constructor: Kings.RigidBody,
+
+        setPosition: function(position) {
+            this.pastPosition = this.position.clone();
+            this.position = position.clone();
+        },
+
+        // Especifica para el juego unicamente
+        continuosCollision: function(body) {
+            var movementVector = new Kings.Vector({
+                x: body.position.x - body.pastPosition.x,
+                y: body.position.y - body.pastPosition.y,
+                z: body.position.z - body.pastPosition.z
+            });
+
+            if (
+                this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
+                this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
+            ) {
+                if (
+                    body.pastPosition.z <= this.position.z + (this.size.z / 2) &&
+                    body.pastPosition.z + movementVector.z >= this.position.z - (this.size.z / 2)
+                ) {
+                    if (
+                        this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&
+                        this.position.y + (this.size.y / 2) >= body.position.y - (body.size.y / 2)
+                    ) {
+                        if (this.callback !== undefined) {
+                            this.callback();
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
+        },
 
         checkCollisionWithBody: function(body) {
             if (

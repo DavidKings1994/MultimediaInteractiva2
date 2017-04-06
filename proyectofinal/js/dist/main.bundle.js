@@ -20100,7 +20100,7 @@
 
 	            Kings.game.player = new Kings.Player({
 	                velocity: 2,
-	                position: { x: 0, y: -2, z: 0 },
+	                position: new Kings.Vector({x: 0, y: -2, z: 0 }),
 	                shape: Kings.AssetBundles[0].content.HarleyDavidson1,
 	                motorSound: Kings.AssetBundles[0].content.motorIddle,
 	                motorAccelSound: Kings.AssetBundles[0].content.motorAccel,
@@ -20130,8 +20130,8 @@
 	                update: function() {
 	                    road.locatePlayer(Kings.game.player.position);
 	                    if (Kings.game.player.live) {
-	                        road.terrainRight.pase = Kings.game.player.getVelocity() * 0.2;
-	                        road.terrainLeft.pase = Kings.game.player.getVelocity() * 0.2;
+	                        road.terrainRight.pase = Kings.game.player.getVelocity() * 0.05;
+	                        road.terrainLeft.pase = Kings.game.player.getVelocity() * 0.05;
 	                        score.score = road.sections[road.playerIndexLocation].id;
 	                    } else {
 	                        road.terrainRight.pase = 0;
@@ -26895,6 +26895,10 @@
 	        this.camera = parameters.camera || new Kings.Camera();
 	        this.gameUpdate = function() { parameters.update() };
 
+	        this.lastTime = 0;
+	        this.elapsedTime = 0;
+	        this.timeStep = 1000/60;
+
 	        window.requestAnimFrame = (function() {
 	            return window.requestAnimationFrame ||
 	            window.webkitRequestAnimationFrame ||
@@ -26902,7 +26906,7 @@
 	            window.oRequestAnimationFrame ||
 	            window.msRequestAnimationFrame ||
 	            function(callback, element) {
-	                window.setTimeout(callback, 1000/30);
+	                window.setTimeout(callback, this.timeStep);
 	            };
 	        })();
 
@@ -26916,8 +26920,6 @@
 	        Kings.vMatrix = glMatrix.mat4.create();
 	        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
 	        Kings.mvMatrixStack = [];
-
-	        this.lastTime = 0;
 
 	        Kings.colorShader = new Kings.Shader({
 	            gl: gl,
@@ -26979,11 +26981,11 @@
 
 	        animate: function() {
 	            var timeNow = new Date().getTime();
-	            if (this.lastTime != 0) {
-	                var elapsed = timeNow - this.lastTime;
+	            if (timeNow > this.lastTime + this.timeStep) {
 	                this.update();
+	                this.elapsed = timeNow - this.lastTime;
+	                this.lastTime = timeNow;
 	            }
-	            this.lastTime = timeNow;
 	        },
 
 	        tick: function() {
@@ -27137,6 +27139,10 @@
 	            });
 	        },
 
+	        distanceTo: function(v) {
+	            return Math.sqrt(Math.pow(v.x - this.x, 2) + Math.pow(v.y - this.y, 2) + Math.pow(v.z - this.z, 2));
+	        },
+
 	        dotProduct: function(v) {
 	            return (this.x * v.x) + (this.y * v.y) + (this.z * v.z);
 	        },
@@ -27175,10 +27181,11 @@
 	        },
 
 	        phi: function() {
-	            var angle = Math.atan2(this.x,this.y) * (180 / Math.PI);
-	            if (angle < 0) {
-	                angle += 360;
-	            }
+	            var n = this.normalize();
+	            var angle = (Math.atan2(n.x,n.z)) * (180 / Math.PI);
+	            // if (angle < 0) {
+	            //     angle += 360;
+	            // }
 	            return angle;
 	        }
 	    };
@@ -28437,9 +28444,13 @@
 	        gl.enable(gl.BLEND);
 	        gl.disable(gl.DEPTH_TEST);
 
-	        var cdir = new Kings.Vector({ x: camera.aim.x, y: camera.aim.y, z: camera.aim.z });
+	        var cdir = new Kings.Vector({
+	            x: camera.aim.x,
+	            y: camera.aim.y,
+	            z: camera.aim.z
+	        });
 
-	        this.rotation.y = -cdir.phi();
+	        this.rotation.y = cdir.phi();
 
 	        Kings.GL.mvPushMatrix();
 	        Kings.GL.mvTranslate(this.position);
@@ -28521,7 +28532,7 @@
 /* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25), __webpack_require__(9)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
 	    var Kings = window.Kings || {};
 
 	    Kings.Player = function(parameters) {
@@ -28705,6 +28716,7 @@
 	                }
 	            }
 	            this.position.z += this.velocity + (this.velocity * this.aceleration);
+	            this.body.setPosition(this.position);
 	        } else {
 	            var x = (10 * Math.sin(this.deathAngle * (Math.PI / 180.0))) + this.position.x;
 	            var z = (10 * Math.cos(this.deathAngle * (Math.PI / 180.0))) + this.position.z;
@@ -30706,7 +30718,7 @@
 	        for (var i = 0; i < this.objects.length; i++) {
 	            this.objects[i].update();
 	            if (this.active) {
-	                this.objects[i].body.checkCollisionWithBody(Kings.game.player.body);
+	                this.objects[i].body.continuosCollision(Kings.game.player.body);
 	                if (store.state.gameOver) {
 	                    this.orderDepth(Kings.game.camera);
 	                }
@@ -31216,11 +31228,16 @@
 /* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(9)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
 	    Kings.RigidBody = function(parameters) {
-	        this.position = parameters.position || { x: 0, y: 0, z: 0};
+	        this.position = parameters.position || new Kings.Vector();
+	        this.pastPosition = {
+	            x: parameters.position.x,
+	            y: parameters.position.y,
+	            z: parameters.position.z
+	        } || { x: 0, y: 0, z: 0 };
 	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0};
 	        this.size = parameters.size || { x: 0, y: 0, z: 0};
 	        this.callback = parameters.onCollision;
@@ -31228,6 +31245,41 @@
 
 	    Kings.RigidBody.prototype = {
 	        constructor: Kings.RigidBody,
+
+	        setPosition: function(position) {
+	            this.pastPosition = this.position.clone();
+	            this.position = position.clone();
+	        },
+
+	        // Especifica para el juego unicamente
+	        continuosCollision: function(body) {
+	            var movementVector = new Kings.Vector({
+	                x: body.position.x - body.pastPosition.x,
+	                y: body.position.y - body.pastPosition.y,
+	                z: body.position.z - body.pastPosition.z
+	            });
+
+	            if (
+	                this.position.x - (this.size.x / 2) <= body.position.x + (body.size.x / 2) &&
+	                this.position.x + (this.size.x / 2) >= body.position.x - (body.size.x / 2)
+	            ) {
+	                if (
+	                    body.pastPosition.z <= this.position.z + (this.size.z / 2) &&
+	                    body.pastPosition.z + movementVector.z >= this.position.z - (this.size.z / 2)
+	                ) {
+	                    if (
+	                        this.position.y - (this.size.y / 2) <= body.position.y + (body.size.y / 2) &&
+	                        this.position.y + (this.size.y / 2) >= body.position.y - (body.size.y / 2)
+	                    ) {
+	                        if (this.callback !== undefined) {
+	                            this.callback();
+	                        }
+	                        return true;
+	                    }
+	                }
+	            }
+	            return false;
+	        },
 
 	        checkCollisionWithBody: function(body) {
 	            if (
@@ -35092,7 +35144,7 @@
 
 
 	// module
-	exports.push([module.id, "\n#recordWindow {\n    display: inline-block;\n    width: 400px;\n    height: 150px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    z-index: 100;\n    background: rgb(169,3,41); /* Old browsers */\n    background: -moz-linear-gradient(-45deg, rgba(169,3,41,1) 0%, rgba(143,2,34,1) 44%, rgba(109,0,25,1) 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(-45deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(135deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */\n    border-radius: 5px;\n    border-style: solid;\n    border-color: white;\n    border-width: 2px;\n}\n#recordWindow h1 {\n    text-align: center;\n    color: white;\n}\n#recordWindow img {\n    height: 50px;\n    width: auto;\n    position: relative;\n    transform: rotate(-16deg);\n}\n.bounce-transition {\n    display: inline-block; /* otherwise scale animation won't work */\n}\n.bounce-enter {\n    animation: bounce-in 1s;\n}\n.bounce-leave {\n    animation: bounce-out 1s;\n}\n@keyframes bounce-in {\n0% {\n        transform: scale(0);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(1);\n}\n}\n@keyframes bounce-out {\n0% {\n        transform: scale(1);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(0);\n}\n}\n", ""]);
+	exports.push([module.id, "\n#recordWindow {\n    padding: 0px 20px;\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    margin-top: -75px;\n    margin-left: -200px;\n    z-index: 100;\n    background: rgb(169,3,41); /* Old browsers */\n    background: -moz-linear-gradient(-45deg, rgba(169,3,41,1) 0%, rgba(143,2,34,1) 44%, rgba(109,0,25,1) 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(-45deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(135deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */\n    border-radius: 5px;\n    border-style: solid;\n    border-color: white;\n    border-width: 2px;\n}\n#recordWindow h1 {\n    text-align: center;\n    color: white;\n}\n#recordWindow img {\n    height: 69px;\n    width: auto;\n    position: absolute;\n    top: -37px;\n    left: -35px;\n    display: inline-block;\n    transform: rotate(-30deg);\n}\n.bounce-animation-transition {\n    display: inline-block;\n    transform: scale(0) !important;\n}\n.bounce-animation-enter {\n    animation: bounce-in 2s;\n    -webkit-animation: bounce-in 2s;\n}\n.bounce-animation-leave {\n    animation: bounce-out 2s;\n    -webkit-animation: bounce-out 2s;\n}\n@keyframes bounce-in {\n0% {\n        transform: scale(0);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(1);\n}\n}\n@keyframes bounce-out {\n0% {\n        transform: scale(1);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(0);\n}\n}\n", ""]);
 
 	// exports
 
@@ -35146,11 +35198,11 @@
 	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
 	  return _c('transition', {
 	    attrs: {
-	      "name": "bounce",
+	      "name": "bounce-animation",
 	      "appear": ""
 	    },
 	    on: {
-	      "enter": _vm.enter
+	      "after-enter": _vm.enter
 	    }
 	  }, [_c('div', {
 	    attrs: {
@@ -35158,7 +35210,7 @@
 	    }
 	  }, [_c('h1', [(_vm.secondaryAnimation) ? _c('transition', {
 	    attrs: {
-	      "name": "bounce",
+	      "name": "bounce-animation",
 	      "appear": ""
 	    }
 	  }, [_c('img', {

@@ -18,6 +18,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             });
         },
 
+        distanceTo: function(v) {
+            return Math.sqrt(Math.pow(v.x - this.x, 2) + Math.pow(v.y - this.y, 2) + Math.pow(v.z - this.z, 2));
+        },
+
         dotProduct: function(v) {
             return (this.x * v.x) + (this.y * v.y) + (this.z * v.z);
         },
@@ -56,10 +60,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         },
 
         phi: function() {
-            var angle = Math.atan2(this.x,this.y) * (180 / Math.PI);
-            if (angle < 0) {
-                angle += 360;
-            }
+            var n = this.normalize();
+            var angle = (Math.atan2(n.x,n.z)) * (180 / Math.PI);
+            // if (angle < 0) {
+            //     angle += 360;
+            // }
             return angle;
         }
     };

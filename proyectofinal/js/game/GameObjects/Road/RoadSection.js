@@ -21,7 +21,7 @@ define(['jquery', 'glMatrix', './../../../store/store'],  function($, glMatrix, 
         for (var i = 0; i < this.objects.length; i++) {
             this.objects[i].update();
             if (this.active) {
-                this.objects[i].body.checkCollisionWithBody(Kings.game.player.body);
+                this.objects[i].body.continuosCollision(Kings.game.player.body);
                 if (store.state.gameOver) {
                     this.orderDepth(Kings.game.camera);
                 }

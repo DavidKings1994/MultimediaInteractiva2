@@ -41,6 +41,10 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         this.camera = parameters.camera || new Kings.Camera();
         this.gameUpdate = function() { parameters.update() };
 
+        this.lastTime = 0;
+        this.elapsedTime = 0;
+        this.timeStep = 1000/60;
+
         window.requestAnimFrame = (function() {
             return window.requestAnimationFrame ||
             window.webkitRequestAnimationFrame ||
@@ -48,7 +52,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
             window.oRequestAnimationFrame ||
             window.msRequestAnimationFrame ||
             function(callback, element) {
-                window.setTimeout(callback, 1000/30);
+                window.setTimeout(callback, this.timeStep);
             };
         })();
 
@@ -62,8 +66,6 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         Kings.vMatrix = glMatrix.mat4.create();
         glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
         Kings.mvMatrixStack = [];
-
-        this.lastTime = 0;
 
         Kings.colorShader = new Kings.Shader({
             gl: gl,
@@ -125,11 +127,11 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         animate: function() {
             var timeNow = new Date().getTime();
-            if (this.lastTime != 0) {
-                var elapsed = timeNow - this.lastTime;
+            if (timeNow > this.lastTime + this.timeStep) {
                 this.update();
+                this.elapsed = timeNow - this.lastTime;
+                this.lastTime = timeNow;
             }
-            this.lastTime = timeNow;
         },
 
         tick: function() {

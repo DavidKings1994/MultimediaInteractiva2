@@ -48,9 +48,13 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         gl.enable(gl.BLEND);
         gl.disable(gl.DEPTH_TEST);
 
-        var cdir = new Kings.Vector({ x: camera.aim.x, y: camera.aim.y, z: camera.aim.z });
+        var cdir = new Kings.Vector({
+            x: camera.aim.x,
+            y: camera.aim.y,
+            z: camera.aim.z
+        });
 
-        this.rotation.y = -cdir.phi();
+        this.rotation.y = cdir.phi();
 
         Kings.GL.mvPushMatrix();
         Kings.GL.mvTranslate(this.position);

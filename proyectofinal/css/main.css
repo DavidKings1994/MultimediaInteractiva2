@@ -41,6 +41,24 @@ body {
     border-color: rgb(150,0,0);
 }
 
+#footer {
+    height: 100px;
+    background: rgb(50,50,50);
+    padding: 36px 0;
+    text-align: center;
+}
+
+#footer img {
+    height: 20px;
+}
+
+#footer span {
+    color: rgb(100,100,100);
+    font-size: 20px;
+    vertical-align: middle;
+    margin-left: 10px;
+}
+
 ::-webkit-scrollbar {
     width: 8px;
 }

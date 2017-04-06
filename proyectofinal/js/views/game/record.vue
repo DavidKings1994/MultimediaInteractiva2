@@ -1,11 +1,11 @@
 <template>
-    <transition name="bounce"
-        v-on:enter="enter"
+    <transition name="bounce-animation"
+        v-on:after-enter="enter"
         appear>
         <div id="recordWindow">
             <h1>
                 <transition
-                    name="bounce"
+                    name="bounce-animation"
                     v-if="secondaryAnimation"
                     appear>
                     <img class="crown" :src="'Assets/img/crown.png'" alt="corona">
@@ -38,13 +38,12 @@
 
 <style>
     #recordWindow {
-        display: inline-block;
-        width: 400px;
-        height: 150px;
-        position: fixed;
+        padding: 0px 20px;
+        position: absolute;
         top: 50%;
         left: 50%;
-        transform: translate(-50%, -50%);
+        margin-top: -75px;
+        margin-left: -200px;
         z-index: 100;
         background: rgb(169,3,41); /* Old browsers */
         background: -moz-linear-gradient(-45deg, rgba(169,3,41,1) 0%, rgba(143,2,34,1) 44%, rgba(109,0,25,1) 100%); /* FF3.6-15 */
@@ -61,19 +60,25 @@
         color: white;
     }
     #recordWindow img {
-        height: 50px;
+        height: 69px;
         width: auto;
-        position: relative;
-        transform: rotate(-16deg);
+        position: absolute;
+        top: -37px;
+        left: -35px;
+        display: inline-block;
+        transform: rotate(-30deg);
     }
-    .bounce-transition {
-        display: inline-block; /* otherwise scale animation won't work */
+    .bounce-animation-transition {
+        display: inline-block;
+        transform: scale(0) !important;
     }
-    .bounce-enter {
-        animation: bounce-in 1s;
+    .bounce-animation-enter {
+        animation: bounce-in 2s;
+        -webkit-animation: bounce-in 2s;
     }
-    .bounce-leave {
-        animation: bounce-out 1s;
+    .bounce-animation-leave {
+        animation: bounce-out 2s;
+        -webkit-animation: bounce-out 2s;
     }
     @keyframes bounce-in {
         0% {
