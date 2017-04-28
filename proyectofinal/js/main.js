@@ -28,7 +28,8 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
             el: '#App',
             data: {
                 showConfig: false,
-                showRecord: false
+                showRecord: false,
+                usuarioLogeado: true
             },
             computed: {
                 score: function() {
@@ -103,13 +104,14 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
                 },
                 statusChangeCallback: function(response) {
                     if (response.status === 'connected') {
+                        this.usuarioLogeado = true;
                         if (this.score > 0) {
                             this.testAPI();
                         }
                     } else if (response.status === 'not_authorized') {
-
+                        this.usuarioLogeado = false;
                     } else {
-
+                        this.usuarioLogeado = false;
                     }
                 },
             },

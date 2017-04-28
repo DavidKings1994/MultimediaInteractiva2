@@ -117,6 +117,9 @@
                 <div class="row" style="margin: 0 auto;">
                     <div class="col-xs-4">
                         <div class="fb-login-button" data-size="large" data-auto-logout-link="true"></div>
+                        <div v-if="!usuarioLogeado" id="Mensaje-Login">
+                            <span>Inicia sesion para registrar tu puntuacion!</span>
+                        </div>
                     </div>
                     <div class="col-xs-4" style="text-align: center;">
                         <div class="fb-like" data-href="http://lmad.davidreyes.tk/proyectofinal" data-layout="button_count" data-action="like" data-size="large" data-show-faces="true"></div>
@@ -155,8 +158,8 @@
                     <img src="Assets\img\logo.png" alt="logo"><span>2017 David Reyes</span>
                 </div>
             </div>
-            <newrecord v-if="showRecord" v-on:cerrar="showRecord = false"></newrecord>
-            <config v-if="showConfig" v-on:cerrar="showConfig = false"></config>
+            <newrecord v-show="showRecord" v-on:cerrar="showRecord = false"></newrecord>
+            <config v-show="showConfig" v-on:cerrar="showConfig = false"></config>
         </div>
     </body>
 </html>

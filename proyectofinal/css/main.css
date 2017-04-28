@@ -41,6 +41,23 @@ body {
     border-color: rgb(150,0,0);
 }
 
+#Mensaje-Login {
+    float: right;
+    color: white;
+    background: forestgreen;
+    border-radius: 5px;
+    padding: 3px 6px;
+    font-size: 13px;
+}
+
+#Mensaje-Login img {
+
+}
+
+#Mensaje-Login p {
+
+}
+
 #footer {
     height: 100px;
     background: rgb(50,50,50);

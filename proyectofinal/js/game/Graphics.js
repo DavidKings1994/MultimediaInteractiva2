@@ -43,7 +43,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
 
         this.lastTime = 0;
         this.elapsedTime = 0;
-        this.timeStep = 1000/60;
+        this.timeStep = 1000/30;
 
         window.requestAnimFrame = (function() {
             return window.requestAnimationFrame ||

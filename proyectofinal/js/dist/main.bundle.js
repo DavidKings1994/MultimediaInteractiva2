@@ -74,7 +74,8 @@
 	            el: '#App',
 	            data: {
 	                showConfig: false,
-	                showRecord: false
+	                showRecord: false,
+	                usuarioLogeado: true
 	            },
 	            computed: {
 	                score: function() {
@@ -149,13 +150,14 @@
 	                },
 	                statusChangeCallback: function(response) {
 	                    if (response.status === 'connected') {
+	                        this.usuarioLogeado = true;
 	                        if (this.score > 0) {
 	                            this.testAPI();
 	                        }
 	                    } else if (response.status === 'not_authorized') {
-
+	                        this.usuarioLogeado = false;
 	                    } else {
-
+	                        this.usuarioLogeado = false;
 	                    }
 	                },
 	            },
@@ -26897,7 +26899,7 @@
 
 	        this.lastTime = 0;
 	        this.elapsedTime = 0;
-	        this.timeStep = 1000/60;
+	        this.timeStep = 1000/30;
 
 	        window.requestAnimFrame = (function() {
 	            return window.requestAnimationFrame ||
