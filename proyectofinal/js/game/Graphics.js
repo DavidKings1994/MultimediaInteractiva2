@@ -6,6 +6,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
     require('./Geometry/Triangle.js');
     require('./Geometry/Plane.js');
     require('./Geometry/Cube.js');
+    require('./Geometry/Sphere.js');
     require('./Geometry/Grid.js');
     require('./GameObjects/Gameobject.js');
     require('./GameObjects/Camera.js');
@@ -64,7 +65,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
         Kings.pMatrix = glMatrix.mat4.create();
         Kings.wMatrix = glMatrix.mat4.create();
         Kings.vMatrix = glMatrix.mat4.create();
-        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
+        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 120.0);
         Kings.mvMatrixStack = [];
 
         Kings.colorShader = new Kings.Shader({
@@ -107,7 +108,7 @@ define(['jquery', 'glMatrix'],  function($, glMatrix) {
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
+                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 120.0);
 
                 for (var i = 0; i < this.elements.length; i++) {
                     //if (Kings.Gameobject != null) {

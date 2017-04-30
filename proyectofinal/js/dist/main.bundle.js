@@ -44,13 +44,13 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(2), __webpack_require__(26), __webpack_require__(4), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Vue, Vuex, Game, Store) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function($) {!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(2), __webpack_require__(27), __webpack_require__(4), __webpack_require__(26)], __WEBPACK_AMD_DEFINE_RESULT__ = function(Vue, Vuex, Game, Store) {
 
-	    Vue.component('leaderboard', __webpack_require__(51));
-	    Vue.component('player-plate', __webpack_require__(64));
-	    Vue.component('config', __webpack_require__(69));
-	    Vue.component('loading', __webpack_require__(74));
-	    Vue.component('newrecord', __webpack_require__(79));
+	    Vue.component('leaderboard', __webpack_require__(53));
+	    Vue.component('player-plate', __webpack_require__(66));
+	    Vue.component('config', __webpack_require__(71));
+	    Vue.component('loading', __webpack_require__(76));
+	    Vue.component('newrecord', __webpack_require__(81));
 
 	    $(document).ready(function() {
 	        window.addEventListener('keydown', function(e) {
@@ -59,7 +59,7 @@
 	            }
 	        });
 
-	        var store = __webpack_require__(25);
+	        var store = __webpack_require__(26);
 	        var json = localStorage.getItem('configurationERMI');
 	        if (json != null) {
 	            var valores = JSON.parse(json);
@@ -20003,20 +20003,21 @@
 
 	    __webpack_require__(6);
 	    __webpack_require__(7);
-	    __webpack_require__(24);
-	    __webpack_require__(27);
-	    __webpack_require__(31);
-	    __webpack_require__(32);
-	    __webpack_require__(37);
-	    __webpack_require__(38);
+	    __webpack_require__(25);
+	    __webpack_require__(28);
+	    __webpack_require__(29);
+	    __webpack_require__(33);
+	    __webpack_require__(34);
 	    __webpack_require__(39);
+	    __webpack_require__(40);
 	    __webpack_require__(41);
-	    __webpack_require__(42);
 	    __webpack_require__(43);
 	    __webpack_require__(44);
 	    __webpack_require__(45);
+	    __webpack_require__(46);
+	    __webpack_require__(47);
 
-	    var store = __webpack_require__(25);
+	    var store = __webpack_require__(26);
 
 	    $.fn.initGame = function( parameters ) {
 	        var self = this;
@@ -20040,7 +20041,7 @@
 	                ambiental: [1.0, 1.0, 1.0],
 	                directional: {
 	                    direction: [0.0, -0.3, -0.3],
-	                    color: [0.3, 0.3, 0.3]
+	                    color: [0.4, 0.4, 0.4]
 	                },
 	                spot: {
 	                    position: [0.0, 0.0, 0.0],
@@ -20059,11 +20060,11 @@
 	        }, false );
 
 	        Kings.game.shaders = {
-	            grayscale: __webpack_require__(46),
-	            blur: __webpack_require__(47),
-	            hdr: __webpack_require__(48),
-	            crt: __webpack_require__(49),
-	            basic: __webpack_require__(50)
+	            grayscale: __webpack_require__(48),
+	            blur: __webpack_require__(49),
+	            hdr: __webpack_require__(50),
+	            crt: __webpack_require__(51),
+	            basic: __webpack_require__(52)
 	        };
 
 	        Kings.game.hui = new Kings.HUI();
@@ -20099,6 +20100,9 @@
 	                store.commit('pauseGame', !Kings.game.paused);
 	            });
 	            $( document ).trigger( "gamePause" );
+
+	            var sky = new Kings.SkySphere({});
+	            Kings.game.addElement(sky);
 
 	            Kings.game.player = new Kings.Player({
 	                velocity: 2,
@@ -26869,7 +26873,8 @@
 	    __webpack_require__(18);
 	    __webpack_require__(19);
 	    __webpack_require__(20);
-	    __webpack_require__(23);
+	    __webpack_require__(21);
+	    __webpack_require__(24);
 
 	    Kings.Graphics = function(parameters) {
 	        var self = this;
@@ -26920,7 +26925,7 @@
 	        Kings.pMatrix = glMatrix.mat4.create();
 	        Kings.wMatrix = glMatrix.mat4.create();
 	        Kings.vMatrix = glMatrix.mat4.create();
-	        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
+	        glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 120.0);
 	        Kings.mvMatrixStack = [];
 
 	        Kings.colorShader = new Kings.Shader({
@@ -26963,7 +26968,7 @@
 	                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-	                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 100.0);
+	                glMatrix.mat4.perspective(Kings.pMatrix, 45, gl.canvas.width / gl.canvas.height, 0.01, 120.0);
 
 	                for (var i = 0; i < this.elements.length; i++) {
 	                    //if (Kings.Gameobject != null) {
@@ -27756,6 +27761,217 @@
 
 	    __webpack_require__(11);
 
+	    Kings.Sphere = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.radius = parameters.radius || 1;
+	        this.slices = parameters.slices || 6;
+	        this.stacks = parameters.stacks || 6;
+	        this.color = parameters.color || { r: 1, g: 1, b: 1, a: 1 };
+	        this.texture = parameters.texture || null;
+	        if (this.texture != null) {
+	            this.vertexPositionAttribute = Kings.textureShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.textureCoordAttribute = Kings.textureShader.getAttributeLocation('aTextureCoord');
+	            gl.enableVertexAttribArray(this.textureCoordAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	            Kings.Texture.handleTexture(this.texture);
+	        } else {
+	            this.vertexPositionAttribute = Kings.colorShader.getAttributeLocation('aVertexPosition');
+	            gl.enableVertexAttribArray(this.vertexPositionAttribute);
+	            this.vertexColorAttribute = Kings.colorShader.getAttributeLocation('aVertexColor');
+	            gl.enableVertexAttribArray(this.vertexColorAttribute);
+	            this.vertexNormalAttribute = Kings.textureShader.getAttributeLocation('aVertexNormal');
+	            gl.enableVertexAttribArray(this.vertexNormalAttribute);
+	        }
+	        this.initBuffers();
+	    };
+
+	    Kings.Sphere.prototype = {
+	        constructor: Kings.Sphere,
+
+	        initBuffers: function() {
+	            var textureCoords = [];
+	            var vertices = [];
+	            var vertexNormals = [];
+	            var colors = [];
+	            var indexData = [];
+
+	            if (this.texture != null) {
+	                var xStep = Math.PI / this.slices;
+	                var yStep = Math.PI / this.stacks;
+	                for (var stack = 0; stack <= this.stacks; stack++) {
+	                    var theta = stack * yStep;
+	                    var sinTheta = Math.sin(theta);
+	                    var cosTheta = Math.cos(theta);
+	                    for (var slice = 0; slice <= this.slices; slice++) {
+	                        var phi = slice * 2 * xStep;
+	                        var sinPhi = Math.sin(phi);
+	                        var cosPhi = Math.cos(phi);
+
+	                        var x = cosPhi * sinTheta;
+	                        var y = cosTheta;
+	                        var z = sinPhi * sinTheta;
+	                        var u = 1 - (slice / this.stacks);
+	                        var v = 1 - (stack / this.slices);
+
+	                        vertexNormals.push(x);
+	                        vertexNormals.push(y);
+	                        vertexNormals.push(z);
+	                        textureCoords.push(u);
+	                        textureCoords.push(v);
+	                        vertices.push(this.position.x + (this.radius * x));
+	                        vertices.push(this.position.y + (this.radius * y));
+	                        vertices.push(this.position.z + (this.radius * z));
+	                    }
+	                }
+
+	                this.sphereTextureCoordBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereTextureCoordBuffer);
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+	                this.sphereTextureCoordBuffer.itemSize = 2;
+	                this.sphereTextureCoordBuffer.numItems = textureCoords.length / 2;
+
+	            } else {
+	                var xStep = Math.PI / this.slices;
+	                var yStep = Math.PI / this.stacks;
+	                for (var stack = 0; stack <= this.stacks; stack++) {
+	                    var theta = latNumber * yStep;
+	                    var sinTheta = Math.sin(theta);
+	                    var cosTheta = Math.cos(theta);
+	                    for (var slice = 0; slice <= this.slices; slice++) {
+	                        var phi = longNumber * 2 * xStep;
+	                        var sinPhi = Math.sin(phi);
+	                        var cosPhi = Math.cos(phi);
+
+	                        var x = cosPhi * sinTheta;
+	                        var y = cosTheta;
+	                        var z = sinPhi * sinTheta;
+	                        var u = 1 - (longNumber / longitudeBands);
+	                        var v = 1 - (latNumber / latitudeBands);
+
+	                        colors.push(this.color.r);
+	                        colors.push(this.color.g);
+	                        colors.push(this.color.b);
+	                        colors.push(this.color.a);
+	                        vertexNormals.push(x);
+	                        vertexNormals.push(y);
+	                        vertexNormals.push(z);
+	                        vertices.push(this.position.x + (this.radius * x));
+	                        vertices.push(this.position.y + (this.radius * y));
+	                        vertices.push(this.position.z + (this.radius * z));
+	                    }
+	                }
+
+	                this.sphereVertexColorBuffer = gl.createBuffer();
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereVertexColorBuffer);
+	                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+	                this.sphereVertexColorBuffer.itemSize = 4;
+	                this.sphereVertexColorBuffer.numItems = colors.length / 4;
+	            }
+
+	            for (var stack = 0; stack < this.stacks; stack++) {
+	                for (var slice = 0; slice < this.slices; slice++) {
+	                    var first = (stack * (this.slices + 1)) + slice;
+	                    var second = first + this.slices + 1;
+	                    indexData.push(first);
+	                    indexData.push(second);
+	                    indexData.push(first + 1);
+
+	                    indexData.push(second);
+	                    indexData.push(second + 1);
+	                    indexData.push(first + 1);
+	                }
+	            }
+
+	            this.sphereVertexPositionBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereVertexPositionBuffer);
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	            this.sphereVertexPositionBuffer.itemSize = 3;
+	            this.sphereVertexPositionBuffer.numItems = vertices.length / 3;
+
+	            this.sphereVertexNormalBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereVertexNormalBuffer);
+	            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+	            this.sphereVertexNormalBuffer.itemSize = 3;
+	            this.sphereVertexNormalBuffer.numItems = vertexNormals.length / 3;
+
+	            this.sphereVertexIndexBuffer = gl.createBuffer();
+	            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.sphereVertexIndexBuffer);
+	            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexData), gl.STATIC_DRAW);
+	            this.sphereVertexIndexBuffer.itemSize = 1;
+	            this.sphereVertexIndexBuffer.numItems = indexData.length;
+	        },
+
+	        update: function() {
+
+	        },
+
+	        draw: function(shader) {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            Kings.GL.mvRotate(this.rotation.x, 1, 0, 0);
+	            Kings.GL.mvRotate(this.rotation.y, 0, 1, 0);
+	            Kings.GL.mvRotate(this.rotation.z, 0, 0, 1);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereVertexPositionBuffer);
+	            gl.vertexAttribPointer(this.vertexPositionAttribute, this.sphereVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereVertexNormalBuffer);
+	            gl.vertexAttribPointer(this.vertexNormalAttribute, this.sphereVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	            if (shader != undefined) {
+	                gl.useProgram(shader.getProgram());
+	                gl.activeTexture(gl.TEXTURE0);
+	                gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	                gl.uniform1i(shader.getProgram().samplerUniform, 0);
+
+	                gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereTextureCoordBuffer);
+	                gl.vertexAttribPointer(this.textureCoordAttribute, this.sphereTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                Kings.GL.setMatrixUniforms(shader);
+	            } else {
+	                if (this.texture != null) {
+	                    gl.useProgram(Kings.textureShader.getProgram());
+	                    gl.activeTexture(gl.TEXTURE0);
+	                    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	                    gl.uniform1i(Kings.textureShader.getProgram().samplerUniform, 0);
+
+	                    Kings.GL.setLightUniforms(Kings.textureShader);
+
+	                    gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereTextureCoordBuffer);
+	                    gl.vertexAttribPointer(this.textureCoordAttribute, this.sphereTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                    Kings.GL.setMatrixUniforms(Kings.textureShader);
+	                } else {
+	                    gl.useProgram(Kings.colorShader.getProgram());
+	                    gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereVertexColorBuffer);
+	                    gl.vertexAttribPointer(this.vertexColorAttribute, this.sphereVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+	                    Kings.GL.setLightUniforms(Kings.colorShader);
+	                    Kings.GL.setMatrixUniforms(Kings.colorShader);
+	                }
+	            }
+
+	            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.sphereVertexIndexBuffer);
+	            gl.drawElements(gl.TRIANGLES, this.sphereVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(11);
+
 	    Kings.Grid = function(parameters) {
 	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
 	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
@@ -27963,7 +28179,7 @@
 
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28017,7 +28233,7 @@
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28080,7 +28296,7 @@
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28104,7 +28320,7 @@
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28196,7 +28412,7 @@
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28314,13 +28530,13 @@
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(21);
+	    __webpack_require__(22);
 
 	    Kings.ParticleExplosion = function(parameters) {
 	        Kings.ParticleSistem.call(this, parameters);
@@ -28345,13 +28561,13 @@
 
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(22);
+	    __webpack_require__(23);
 
 	    Kings.ParticleSistem = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
@@ -28393,7 +28609,7 @@
 
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -28477,13 +28693,13 @@
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(21);
+	    __webpack_require__(22);
 
 	    Kings.ParticleFire = function(parameters) {
 	        parameters.keepAlive = true;
@@ -28531,10 +28747,10 @@
 
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25), __webpack_require__(9)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(26), __webpack_require__(9)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
 	    var Kings = window.Kings || {};
 
 	    Kings.Player = function(parameters) {
@@ -28907,11 +29123,11 @@
 
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Vue = __webpack_require__(2);
-	var Vuex = __webpack_require__(26);
+	var Vuex = __webpack_require__(27);
 
 	Vue.use(Vuex);
 
@@ -28956,7 +29172,7 @@
 
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -29773,14 +29989,86 @@
 
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(28);
-	    __webpack_require__(29);
+	    Kings.SkySphere = function(parameters) {
+	        this.position = parameters.position || { x: 0, y: 0, z: 0 };
+	        this.rotation = parameters.rotation || { x: 0, y: 0, z: 0 };
+	        this.radius = parameters.radius || 50;
+
+	        this.cloudsRotationRatio = 0.5;
+	        this.moonRotationRatio = 0.2;
+
+	        this.cloudsRotation = 0;
+
+	        this.clouds = new Kings.Sphere({
+	            radius: this.radius,
+	            slices: 32,
+	            stacks: 32,
+	            texture: Kings.AssetBundles[0].content.clouds,
+	            // rotation: { x: 0, y: 90, z: 0 }
+	        });
+	        this.moon = new Kings.Sphere({
+	            radius: this.radius + 10,
+	            slices: 32,
+	            stacks: 32,
+	            texture: Kings.AssetBundles[0].content.moon,
+	            rotation: { x: 0, y: 90, z: 0 }
+	        });
+	    };
+
+	    Kings.SkySphere.prototype = {
+	        constructor: Kings.SkySphere,
+
+	        update: function() {
+	            this.position.z = Kings.game.player.position.z + 35;
+	            if (Kings.game.player.live) {
+	                this.cloudsRotation += Kings.game.player.getVelocity();
+	            }
+	        },
+
+	        draw: function() {
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+	            this.moon.draw(Kings.game.shaders.basic);
+	            Kings.GL.mvPopMatrix();
+
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvTranslate(this.position);
+
+	            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	            gl.enable(gl.BLEND);
+	            gl.disable(gl.DEPTH_TEST);
+
+	            Kings.GL.mvPushMatrix();
+	            Kings.GL.mvRotate(90, 0, 0, 1);
+	            Kings.GL.mvRotate(this.cloudsRotation, 0, 1, 0);
+	            Kings.GL.mvScale({ x: 1, y: 2, z: 1 });
+	            this.clouds.draw(Kings.game.shaders.basic);
+	            Kings.GL.mvPopMatrix();
+
+	            gl.disable(gl.BLEND);
+	            gl.enable(gl.DEPTH_TEST);
+
+	            Kings.GL.mvPopMatrix();
+	        }
+	    };
+	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
+	    var Kings = window.Kings || {};
+
+	    __webpack_require__(30);
+	    __webpack_require__(31);
 
 	    Kings.LoadManager = {
 	        loadBundle: function(name, callback) {
@@ -29916,14 +30204,14 @@
 
 
 /***/ },
-/* 28 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(29);
-	    __webpack_require__(30);
+	    __webpack_require__(31);
+	    __webpack_require__(32);
 	    __webpack_require__(11);
 
 	    Kings.ObjLoader = {
@@ -30153,7 +30441,7 @@
 
 
 /***/ },
-/* 29 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -30272,7 +30560,7 @@
 
 
 /***/ },
-/* 30 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -30291,7 +30579,7 @@
 
 
 /***/ },
-/* 31 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -30373,16 +30661,16 @@
 
 
 /***/ },
-/* 32 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(26)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
 	    var Kings = window.Kings || {};
 
-	    __webpack_require__(33);
-	    __webpack_require__(34);
 	    __webpack_require__(35);
 	    __webpack_require__(36);
+	    __webpack_require__(37);
+	    __webpack_require__(38);
 
 	    Kings.Road = function(parameters) {
 	        Kings.GameObject.call(this, parameters);
@@ -30694,10 +30982,10 @@
 
 
 /***/ },
-/* 33 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(26)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
 	    var Kings = window.Kings || {};
 
 	    Kings.RoadSection = function(parameters) {
@@ -30752,7 +31040,7 @@
 
 
 /***/ },
-/* 34 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -30790,7 +31078,7 @@
 
 
 /***/ },
-/* 35 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -30825,7 +31113,7 @@
 
 
 /***/ },
-/* 36 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -30893,7 +31181,7 @@
 
 
 /***/ },
-/* 37 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -30953,7 +31241,7 @@
 
 
 /***/ },
-/* 38 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31016,16 +31304,16 @@
 
 
 /***/ },
-/* 39 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
 	    var Kings = window.Kings || {};
 
 	    __webpack_require__(11);
-	    __webpack_require__(40);
-	    __webpack_require__(17);
-	    __webpack_require__(14);
+	    __webpack_require__(42);
+	    __webpack_require__(18);
+	    __webpack_require__(15);
 
 	    Kings.Terrain = function(parameters) {
 	        Kings.Grid.call(this, parameters);
@@ -31156,7 +31444,7 @@
 
 
 /***/ },
-/* 40 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31227,7 +31515,7 @@
 
 
 /***/ },
-/* 41 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(9)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31329,7 +31617,7 @@
 
 
 /***/ },
-/* 42 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31382,7 +31670,7 @@
 
 
 /***/ },
-/* 43 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31451,7 +31739,7 @@
 
 
 /***/ },
-/* 44 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31523,10 +31811,10 @@
 
 
 /***/ },
-/* 45 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5), __webpack_require__(26)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix, store) {
 	    var Kings = window.Kings || {};
 
 	    Kings.Score = function(parameters) {
@@ -31579,7 +31867,7 @@
 
 
 /***/ },
-/* 46 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31615,7 +31903,7 @@
 
 
 /***/ },
-/* 47 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31660,7 +31948,7 @@
 
 
 /***/ },
-/* 48 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31700,7 +31988,7 @@
 
 
 /***/ },
-/* 49 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31759,7 +32047,7 @@
 
 
 /***/ },
-/* 50 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, glMatrix) {
@@ -31785,8 +32073,6 @@
 	            'void main(void) {',
 	                'vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
 	                'gl_FragColor = vec4(textureColor.rgb, textureColor.a);',
-	                // 'if(gl_FragColor.a < 0.5)',
-	                //     'discard;',
 	            '}'
 	        ].join("\n")
 	    });
@@ -31796,18 +32082,18 @@
 
 
 /***/ },
-/* 51 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
 	/* styles */
-	__webpack_require__(52)
+	__webpack_require__(54)
 
-	var Component = __webpack_require__(61)(
+	var Component = __webpack_require__(63)(
 	  /* script */
-	  __webpack_require__(62),
+	  __webpack_require__(64),
 	  /* template */
-	  __webpack_require__(63),
+	  __webpack_require__(65),
 	  /* scopeId */
 	  null,
 	  /* cssModules */
@@ -31834,17 +32120,17 @@
 
 
 /***/ },
-/* 52 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(53);
+	var content = __webpack_require__(55);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	if(content.locals) module.exports = content.locals;
 	// add the styles to the DOM
-	var update = __webpack_require__(59)("3651ec54", content, false);
+	var update = __webpack_require__(61)("3651ec54", content, false);
 	// Hot Module Replacement
 	if(false) {
 	 // When the styles change, update the <style> tags
@@ -31860,10 +32146,10 @@
 	}
 
 /***/ },
-/* 53 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(54)(undefined);
+	exports = module.exports = __webpack_require__(56)(undefined);
 	// imports
 
 
@@ -31874,7 +32160,7 @@
 
 
 /***/ },
-/* 54 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*
@@ -31953,10 +32239,10 @@
 	  return '/*# ' + data + ' */';
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(55).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(57).Buffer))
 
 /***/ },
-/* 55 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/*!
@@ -31969,9 +32255,9 @@
 
 	'use strict'
 
-	var base64 = __webpack_require__(56)
-	var ieee754 = __webpack_require__(57)
-	var isArray = __webpack_require__(58)
+	var base64 = __webpack_require__(58)
+	var ieee754 = __webpack_require__(59)
+	var isArray = __webpack_require__(60)
 
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -33752,7 +34038,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 56 */
+/* 58 */
 /***/ function(module, exports) {
 
 	'use strict'
@@ -33872,7 +34158,7 @@
 
 
 /***/ },
-/* 57 */
+/* 59 */
 /***/ function(module, exports) {
 
 	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -33962,7 +34248,7 @@
 
 
 /***/ },
-/* 58 */
+/* 60 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -33973,7 +34259,7 @@
 
 
 /***/ },
-/* 59 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -33992,7 +34278,7 @@
 	  ) }
 	}
 
-	var listToStyles = __webpack_require__(60)
+	var listToStyles = __webpack_require__(62)
 
 	/*
 	type StyleObject = {
@@ -34194,7 +34480,7 @@
 
 
 /***/ },
-/* 60 */
+/* 62 */
 /***/ function(module, exports) {
 
 	/**
@@ -34227,7 +34513,7 @@
 
 
 /***/ },
-/* 61 */
+/* 63 */
 /***/ function(module, exports) {
 
 	module.exports = function normalizeComponent (
@@ -34280,7 +34566,7 @@
 
 
 /***/ },
-/* 62 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function($) {//
@@ -34297,7 +34583,7 @@
 	//
 	//
 
-	var store = __webpack_require__(25);
+	var store = __webpack_require__(26);
 	module.exports = {
 	    data() {
 	        return {
@@ -34334,7 +34620,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ },
-/* 63 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -34369,18 +34655,18 @@
 	}
 
 /***/ },
-/* 64 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
 	/* styles */
-	__webpack_require__(65)
+	__webpack_require__(67)
 
-	var Component = __webpack_require__(61)(
+	var Component = __webpack_require__(63)(
 	  /* script */
-	  __webpack_require__(67),
+	  __webpack_require__(69),
 	  /* template */
-	  __webpack_require__(68),
+	  __webpack_require__(70),
 	  /* scopeId */
 	  null,
 	  /* cssModules */
@@ -34407,17 +34693,17 @@
 
 
 /***/ },
-/* 65 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(66);
+	var content = __webpack_require__(68);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	if(content.locals) module.exports = content.locals;
 	// add the styles to the DOM
-	var update = __webpack_require__(59)("6409fcf5", content, false);
+	var update = __webpack_require__(61)("6409fcf5", content, false);
 	// Hot Module Replacement
 	if(false) {
 	 // When the styles change, update the <style> tags
@@ -34433,10 +34719,10 @@
 	}
 
 /***/ },
-/* 66 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(54)(undefined);
+	exports = module.exports = __webpack_require__(56)(undefined);
 	// imports
 
 
@@ -34447,7 +34733,7 @@
 
 
 /***/ },
-/* 67 */
+/* 69 */
 /***/ function(module, exports) {
 
 	//
@@ -34482,7 +34768,7 @@
 
 
 /***/ },
-/* 68 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -34542,18 +34828,18 @@
 	}
 
 /***/ },
-/* 69 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
 	/* styles */
-	__webpack_require__(70)
+	__webpack_require__(72)
 
-	var Component = __webpack_require__(61)(
+	var Component = __webpack_require__(63)(
 	  /* script */
-	  __webpack_require__(72),
+	  __webpack_require__(74),
 	  /* template */
-	  __webpack_require__(73),
+	  __webpack_require__(75),
 	  /* scopeId */
 	  null,
 	  /* cssModules */
@@ -34580,17 +34866,17 @@
 
 
 /***/ },
-/* 70 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(71);
+	var content = __webpack_require__(73);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	if(content.locals) module.exports = content.locals;
 	// add the styles to the DOM
-	var update = __webpack_require__(59)("2861e5d7", content, false);
+	var update = __webpack_require__(61)("2861e5d7", content, false);
 	// Hot Module Replacement
 	if(false) {
 	 // When the styles change, update the <style> tags
@@ -34606,10 +34892,10 @@
 	}
 
 /***/ },
-/* 71 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(54)(undefined);
+	exports = module.exports = __webpack_require__(56)(undefined);
 	// imports
 
 
@@ -34620,7 +34906,7 @@
 
 
 /***/ },
-/* 72 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function($) {//
@@ -34694,7 +34980,7 @@
 	//
 	//
 
-	var store = __webpack_require__(25);
+	var store = __webpack_require__(26);
 	module.exports = {
 	    data() {
 	        return {
@@ -34746,7 +35032,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ },
-/* 73 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -34909,18 +35195,18 @@
 	}
 
 /***/ },
-/* 74 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
 	/* styles */
-	__webpack_require__(75)
+	__webpack_require__(77)
 
-	var Component = __webpack_require__(61)(
+	var Component = __webpack_require__(63)(
 	  /* script */
-	  __webpack_require__(77),
+	  __webpack_require__(79),
 	  /* template */
-	  __webpack_require__(78),
+	  __webpack_require__(80),
 	  /* scopeId */
 	  null,
 	  /* cssModules */
@@ -34947,17 +35233,17 @@
 
 
 /***/ },
-/* 75 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(76);
+	var content = __webpack_require__(78);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	if(content.locals) module.exports = content.locals;
 	// add the styles to the DOM
-	var update = __webpack_require__(59)("0fa71f04", content, false);
+	var update = __webpack_require__(61)("0fa71f04", content, false);
 	// Hot Module Replacement
 	if(false) {
 	 // When the styles change, update the <style> tags
@@ -34973,10 +35259,10 @@
 	}
 
 /***/ },
-/* 76 */
+/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(54)(undefined);
+	exports = module.exports = __webpack_require__(56)(undefined);
 	// imports
 
 
@@ -34987,7 +35273,7 @@
 
 
 /***/ },
-/* 77 */
+/* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function($) {//
@@ -35004,7 +35290,7 @@
 	//
 	//
 
-	var store = __webpack_require__(25);
+	var store = __webpack_require__(26);
 	module.exports = {
 	    data: function() {
 	        return {
@@ -35038,7 +35324,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ },
-/* 78 */
+/* 80 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -35074,18 +35360,18 @@
 	}
 
 /***/ },
-/* 79 */
+/* 81 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
 	/* styles */
-	__webpack_require__(80)
+	__webpack_require__(82)
 
-	var Component = __webpack_require__(61)(
+	var Component = __webpack_require__(63)(
 	  /* script */
-	  __webpack_require__(82),
+	  __webpack_require__(84),
 	  /* template */
-	  __webpack_require__(83),
+	  __webpack_require__(85),
 	  /* scopeId */
 	  null,
 	  /* cssModules */
@@ -35112,17 +35398,17 @@
 
 
 /***/ },
-/* 80 */
+/* 82 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(81);
+	var content = __webpack_require__(83);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	if(content.locals) module.exports = content.locals;
 	// add the styles to the DOM
-	var update = __webpack_require__(59)("b28c4ef0", content, false);
+	var update = __webpack_require__(61)("b28c4ef0", content, false);
 	// Hot Module Replacement
 	if(false) {
 	 // When the styles change, update the <style> tags
@@ -35138,10 +35424,10 @@
 	}
 
 /***/ },
-/* 81 */
+/* 83 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(54)(undefined);
+	exports = module.exports = __webpack_require__(56)(undefined);
 	// imports
 
 
@@ -35152,7 +35438,7 @@
 
 
 /***/ },
-/* 82 */
+/* 84 */
 /***/ function(module, exports) {
 
 	//
@@ -35194,7 +35480,7 @@
 
 
 /***/ },
-/* 83 */
+/* 85 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;

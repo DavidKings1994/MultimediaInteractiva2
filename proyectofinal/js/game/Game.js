@@ -24,6 +24,7 @@
     require('./Shader.js');
     require('./Graphics.js');
     require('./Player.js');
+    require('./SkySphere.js');
     require('./Utils/LoadManager.js');
     require('./Utils/Keyboard.js');
     require('./GameObjects/Road/Road.js');
@@ -60,7 +61,7 @@
                 ambiental: [1.0, 1.0, 1.0],
                 directional: {
                     direction: [0.0, -0.3, -0.3],
-                    color: [0.3, 0.3, 0.3]
+                    color: [0.4, 0.4, 0.4]
                 },
                 spot: {
                     position: [0.0, 0.0, 0.0],
@@ -119,6 +120,9 @@
                 store.commit('pauseGame', !Kings.game.paused);
             });
             $( document ).trigger( "gamePause" );
+
+            var sky = new Kings.SkySphere({});
+            Kings.game.addElement(sky);
 
             Kings.game.player = new Kings.Player({
                 velocity: 2,
