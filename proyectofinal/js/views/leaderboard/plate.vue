@@ -13,7 +13,7 @@
             <img :src="'Assets/img/Screw-Transparent.png'" class="player-screw screw-down screw-right">
         </div>
         <div class="player-foto-place">
-            <img :src="player.urlFoto" class="player-foto">
+            <img :src="foto" class="player-foto">
         </div>
     </div>
 </template>
@@ -23,6 +23,15 @@
         data() {
             return {
 
+            }
+        },
+        computed: {
+            foto: function() {
+                if (this.player.urlFoto == 0) {
+                    return 'Assets/img/anonimo.jpg';
+                } else {
+                    return this.player.urlFoto;
+                }
             }
         },
         props: ['player']

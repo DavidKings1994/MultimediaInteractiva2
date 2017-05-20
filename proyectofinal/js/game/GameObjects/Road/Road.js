@@ -56,6 +56,8 @@ define(['jquery', 'glMatrix', './../../../store/store'],  function($, glMatrix, 
         this.combinations = [ //0 = nada, 1 = barreera/gasolina, 2 = barril, 3 = gasolina
             [2,2,0,0,0],
             [0,0,0,2,2],
+            [2,0,2,2,0],
+            [0,2,2,0,2],
             [2,2,2,0,0],
             [0,0,2,2,2],
             [2,2,2,0,0],
@@ -69,6 +71,7 @@ define(['jquery', 'glMatrix', './../../../store/store'],  function($, glMatrix, 
             [0,0,0,0,3],
             [3,0,0,0,0],
             [2,0,2,0,2],
+            [1,1,1,1,1],
         ];
         this.string = [
             [
@@ -95,6 +98,17 @@ define(['jquery', 'glMatrix', './../../../store/store'],  function($, glMatrix, 
                 [0,0,0,0,3],
                 [0,0,0,3,0],
                 [0,0,3,0,0],
+            ],
+            [
+                [1,1,1,1,1],
+                [0,0,3,0,0],
+                [0,1,2,0,0],
+                [0,0,3,0,0],
+                [0,0,2,1,0],
+                [0,0,3,0,0],
+                [0,1,2,0,0],
+                [0,0,3,0,0],
+                [0,0,2,1,0],
             ],
             [
                 [2,2,2,2,0],
@@ -135,7 +149,7 @@ define(['jquery', 'glMatrix', './../../../store/store'],  function($, glMatrix, 
             });
             var elements = [];
             if (
-                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0  && this.currentString == -1 && this.emptySectionsPassed > 1) ||
+                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % Math.floor(this.difficulty) == 0  && this.currentString == -1 && this.emptySectionsPassed > 1) ||
                 (this.sections[this.numberOfSections - 1].id % 4 == 0 && this.currentString != -1 && this.emptySectionsPassed > 1)
             ) {
                 this.emptySectionsPassed = 0;

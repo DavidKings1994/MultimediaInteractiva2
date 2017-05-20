@@ -5,6 +5,7 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
     Vue.component('config', require('./views/configuration/config.vue'));
     Vue.component('loading', require('./views/game/loading.vue'));
     Vue.component('newrecord', require('./views/game/record.vue'));
+    Vue.component('registro', require('./views/game/registro.vue'));
 
     $(document).ready(function() {
         window.addEventListener('keydown', function(e) {
@@ -29,7 +30,8 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
             data: {
                 showConfig: false,
                 showRecord: false,
-                usuarioLogeado: true
+                showRegistro: false,
+                usuarioLogeado: false
             },
             computed: {
                 score: function() {
@@ -51,7 +53,11 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
             watch: {
                 gameOver: function() {
                     if (this.gameOver) {
-                        this.testAPI();
+                        if (this.usuarioLogeado) {
+                            this.GetApiData();
+                        } else {
+                            this.showRegistro = true;
+                        }
                         $('meta[property="og:description"]').attr('content', 'Mi puntuacion: ' + this.score + ' km!');
                     }
                 }
@@ -61,6 +67,10 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
                     store.commit('setGameState', true);
                     store.commit('setGameOver', false);
                     $( document ).trigger( "gamePause" );
+                },
+                recordAnonimo: function() {
+                    this.showRegistro = false;
+                    this.showRecord = true;
                 },
                 uploadInformation: function(parameters) {
                     var self = this;
@@ -85,7 +95,7 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
                         self.statusChangeCallback(response);
                     });
                 },
-                testAPI: function() {
+                GetApiData: function() {
                     var self = this;
                     FB.api('/me', function(response) {
                         var _id = response.id;
@@ -105,9 +115,6 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
                 statusChangeCallback: function(response) {
                     if (response.status === 'connected') {
                         this.usuarioLogeado = true;
-                        if (this.score > 0) {
-                            this.testAPI();
-                        }
                     } else if (response.status === 'not_authorized') {
                         this.usuarioLogeado = false;
                     } else {
@@ -149,6 +156,7 @@ define(['vue', 'vuex', "./game/Game", './store/store'],  function(Vue, Vuex, Gam
             },
             mounted: function() {
                 $('#gameWindow').initGame();
+                this.checkLoginState();
             }
         });
     });

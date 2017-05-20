@@ -168,11 +168,11 @@
                     fuelMeter.setLevel(Kings.game.player.fuel);
                     slowTimeMeter.setLevel(Kings.game.player.slowTime);
                     if (road.sections[road.sections.length - 1].id % 50 == 0) {
-                        Kings.game.player.velocity += 0.02;
+                        Kings.game.player.velocity += 0.05;
                         if (Kings.game.player.velocity > 3) {
                             Kings.game.player.velocity = 3;
                         }
-                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 2, 5, 4, 10));
+                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 2, 5, 4, 7));
                     }
                 }
             });

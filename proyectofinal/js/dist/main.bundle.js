@@ -51,6 +51,7 @@
 	    Vue.component('config', __webpack_require__(71));
 	    Vue.component('loading', __webpack_require__(76));
 	    Vue.component('newrecord', __webpack_require__(81));
+	    Vue.component('registro', __webpack_require__(86));
 
 	    $(document).ready(function() {
 	        window.addEventListener('keydown', function(e) {
@@ -75,7 +76,8 @@
 	            data: {
 	                showConfig: false,
 	                showRecord: false,
-	                usuarioLogeado: true
+	                showRegistro: false,
+	                usuarioLogeado: false
 	            },
 	            computed: {
 	                score: function() {
@@ -97,7 +99,11 @@
 	            watch: {
 	                gameOver: function() {
 	                    if (this.gameOver) {
-	                        this.testAPI();
+	                        if (this.usuarioLogeado) {
+	                            this.GetApiData();
+	                        } else {
+	                            this.showRegistro = true;
+	                        }
 	                        $('meta[property="og:description"]').attr('content', 'Mi puntuacion: ' + this.score + ' km!');
 	                    }
 	                }
@@ -107,6 +113,10 @@
 	                    store.commit('setGameState', true);
 	                    store.commit('setGameOver', false);
 	                    $( document ).trigger( "gamePause" );
+	                },
+	                recordAnonimo: function() {
+	                    this.showRegistro = false;
+	                    this.showRecord = true;
 	                },
 	                uploadInformation: function(parameters) {
 	                    var self = this;
@@ -131,7 +141,7 @@
 	                        self.statusChangeCallback(response);
 	                    });
 	                },
-	                testAPI: function() {
+	                GetApiData: function() {
 	                    var self = this;
 	                    FB.api('/me', function(response) {
 	                        var _id = response.id;
@@ -151,9 +161,6 @@
 	                statusChangeCallback: function(response) {
 	                    if (response.status === 'connected') {
 	                        this.usuarioLogeado = true;
-	                        if (this.score > 0) {
-	                            this.testAPI();
-	                        }
 	                    } else if (response.status === 'not_authorized') {
 	                        this.usuarioLogeado = false;
 	                    } else {
@@ -195,6 +202,7 @@
 	            },
 	            mounted: function() {
 	                $('#gameWindow').initGame();
+	                this.checkLoginState();
 	            }
 	        });
 	    });
@@ -20148,11 +20156,11 @@
 	                    fuelMeter.setLevel(Kings.game.player.fuel);
 	                    slowTimeMeter.setLevel(Kings.game.player.slowTime);
 	                    if (road.sections[road.sections.length - 1].id % 50 == 0) {
-	                        Kings.game.player.velocity += 0.02;
+	                        Kings.game.player.velocity += 0.05;
 	                        if (Kings.game.player.velocity > 3) {
 	                            Kings.game.player.velocity = 3;
 	                        }
-	                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 2, 5, 4, 10));
+	                        road.difficulty = Math.floor(Kings.Processing.map(Kings.game.player.velocity, 2, 5, 4, 7));
 	                    }
 	                }
 	            });
@@ -30722,6 +30730,8 @@
 	        this.combinations = [ //0 = nada, 1 = barreera/gasolina, 2 = barril, 3 = gasolina
 	            [2,2,0,0,0],
 	            [0,0,0,2,2],
+	            [2,0,2,2,0],
+	            [0,2,2,0,2],
 	            [2,2,2,0,0],
 	            [0,0,2,2,2],
 	            [2,2,2,0,0],
@@ -30735,6 +30745,7 @@
 	            [0,0,0,0,3],
 	            [3,0,0,0,0],
 	            [2,0,2,0,2],
+	            [1,1,1,1,1],
 	        ];
 	        this.string = [
 	            [
@@ -30761,6 +30772,17 @@
 	                [0,0,0,0,3],
 	                [0,0,0,3,0],
 	                [0,0,3,0,0],
+	            ],
+	            [
+	                [1,1,1,1,1],
+	                [0,0,3,0,0],
+	                [0,1,2,0,0],
+	                [0,0,3,0,0],
+	                [0,0,2,1,0],
+	                [0,0,3,0,0],
+	                [0,1,2,0,0],
+	                [0,0,3,0,0],
+	                [0,0,2,1,0],
 	            ],
 	            [
 	                [2,2,2,2,0],
@@ -30801,7 +30823,7 @@
 	            });
 	            var elements = [];
 	            if (
-	                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % this.difficulty == 0  && this.currentString == -1 && this.emptySectionsPassed > 1) ||
+	                (this.sections[this.numberOfSections - 1].id > 10 && this.sections[this.numberOfSections - 1].id % Math.floor(this.difficulty) == 0  && this.currentString == -1 && this.emptySectionsPassed > 1) ||
 	                (this.sections[this.numberOfSections - 1].id % 4 == 0 && this.currentString != -1 && this.emptySectionsPassed > 1)
 	            ) {
 	                this.emptySectionsPassed = 0;
@@ -34763,6 +34785,15 @@
 
 	        }
 	    },
+	    computed: {
+	        foto: function() {
+	            if (this.player.urlFoto == 0) {
+	                return 'Assets/img/anonimo.jpg';
+	            } else {
+	                return this.player.urlFoto;
+	            }
+	        }
+	    },
 	    props: ['player']
 	}
 
@@ -34815,7 +34846,7 @@
 	  }, [_c('img', {
 	    staticClass: "player-foto",
 	    attrs: {
-	      "src": _vm.player.urlFoto
+	      "src": _vm.foto
 	    }
 	  })])])
 	},staticRenderFns: []}
@@ -35432,7 +35463,7 @@
 
 
 	// module
-	exports.push([module.id, "\n#recordWindow {\n    padding: 0px 20px;\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    margin-top: -75px;\n    margin-left: -200px;\n    z-index: 100;\n    background: rgb(169,3,41); /* Old browsers */\n    background: -moz-linear-gradient(-45deg, rgba(169,3,41,1) 0%, rgba(143,2,34,1) 44%, rgba(109,0,25,1) 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(-45deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(135deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */\n    border-radius: 5px;\n    border-style: solid;\n    border-color: white;\n    border-width: 2px;\n}\n#recordWindow h1 {\n    text-align: center;\n    color: white;\n}\n#recordWindow img {\n    height: 69px;\n    width: auto;\n    position: absolute;\n    top: -37px;\n    left: -35px;\n    display: inline-block;\n    transform: rotate(-30deg);\n}\n.bounce-animation-transition {\n    display: inline-block;\n    transform: scale(0) !important;\n}\n.bounce-animation-enter {\n    animation: bounce-in 2s;\n    -webkit-animation: bounce-in 2s;\n}\n.bounce-animation-leave {\n    animation: bounce-out 2s;\n    -webkit-animation: bounce-out 2s;\n}\n@keyframes bounce-in {\n0% {\n        transform: scale(0);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(1);\n}\n}\n@keyframes bounce-out {\n0% {\n        transform: scale(1);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(0);\n}\n}\n", ""]);
+	exports.push([module.id, "\n#recordWindow {\n    width: 400px;\n    padding: 0px 20px;\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    margin-top: -75px;\n    margin-left: -200px;\n    z-index: 100;\n    background: rgb(169,3,41); /* Old browsers */\n    background: -moz-linear-gradient(-45deg, rgba(169,3,41,1) 0%, rgba(143,2,34,1) 44%, rgba(109,0,25,1) 100%); /* FF3.6-15 */\n    background: -webkit-linear-gradient(-45deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* Chrome10-25,Safari5.1-6 */\n    background: linear-gradient(135deg, rgba(169,3,41,1) 0%,rgba(143,2,34,1) 44%,rgba(109,0,25,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a90329', endColorstr='#6d0019',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */\n    border-radius: 5px;\n    border-style: solid;\n    border-color: white;\n    border-width: 2px;\n}\n#recordWindow h1 {\n    text-align: center;\n    color: white;\n}\n#recordWindow img {\n    height: 69px;\n    width: auto;\n    position: absolute;\n    top: -37px;\n    left: -35px;\n    display: inline-block;\n    transform: rotate(-30deg);\n}\n.bounce-animation-transition {\n    display: inline-block;\n    transform: scale(0) !important;\n}\n.bounce-animation-enter {\n    animation: bounce-in 2s;\n    -webkit-animation: bounce-in 2s;\n}\n.bounce-animation-leave {\n    animation: bounce-out 2s;\n    -webkit-animation: bounce-out 2s;\n}\n@keyframes bounce-in {\n0% {\n        transform: scale(0);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(1);\n}\n}\n@keyframes bounce-out {\n0% {\n        transform: scale(1);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(0);\n}\n}\n", ""]);
 
 	// exports
 
@@ -35496,24 +35527,194 @@
 	    attrs: {
 	      "id": "recordWindow"
 	    }
-	  }, [_c('h1', [(_vm.secondaryAnimation) ? _c('transition', {
-	    attrs: {
-	      "name": "bounce-animation",
-	      "appear": ""
-	    }
-	  }, [_c('img', {
+	  }, [_c('h1', [_c('img', {
 	    staticClass: "crown",
 	    attrs: {
 	      "src": 'Assets/img/crown.png',
 	      "alt": "corona"
 	    }
-	  })]) : _vm._e(), _vm._v("\n            Nuevo record personal!\n        ")], 1)])])
+	  }), _vm._v(" "), _vm._v("\n            Nuevo record!\n        ")])])])
 	},staticRenderFns: []}
 	module.exports.render._withStripped = true
 	if (false) {
 	  module.hot.accept()
 	  if (module.hot.data) {
 	     require("vue-hot-reload-api").rerender("data-v-06df5ef3", module.exports)
+	  }
+	}
+
+/***/ },
+/* 86 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/* styles */
+	__webpack_require__(87)
+
+	var Component = __webpack_require__(63)(
+	  /* script */
+	  __webpack_require__(89),
+	  /* template */
+	  __webpack_require__(90),
+	  /* scopeId */
+	  null,
+	  /* cssModules */
+	  null
+	)
+	Component.options.__file = "C:\\xampp\\htdocs\\MI2\\proyectofinal\\js\\views\\game\\registro.vue"
+	if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+	if (Component.options.functional) {console.error("[vue-loader] registro.vue: functional components are not supported with templates, they should use render functions.")}
+
+	/* hot reload */
+	if (false) {(function () {
+	  var hotAPI = require("vue-hot-reload-api")
+	  hotAPI.install(require("vue"), false)
+	  if (!hotAPI.compatible) return
+	  module.hot.accept()
+	  if (!module.hot.data) {
+	    hotAPI.createRecord("data-v-4dda6755", Component.options)
+	  } else {
+	    hotAPI.reload("data-v-4dda6755", Component.options)
+	  }
+	})()}
+
+	module.exports = Component.exports
+
+
+/***/ },
+/* 87 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(88);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	if(content.locals) module.exports = content.locals;
+	// add the styles to the DOM
+	var update = __webpack_require__(61)("fdb35f46", content, false);
+	// Hot Module Replacement
+	if(false) {
+	 // When the styles change, update the <style> tags
+	 if(!content.locals) {
+	   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-4dda6755!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./registro.vue", function() {
+	     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-4dda6755!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./registro.vue");
+	     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+	     update(newContent);
+	   });
+	 }
+	 // When the module is disposed, remove the <style> tags
+	 module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 88 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(56)(undefined);
+	// imports
+
+
+	// module
+	exports.push([module.id, "\n#registroWindow {\n    width: 400px;\n    padding: 20px 20px;\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    margin-top: -75px;\n    margin-left: -200px;\n    z-index: 100;\n    background: #45484d;\n    background: -moz-linear-gradient(top, #45484d 0%, #000000 100%);\n    background: -webkit-linear-gradient(top, #45484d 0%,#000000 100%);\n    background: linear-gradient(to bottom, #45484d 0%,#000000 100%);\n    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#45484d', endColorstr='#000000',GradientType=0 );\n    border-radius: 5px;\n    border-style: solid;\n    border-color: white;\n    border-width: 2px;\n}\n#registroWindow h1 {\n    text-align: center;\n    color: white;\n}\n#registroWindow img {\n    height: 69px;\n    width: auto;\n    position: absolute;\n    top: -37px;\n    left: -35px;\n    display: inline-block;\n    transform: rotate(-30deg);\n}\n#registroWindow span {\n    color: white;\n    font-size: 30px;\n    text-align: center;\n    width: 100%;\n    display: block;\n    margin: 0 0 15px;\n}\n#registroWindow input[type=\"text\"] {\n    width: 100%;\n    padding: 3px 5px;\n    display: block;\n    margin: 0px auto 20px;\n    color: rgb(50,50,50);\n    font-family: digital;\n    font-size: 25px;\n}\n#registroWindow input[type=\"button\"] {\n    display: block;\n    width: 100%;\n    height: 50px;\n    font-size: 20px;\n    font-family: digital;\n}\n.bounce-animation-transition {\n    display: inline-block;\n    transform: scale(0) !important;\n}\n.bounce-animation-enter {\n    animation: bounce-in 2s;\n    -webkit-animation: bounce-in 2s;\n}\n.bounce-animation-leave {\n    animation: bounce-out 2s;\n    -webkit-animation: bounce-out 2s;\n}\n@keyframes bounce-in {\n0% {\n        transform: scale(0);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(1);\n}\n}\n@keyframes bounce-out {\n0% {\n        transform: scale(1);\n}\n50% {\n        transform: scale(1.5);\n}\n100% {\n        transform: scale(0);\n}\n}\n", ""]);
+
+	// exports
+
+
+/***/ },
+/* 89 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function($) {//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+
+	var store = __webpack_require__(26);
+	module.exports = {
+	    data: function() {
+	        return {
+
+	        };
+	    },
+	    methods: {
+	        guardar: function() {
+	            var self = this;
+	            if ($('#registroWindow input[name="nombre"]').val().trim() != '') {
+	                $.post("./php/registroAnonimo.php",
+	                {
+	                    nombre: $('#registroWindow input[name="nombre"]').val().trim(),
+	                    puntos: store.state.score
+	                },
+	                function(data, status) {
+	                    store.commit('setUpdate', true);
+	                    var resul = $.parseJSON(data);
+	                    if (resul.resultado == 1) {
+	                        self.$emit('cerrarConRecord');
+	                    } else {
+	                        self.$emit('cerrar');
+	                    }
+	                });
+	            }
+	            this.$emit('cerrar');
+	        }
+	    },
+	    mounted: function() {
+	        $('#registroWindow input[name="nombre"]').on('keyup', function(evt) {
+	            evt.stopPropagation();
+	        });
+	        $('#registroWindow input[name="nombre"]').on('keydown', function(evt) {
+	            evt.stopPropagation();
+	        });
+	    }
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+
+/***/ },
+/* 90 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+	  return _c('transition', {
+	    attrs: {
+	      "name": "bounce-animation",
+	      "appear": ""
+	    }
+	  }, [_c('div', {
+	    attrs: {
+	      "id": "registroWindow"
+	    }
+	  }, [_c('span', [_vm._v("Nueva puntuacion!")]), _vm._v(" "), _c('input', {
+	    attrs: {
+	      "type": "text",
+	      "name": "nombre",
+	      "placeholder": "nombre"
+	    }
+	  }), _vm._v(" "), _c('input', {
+	    staticClass: "btn-danger",
+	    attrs: {
+	      "type": "button",
+	      "value": "Guardar"
+	    },
+	    on: {
+	      "click": function($event) {
+	        _vm.guardar()
+	      }
+	    }
+	  })])])
+	},staticRenderFns: []}
+	module.exports.render._withStripped = true
+	if (false) {
+	  module.hot.accept()
+	  if (module.hot.data) {
+	     require("vue-hot-reload-api").rerender("data-v-4dda6755", module.exports)
 	  }
 	}
 

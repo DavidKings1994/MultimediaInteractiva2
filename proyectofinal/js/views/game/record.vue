@@ -4,13 +4,13 @@
         appear>
         <div id="recordWindow">
             <h1>
-                <transition
+                <!-- <transition
                     name="bounce-animation"
                     v-if="secondaryAnimation"
-                    appear>
+                    appear> -->
                     <img class="crown" :src="'Assets/img/crown.png'" alt="corona">
-                </transition>
-                Nuevo record personal!
+                <!-- </transition> -->
+                Nuevo record!
             </h1>
         </div>
     </transition>
@@ -38,6 +38,7 @@
 
 <style>
     #recordWindow {
+        width: 400px;
         padding: 0px 20px;
         position: absolute;
         top: 50%;

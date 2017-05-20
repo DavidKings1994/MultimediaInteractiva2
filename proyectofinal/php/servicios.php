@@ -34,6 +34,21 @@
 				return $resul;
 			}
 		}
+		function registroAnonimo($nombre, $puntos) {
+			$client = new nusoap_client('http://lmad.davidreyes.tk/proyectofinal/php/soap_server.php?wsdl',"wsdl");
+			$resul = $client->call('registroAnonimo', array('nombre'=>$nombre, 'puntos'=>$puntos));
+			$err = $client->getError();
+			if ($err) {
+				echo '<h2>Constructor error</h2>' . $err;
+			    exit();
+			}
+			if($client->fault) {
+				echo "FAULT: <p>Code: (".$client->faultcode."</p>";
+				echo "String: ".$client->faultstring;
+			} else {
+				return $resul;
+			}
+		}
 		function leaderBoard()
 		{
 			$client = new nusoap_client('http://lmad.davidreyes.tk/proyectofinal/php/soap_server.php?wsdl',"wsdl");
